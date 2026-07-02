@@ -25,6 +25,7 @@ mod modules;
 mod performance;
 mod pipelines;
 mod plugins;
+mod report_engine;
 #[allow(dead_code)]
 mod streaming;
 #[allow(dead_code)]
@@ -42,7 +43,8 @@ use commands::{
     mining::parse_drone_manifest, ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
     monitoring::compute_epoch_diff_cmd, monitoring::compute_progression_cmd, ping,
     pipelines::check_odm_availability, pipelines::get_odm_status, pipelines::run_odm_pipeline,
-    probe_file, read_las_points_cmd, sample_profile, save_settings,
+    probe_file, read_las_points_binary, read_las_points_cmd, sample_profile, save_settings,
+    generate_report_cmd,
     streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
     streaming::get_stream_status_cmd, streaming::merge_distributed_cube_results,
     streaming::start_coordinator_cmd, streaming::start_stream_cmd, streaming::stop_coordinator_cmd,
@@ -73,8 +75,10 @@ pub fn run() {
             get_settings,
             save_settings,
             probe_file,
+            read_las_points_binary,
             read_las_points_cmd,
             sample_profile,
+            generate_report_cmd,
             parse_drone_manifest,
             classify_ground,
             compute_volumes_cmd,

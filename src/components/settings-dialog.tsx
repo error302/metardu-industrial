@@ -77,7 +77,8 @@ export function SettingsDialog({ open, onClose }: Props) {
     draft.defaultDomain !== settings.defaultDomain ||
     draft.defaultEpsg !== settings.defaultEpsg ||
     draft.density !== settings.density ||
-    draft.reducedMotion !== settings.reducedMotion;
+    draft.reducedMotion !== settings.reducedMotion ||
+    draft.theme !== settings.theme;
 
   function apply() {
     setSaving(true);
@@ -271,8 +272,48 @@ export function SettingsDialog({ open, onClose }: Props) {
           </section>
 
           {/* ── Accessibility ── */}
-          <SectionHeader title="Accessibility" />
+          <SectionHeader title="Accessibility & Theme" />
           <section className="mb-7">
+            {/* Theme toggle */}
+            <div className="mb-3">
+              <div className="mb-2 text-[12px] font-semibold text-steel-light">
+                Display theme
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setDraft({ ...draft, theme: "dark" })}
+                  className="rounded-md border p-3 text-left transition-colors"
+                  style={{
+                    borderColor: draft.theme === "dark" ? colors.industrialOrange : colors.navyBorder,
+                    background: draft.theme === "dark" ? `${colors.industrialOrange}10` : "var(--color-navy-base)",
+                  }}
+                >
+                  <div className="text-[14px] font-semibold" style={{ color: draft.theme === "dark" ? colors.industrialOrange : "var(--color-steel-light)" }}>
+                    Dark (Cabin)
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-steel-gray">
+                    Navy background — for low-light survey cabins & control rooms
+                  </div>
+                </button>
+                <button
+                  onClick={() => setDraft({ ...draft, theme: "light" })}
+                  className="rounded-md border p-3 text-left transition-colors"
+                  style={{
+                    borderColor: draft.theme === "light" ? colors.industrialOrange : colors.navyBorder,
+                    background: draft.theme === "light" ? `${colors.industrialOrange}10` : "var(--color-navy-base)",
+                  }}
+                >
+                  <div className="text-[14px] font-semibold" style={{ color: draft.theme === "light" ? colors.industrialOrange : "var(--color-steel-light)" }}>
+                    Daylight (Field)
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-steel-gray">
+                    White high-contrast — for outdoor use in direct sunlight
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Reduced motion */}
             <label className="flex cursor-pointer items-center justify-between rounded-md border border-navy-border bg-navy-base px-3 py-3">
               <div>
                 <div className="text-[14px] font-medium text-white">

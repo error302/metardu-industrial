@@ -344,16 +344,31 @@ export async function classifyGround(
   });
 }
 
-/** Read LAS point data (x, y, z tuples) for point cloud rendering. */
+/** Read LAS point data (x, y, z tuples) for point cloud rendering (JSON path). */
 export async function readLasPoints(
   path: string,
   maxPoints: number,
 ): Promise<[number, number, number][] | null> {
   if (!isTauri()) return null;
-  return invoke<[number, number, number][]>("read_las_points", {
+  return invoke<[number, number, number][]>("read_las_points_cmd", {
     path,
     maxPoints,
   });
+}
+
+/**
+ * Read LAS points as packed binary (f32 LE) for high-performance rendering.
+ * Returns ArrayBuffer: [x0, y0, z0, x1, y1, z1, ...] — 12 bytes/point.
+ * 1M points = 12MB vs 40MB JSON. Zero GC pressure.
+ */
+export async function readLasPointsBinary(
+  path: string,
+  maxPoints: number,
+): Promise<Uint8Array | null> {
+  if (!isTauri()) return null;
+  const bytes = await invoke<number[]>("read_las_points_binary", { path, maxPoints });
+  if (!bytes) return null;
+  return new Uint8Array(bytes);
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -906,6 +921,49 @@ export async function removeScheduledJob(id: string): Promise<void> {
 export async function listScheduledJobs(): Promise<ScheduledJobStatus[]> {
   if (!isTauri()) return [];
   return invoke<ScheduledJobStatus[]>("list_scheduled_jobs");
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Branded PDF Report Engine
+
+export type ReportType =
+  | "eom_reconciliation"
+  | "dredge_audit"
+  | "s44_compliance"
+  | "stockpile_audit"
+  | "blast_report"
+  | "generic";
+
+export interface ReportTable {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
+export interface ReportStat {
+  label: string;
+  value: string;
+  unit: string;
+  color?: string;
+}
+
+export interface ReportSpec {
+  report_type: ReportType;
+  title: string;
+  subtitle?: string;
+  client?: string;
+  metadata?: Record<string, string>;
+  tables?: ReportTable[];
+  summary?: ReportStat[];
+  map_screenshot?: string;
+  provenance_hash?: string;
+  output_path: string;
+}
+
+/** Generate a branded HTML report (print-ready for PDF conversion). */
+export async function generateReport(spec: ReportSpec): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string>("generate_report_cmd", { spec });
 }
 
 // ──────────────────────────────────────────────────────────────────

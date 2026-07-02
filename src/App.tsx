@@ -8,6 +8,7 @@
  * go straight from modules → workspace.
  */
 
+import { useEffect } from "react";
 import { useAppStore } from "@/stores/app-store";
 import { SplashScreen } from "@/screens/splash-screen";
 import { ModuleLoadingScreen } from "@/screens/module-loading-screen";
@@ -16,6 +17,12 @@ import { WorkspaceShell } from "@/screens/workspace-shell";
 
 function App() {
   const phase = useAppStore((s) => s.phase);
+  const theme = useAppStore((s) => s.settings.theme);
+
+  // Apply theme to document root — CSS variables swap via [data-theme]
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-navy-base">

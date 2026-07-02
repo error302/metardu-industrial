@@ -18,7 +18,7 @@ import { Deck } from "@deck.gl/core";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { fromLonLat, toLonLat } from "ol/proj";
 import { colors } from "@/lib/tokens";
-import { readLasPoints, type CsfResult } from "@/lib/tauri-ipc";
+import { readLasPointsBinary, type CsfResult } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
 
 /** Client-side LOD decimation — mirrors the Rust decimate_points function. */
@@ -107,9 +107,15 @@ export function PointCloudLayer({
       return;
     }
     setLoading(true);
-    readLasPoints(file.path, maxPoints)
-      .then((pts) => {
-        if (!pts) { setRawPoints([]); setPointCount(0); setLoading(false); return; }
+    readLasPointsBinary(file.path, maxPoints)
+      .then((bytes) => {
+        if (!bytes || bytes.length === 0) { setRawPoints([]); setPointCount(0); setLoading(false); return; }
+        // Decode packed f32 array: [x0, y0, z0, x1, y1, z1, ...]
+        const floats = new Float32Array(bytes.buffer);
+        const pts: [number, number, number][] = [];
+        for (let i = 0; i < floats.length; i += 3) {
+          pts.push([floats[i], floats[i + 1], floats[i + 2]]);
+        }
         setRawPoints(pts);
         setPointCount(pts.length);
         setLoading(false);

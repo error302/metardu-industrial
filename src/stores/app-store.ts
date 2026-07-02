@@ -18,6 +18,7 @@ export interface AppSettings {
   defaultEpsg: string;
   density: "compact" | "comfortable";
   reducedMotion: boolean;
+  theme: "dark" | "light";
 }
 
 interface AppState {
@@ -37,6 +38,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultEpsg: "EPSG:4326",
   density: "comfortable",
   reducedMotion: false,
+  theme: "dark",
 };
 
 export const useAppStore = create<AppState>((set) => ({

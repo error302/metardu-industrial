@@ -17,6 +17,7 @@ use crate::formats::{
 };
 use crate::geodesy::{transform_coords, Coord, TransformResult};
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
+use crate::report_engine::{generate_report, ReportSpec};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -178,9 +179,29 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
     }
 }
 
-/// Read LAS point data (x, y, z tuples) for point cloud rendering.
-/// Returns up to max_points points (0 = all). Used by the Deck.gl
-/// point cloud layer in the frontend.
+/// Read LAS point data as a packed binary buffer (f32 array) for
+/// high-performance rendering. Returns raw bytes: [x0, y0, z0, x1, y1, z1, ...]
+/// as little-endian f32 values. The frontend wraps this as a Float32Array
+/// for direct upload to Deck.gl/WebGL — zero JSON serialization, zero GC pressure.
+///
+/// Each point is 3 × f32 = 12 bytes. For 1M points = 12MB (vs ~40MB JSON).
+#[tauri::command]
+pub fn read_las_points_binary(path: String, max_points: u64) -> Result<Vec<u8>, String> {
+    let path_buf = PathBuf::from(&path);
+    let points = read_las_points(&path_buf, max_points).map_err(|e| e.to_string())?;
+
+    // Pack into f32 array: [x0, y0, z0, x1, y1, z1, ...]
+    let mut buf = Vec::with_capacity(points.len() * 12);
+    for (x, y, z) in &points {
+        buf.extend_from_slice(&(*x as f32).to_le_bytes());
+        buf.extend_from_slice(&(*y as f32).to_le_bytes());
+        buf.extend_from_slice(&(*z as f32).to_le_bytes());
+    }
+    Ok(buf)
+}
+
+/// Read LAS point data (x, y, z tuples) as JSON. Kept for backward compat
+/// but prefer read_las_points_binary for >100K points.
 #[tauri::command]
 pub fn read_las_points_cmd(path: String, max_points: u64) -> Result<Vec<(f64, f64, f64)>, String> {
     let path_buf = PathBuf::from(&path);
@@ -276,6 +297,16 @@ fn haversine_meters(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> f64 {
     let dlambda = (lon2 - lon1).to_radians();
     let h = (dphi / 2.0).sin().powi(2) + phi1.cos() * phi2.cos() * (dlambda / 2.0).sin().powi(2);
     2.0 * r * h.sqrt().asin()
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Branded PDF Report Engine — generates professional survey reports.
+
+/// Generate a branded HTML report (print-ready for PDF conversion).
+#[tauri::command]
+pub fn generate_report_cmd(spec: ReportSpec) -> Result<String, String> {
+    generate_report(&spec).map_err(|e| e.to_string())?;
+    Ok(spec.output_path.clone())
 }
 
 // ──────────────────────────────────────────────────────────────────

@@ -59,6 +59,48 @@
   --accent: var(--color-industrial-orange);
 }
 
+/* Daylight high-contrast theme — for outdoor field use (direct sunlight) */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #FFFFFF;
+  --foreground: #0A192F;
+  --accent: #D97706; /* darker orange for contrast on white */
+
+  /* Override navy backgrounds with white/light gray */
+  --color-navy-base: #F8FAFC;
+  --color-navy-panel: #FFFFFF;
+  --color-navy-elevated: #E2E8F0;
+  --color-navy-border: #CBD5E1;
+
+  /* Override text colors for dark-on-light */
+  --color-white: #0A192F;
+  --color-steel-gray: #475569;
+  --color-steel-light: #334155;
+
+  /* Keep orange but darken for contrast */
+  --color-industrial-orange: #D97706;
+  --color-industrial-orange-dim: #B45309;
+
+  /* Domain accents stay but darken */
+  --color-mining-yellow: #CA8A04;
+  --color-mining-burnt: #C2410C;
+  --color-marine-deep: #1E40AF;
+  --color-marine-turquoise: #0F766E;
+  --color-marine-cyan: #0E7490;
+
+  /* Semantic — keep pass/fail but darken */
+  --color-pass: #15803D;
+  --color-fail: #DC2626;
+  --color-investigate: #B45309;
+
+  /* Survey grid — darker on light bg */
+  --color-survey-grid: #CBD5E1;
+
+  /* Fix body bg/fg */
+  --background: #F8FAFC;
+  --foreground: #0A192F;
+}
+
 * {
   border-color: var(--color-navy-border);
 }
