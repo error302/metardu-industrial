@@ -36,6 +36,8 @@ import {
   Shield,
   Waves,
   Anchor,
+  Brain,
+  History,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -49,6 +51,8 @@ import { S44ComplianceDialog } from "@/components/s44-compliance-dialog";
 import { CubeSurfaceDialog } from "@/components/cube-surface-dialog";
 import { CubeSurfaceOverlay } from "@/components/cube-surface-overlay";
 import { S57ExportDialog } from "@/components/s57-export-dialog";
+import { Monitoring4DDialog } from "@/components/monitoring-4d-dialog";
+import { MlClassificationDialog } from "@/components/ml-classification-dialog";
 import { PointCloudLayer } from "@/components/point-cloud-layer";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc } from "@/lib/tauri-ipc";
@@ -73,6 +77,8 @@ export function WorkspaceShell() {
   const [s44Open, setS44Open] = useState(false);
   const [cubeOpen, setCubeOpen] = useState(false);
   const [s57Open, setS57Open] = useState(false);
+  const [monitoringOpen, setMonitoringOpen] = useState(false);
+  const [mlOpen, setMlOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
@@ -103,6 +109,8 @@ export function WorkspaceShell() {
             onOpenS44={() => setS44Open(true)}
             onOpenCube={() => setCubeOpen(true)}
             onOpenS57={() => setS57Open(true)}
+            onOpenMonitoring={() => setMonitoringOpen(true)}
+            onOpenMl={() => setMlOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -167,6 +175,8 @@ export function WorkspaceShell() {
         onSurfaceGenerated={setCubeSurface}
       />
       <S57ExportDialog open={s57Open} onClose={() => setS57Open(false)} />
+      <Monitoring4DDialog open={monitoringOpen} onClose={() => setMonitoringOpen(false)} />
+      <MlClassificationDialog open={mlOpen} onClose={() => setMlOpen(false)} />
     </div>
   );
 }
@@ -227,6 +237,8 @@ function LeftSidebar({
   onOpenS44,
   onOpenCube,
   onOpenS57,
+  onOpenMonitoring,
+  onOpenMl,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -236,6 +248,8 @@ function LeftSidebar({
   onOpenS44: () => void;
   onOpenCube: () => void;
   onOpenS57: () => void;
+  onOpenMonitoring: () => void;
+  onOpenMl: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -281,6 +295,16 @@ function LeftSidebar({
               label="Volume Calculator"
               onClick={onOpenVolumeCalc}
             />
+            <SidebarItem
+              icon={<History className="h-3 w-3" />}
+              label="4D Monitoring"
+              onClick={onOpenMonitoring}
+            />
+            <SidebarItem
+              icon={<Brain className="h-3 w-3" />}
+              label="ML Classification"
+              onClick={onOpenMl}
+            />
           </SidebarSection>
         )}
 
@@ -304,6 +328,11 @@ function LeftSidebar({
               icon={<Anchor className="h-3 w-3" />}
               label="S-57 Export"
               onClick={onOpenS57}
+            />
+            <SidebarItem
+              icon={<Brain className="h-3 w-3" />}
+              label="ML Classification"
+              onClick={onOpenMl}
             />
           </SidebarSection>
         )}

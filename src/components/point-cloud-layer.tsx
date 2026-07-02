@@ -12,7 +12,7 @@
  * over the OL map, synchronized via view change events.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Map from "ol/Map";
 import { Deck } from "@deck.gl/core";
 import { ScatterplotLayer } from "@deck.gl/layers";
@@ -20,6 +20,43 @@ import { fromLonLat, toLonLat } from "ol/proj";
 import { colors } from "@/lib/tokens";
 import { readLasPoints, type CsfResult } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
+
+/**
+ * Client-side LOD decimation — mirrors the Rust decimate_points function.
+ * Uses spatial hashing: divides bounding box into cells of cell_size,
+ * keeps one representative point per cell (median by Z).
+ */
+function decimateClientSide(
+  points: [number, number, number][],
+  cellSize: number,
+): [number, number, number][] {
+  if (cellSize <= 0 || points.length === 0) return points;
+  const cells: Record<string, [number, number, number][]> = {};
+  for (const p of points) {
+    const col = Math.floor(p[0] / cellSize);
+    const row = Math.floor(p[1] / cellSize);
+    const key = `${col},${row}`;
+    if (cells[key]) cells[key].push(p);
+    else cells[key] = [p];
+  }
+  const result: [number, number, number][] = [];
+  for (const key of Object.keys(cells)) {
+    const cell = cells[key];
+    cell.sort((a, b) => a[2] - b[2]);
+    result.push(cell[Math.floor(cell.length / 2)]);
+  }
+  return result;
+}
+
+/** Determine LOD cell size based on map zoom and point count. */
+function lodCellSize(zoom: number, pointCount: number): number {
+  if (pointCount < 10000) return 0; // no decimation for small clouds
+  if (zoom >= 16) return 0;          // close enough to show all
+  if (zoom >= 14) return 1.0;        // 1m cells
+  if (zoom >= 12) return 5.0;        // 5m cells
+  if (zoom >= 10) return 25.0;       // 25m cells
+  return 100.0;                       // world view
+}
 
 interface PointCloudLayerProps {
   map: Map | null;
@@ -48,21 +85,22 @@ export function PointCloudLayer({
 }: PointCloudLayerProps) {
   const deckRef = useRef<Deck | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [points, setPoints] = useState<PointData[]>([]);
+  const [rawPoints, setRawPoints] = useState<[number, number, number][]>([]);
   const [loading, setLoading] = useState(false);
   const [pointCount, setPointCount] = useState(0);
+  const [currentZoom, setCurrentZoom] = useState(2);
   const files = useSurveyStore((s) => s.files);
 
   // Load points when active file changes
   useEffect(() => {
     if (!activeFileId) {
-      setPoints([]);
+      setRawPoints([]);
       setPointCount(0);
       return;
     }
     const file = files.find((f) => f.id === activeFileId);
     if (!file || file.kind !== "las") {
-      setPoints([]);
+      setRawPoints([]);
       setPointCount(0);
       return;
     }
@@ -71,28 +109,46 @@ export function PointCloudLayer({
     readLasPoints(file.path, maxPoints)
       .then((pts) => {
         if (!pts) {
-          setPoints([]);
+          setRawPoints([]);
           setPointCount(0);
           setLoading(false);
           return;
         }
-        // Convert lon/lat to Web Mercator for Deck.gl rendering
-        const pointData: PointData[] = pts.map((p, i) => ({
-          position: fromLonLat([p[0], p[1]]) as [number, number],
-          z: p[2],
-          isGround: csfResult?.is_ground[i] ?? null,
-          index: i,
-        }));
-        setPoints(pointData);
+        setRawPoints(pts);
         setPointCount(pts.length);
         setLoading(false);
       })
       .catch(() => {
-        setPoints([]);
+        setRawPoints([]);
         setPointCount(0);
         setLoading(false);
       });
   }, [activeFileId, files, maxPoints, csfResult]);
+
+  // Track zoom changes for LOD
+  useEffect(() => {
+    if (!map) return;
+    const updateZoom = () => {
+      const z = map.getView().getZoom();
+      if (z !== undefined) setCurrentZoom(z);
+    };
+    map.on("moveend", updateZoom);
+    updateZoom();
+    return () => { map.un("moveend", updateZoom); };
+  }, [map]);
+
+  // Apply LOD decimation based on current zoom
+  const points = useMemo<PointData[]>(() => {
+    if (rawPoints.length === 0) return [];
+    const cellSize = lodCellSize(currentZoom, rawPoints.length);
+    const decimated = decimateClientSide(rawPoints, cellSize);
+    return decimated.map((p, i) => ({
+      position: fromLonLat([p[0], p[1]]) as [number, number],
+      z: p[2],
+      isGround: csfResult?.is_ground[i] ?? null,
+      index: i,
+    }));
+  }, [rawPoints, currentZoom, csfResult]);
 
   // Initialize Deck.gl canvas over the OL map
   useEffect(() => {

@@ -86,7 +86,7 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
 ///
 /// Phase 1: supports uncompressed strips with float32/float64/uint16/uint32
 /// sample formats. Errors out for tiled or compressed DEMs.
-fn read_dem_grid(
+pub fn read_dem_grid(
     path: &std::path::Path,
     header: &crate::formats::GeoTiffHeader,
 ) -> Result<Vec<f64>, String> {

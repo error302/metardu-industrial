@@ -15,20 +15,22 @@ mod formats;
 mod geodesy;
 mod marine;
 mod mining;
-#[allow(dead_code)]
 mod ml;
 mod modules;
 #[allow(dead_code)]
 mod performance;
 mod pipelines;
+mod plugins;
 
 use commands::pipelines::OdmState;
 use commands::{
     app_version, get_settings, init_module, is_proj_available, list_modules,
     marine::check_s44_compliance_cmd, marine::compute_tpu_batch, marine::export_s57,
     marine::generate_cube_surface_cmd, mining::classify_ground, mining::compute_volumes_cmd,
-    mining::parse_drone_manifest, ping, pipelines::check_odm_availability,
-    pipelines::get_odm_status, pipelines::run_odm_pipeline, probe_file, read_las_points_cmd,
+    mining::parse_drone_manifest, ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
+    monitoring::compute_epoch_diff_cmd, monitoring::compute_progression_cmd, ping,
+    pipelines::check_odm_availability, pipelines::get_odm_status, pipelines::run_odm_pipeline,
+    plugins::get_supported_extensions, plugins::list_plugins, probe_file, read_las_points_cmd,
     sample_profile, save_settings, transform_coords_cmd,
 };
 use modules::ModuleRegistry;
@@ -68,6 +70,12 @@ pub fn run() {
             compute_tpu_batch,
             check_s44_compliance_cmd,
             export_s57,
+            compute_epoch_diff_cmd,
+            compute_progression_cmd,
+            classify_habitat_cmd,
+            analyze_fragmentation_cmd,
+            list_plugins,
+            get_supported_extensions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

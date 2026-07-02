@@ -620,6 +620,153 @@ export async function exportS57(
 }
 
 // ──────────────────────────────────────────────────────────────────
+// 4D Monitoring — Phase 3
+
+export interface Monitoring4DParams {
+  cell_area: number;
+  density: number;
+  hotspot_threshold: number;
+  active_threshold: number;
+}
+
+export type ChangeZone = "fill" | "cut" | "stable" | "no_data";
+
+export interface DiffSummary {
+  total_fill_volume: number;
+  total_cut_volume: number;
+  net_volume: number;
+  total_fill_tonnage: number;
+  total_cut_tonnage: number;
+  net_tonnage: number;
+  fill_cells: number;
+  cut_cells: number;
+  stable_cells: number;
+  nodata_cells: number;
+  active_cells: number;
+  max_fill: number;
+  max_cut: number;
+  mean_dz: number;
+  rms_dz: number;
+}
+
+export interface EpochDiff {
+  dz: number[];
+  volume_delta: number[];
+  tonnage_delta: number[];
+  zones: ChangeZone[];
+  summary: DiffSummary;
+  hotspots: number[];
+}
+
+export interface EpochSummary {
+  epoch: number;
+  fill_volume: number;
+  cut_volume: number;
+  net_volume: number;
+  fill_tonnage: number;
+  cut_tonnage: number;
+}
+
+export interface ProgressionReport {
+  epochs: EpochSummary[];
+  cumulative_fill: number;
+  cumulative_cut: number;
+  cumulative_net: number;
+  cumulative_tonnage: number;
+  max_single_epoch_change: number;
+}
+
+export async function computeEpochDiff(
+  previousPath: string,
+  currentPath: string,
+  params: Monitoring4DParams,
+): Promise<EpochDiff | null> {
+  if (!isTauri()) return null;
+  return invoke<EpochDiff>("compute_epoch_diff_cmd", {
+    request: { previousPath, currentPath, params },
+  });
+}
+
+export async function computeProgression(
+  paths: string[],
+  params: Monitoring4DParams,
+): Promise<ProgressionReport | null> {
+  if (!isTauri()) return null;
+  return invoke<ProgressionReport>("compute_progression_cmd", {
+    request: { paths, params },
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// ML Classification — Phase 3
+
+export interface BackscatterFeatures {
+  mean_intensity: number;
+  std_intensity: number;
+  angular_slope: number;
+  angular_curvature: number;
+  texture_homogeneity: number;
+  depth: number;
+}
+
+export type HabitatClass = "rock" | "coarse_sediment" | "sand" | "mud" | "mixed";
+
+export interface HabitatClassificationResult {
+  class: HabitatClass;
+  confidence: number;
+  class_probabilities: number[];
+}
+
+export type FragmentationQuality = "excellent" | "acceptable" | "coarse" | "very_coarse";
+
+export interface FragmentationResult {
+  p20: number;
+  p50: number;
+  p80: number;
+  p90: number;
+  uniformity: number;
+  mean_size: number;
+  quality: FragmentationQuality;
+}
+
+export async function classifyHabitat(
+  features: BackscatterFeatures,
+): Promise<HabitatClassificationResult | null> {
+  if (!isTauri()) return null;
+  return invoke<HabitatClassificationResult>("classify_habitat_cmd", { features });
+}
+
+export async function analyzeFragmentation(
+  sizesMm: number[],
+): Promise<FragmentationResult | null> {
+  if (!isTauri()) return null;
+  return invoke<FragmentationResult>("analyze_fragmentation_cmd", {
+    request: { sizes_mm: sizesMm },
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Plugin SDK — Phase 3
+
+export interface PluginInfo {
+  name: string;
+  version: string;
+  vendor: string;
+  description: string;
+  capabilities: string[];
+}
+
+export async function listPlugins(): Promise<PluginInfo[]> {
+  if (!isTauri()) return [];
+  return invoke<PluginInfo[]>("list_plugins");
+}
+
+export async function getPluginExtensions(): Promise<string[]> {
+  if (!isTauri()) return [];
+  return invoke<string[]>("get_supported_extensions");
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Browser-mode stubs — mirror the registry in src-tauri/src/modules/registry.rs
 
 const BROWSER_MODULE_STUBS: ModuleInfo[] = [

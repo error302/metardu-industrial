@@ -4,6 +4,8 @@
 
 pub mod marine;
 pub mod mining;
+pub mod ml;
+pub mod monitoring;
 pub mod pipelines;
 
 use crate::formats::{
