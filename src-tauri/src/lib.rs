@@ -12,6 +12,8 @@
 
 mod automation;
 mod commands;
+#[allow(dead_code)]
+mod distributed;
 mod formats;
 mod geodesy;
 mod marine;
@@ -22,6 +24,8 @@ mod modules;
 mod performance;
 mod pipelines;
 mod plugins;
+#[allow(dead_code)]
+mod streaming;
 
 use commands::pipelines::OdmState;
 use commands::{

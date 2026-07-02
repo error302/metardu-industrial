@@ -4,9 +4,8 @@
 // A sonar vendor can ship a plugin that registers their proprietary
 // format reader, and it loads at startup without recompiling the main app.
 //
-// Phase 3 scaffold: defines the plugin trait, registry, and lifecycle.
-// Dynamic loading via `libloading` is Phase 4+ work — Phase 3 provides
-// the static trait interface that plugins implement.
+// Phase 3: defines the plugin trait, registry, and lifecycle.
+// Phase 4: dynamic loading via `libloading` (see dynamic_loader.rs).
 //
 // Plugin types:
 //   - FileReaderPlugin: read a proprietary file format (e.g., Norbit .wbm)
@@ -16,6 +15,9 @@
 // Each plugin declares its capabilities via the PluginInfo struct and
 // implements the relevant trait(s). The PluginRegistry holds all
 // registered plugins and provides lookup by capability.
+
+#[allow(dead_code)]
+pub mod dynamic_loader;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
