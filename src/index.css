@@ -16,8 +16,8 @@
   --color-industrial-orange: #ffa500;
   --color-industrial-orange-dim: #b8771a;
   --color-white: #ffffff;
-  --color-steel-gray: #6b7280;
-  --color-steel-light: #9ca3af;
+  --color-steel-gray: #94a3b8;
+  --color-steel-light: #cbd5e1;
 
   /* Mining mode */
   --color-mining-yellow: #ffc107;
@@ -72,10 +72,36 @@ body,
   background: var(--color-navy-base);
   color: var(--color-white);
   font-family: var(--font-sans);
+  /* Base font size — 14px for better readability across the workspace */
+  font-size: 14px;
   font-feature-settings: "cv11", "ss01", "ss03";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow: hidden;
+}
+
+/* =========================================================================
+   Component-level base styles
+   These ensure consistent sizing/typography regardless of Tailwind utilities
+   applied at the call site. Kept here so the design system has a single
+   source of truth for the workspace shell.
+   ========================================================================= */
+
+/* Sidebar navigation items — slightly larger font for readability */
+.sidebar-item {
+  font-size: 13px;
+}
+
+/* Title bar — 44px for comfortable touch/click targets */
+.title-bar {
+  height: 44px;
+}
+
+/* "New Survey" primary action — bolder, slightly larger */
+.new-survey-btn {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 /* Monospaced coordinate readouts */
@@ -101,20 +127,25 @@ body,
   background-size: 16px 16px;
 }
 
-/* Scrollbar — slim, themed */
+/* Scrollbar — wider and higher-contrast for better visibility on dark navy */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: var(--color-navy-base);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-navy-border);
-  border-radius: 4px;
+  background: var(--color-navy-elevated);
+  border: 2px solid var(--color-navy-base);
+  border-radius: 6px;
+  min-height: 32px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-steel-gray);
+}
+::-webkit-scrollbar-corner {
+  background: var(--color-navy-base);
 }
 
 /* Selection */

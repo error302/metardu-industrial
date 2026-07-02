@@ -227,19 +227,19 @@ export function WorkspaceShell() {
 function TitleBar({ domain }: { domain: DomainMode }) {
   const accent = domainAccent[domain].primary;
   return (
-    <header className="flex h-10 items-center justify-between border-b border-navy-border bg-navy-panel px-3">
+    <header className="title-bar flex items-center justify-between border-b border-navy-border bg-navy-panel px-3">
       <div className="flex items-center gap-3">
         <div
-          className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold"
+          className="flex h-8 w-8 items-center justify-center rounded text-sm font-black"
           style={{ background: colors.industrialOrange, color: colors.navyBase }}
         >
           M
         </div>
-        <span className="text-xs font-semibold tracking-wide text-white">
+        <span className="text-[13px] font-semibold tracking-wide text-white">
           {APP_NAME}
         </span>
         <span className="text-steel-gray">/</span>
-        <span className="text-xs text-steel-light">Untitled Project</span>
+        <span className="text-[13px] text-steel-light">Untitled Project</span>
         <span
           className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
           style={{
@@ -297,13 +297,13 @@ function LeftSidebar({
   const accent = domainAccent[domain].primary;
 
   return (
-    <aside className="flex w-60 flex-col border-r border-navy-border bg-navy-panel">
+    <aside className="flex w-[260px] flex-col border-r border-navy-border bg-navy-panel">
       <div className="border-b border-navy-border p-3">
         <button
-          className="flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium transition-colors"
+          className="new-survey-btn flex w-full items-center justify-center gap-2 rounded-md py-2.5 transition-colors"
           style={{ background: accent, color: colors.navyBase }}
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-4 w-4" />
           New Survey
         </button>
       </div>
@@ -448,7 +448,7 @@ function SidebarItem({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-md py-1.5 text-xs transition-colors ${
+      className={`sidebar-item flex w-full items-center gap-2 rounded-md py-2 transition-colors ${
         active
           ? "bg-navy-elevated text-white"
           : "text-steel-light hover:bg-navy-elevated/50 hover:text-white"
@@ -687,54 +687,54 @@ function FloatingActions({
       <button
         onClick={onToggleRight}
         title="Toggle right panel"
-        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
       >
-        <Square className="h-3 w-3" />
+        <Square className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onToggleSidebar}
         title="Toggle sidebar"
-        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
       >
-        <Layers className="h-3 w-3" />
+        <Layers className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onToggleProfile}
         title="Profile tool"
-        className="rounded border p-1.5 backdrop-blur transition-colors"
+        className="rounded border p-2 backdrop-blur transition-colors"
         style={{
           background: profileActive ? colors.industrialOrange : "rgba(10, 25, 47, 0.85)",
           borderColor: profileActive ? colors.industrialOrange : colors.navyBorder,
           color: profileActive ? colors.navyBase : colors.steelLight,
         }}
       >
-        <TrendingUp className="h-3 w-3" />
+        <TrendingUp className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onToggleStream}
         title="Live stream (UDP)"
-        className="rounded border p-1.5 backdrop-blur transition-colors"
+        className="rounded border p-2 backdrop-blur transition-colors"
         style={{
           background: isStreaming ? colors.marineTurquoise : "rgba(10, 25, 47, 0.85)",
           borderColor: isStreaming ? colors.marineTurquoise : colors.navyBorder,
           color: isStreaming ? colors.navyBase : colors.steelLight,
         }}
       >
-        <Radio className={`h-3 w-3 ${isStreaming ? "animate-pulse" : ""}`} />
+        <Radio className={`h-3.5 w-3.5 ${isStreaming ? "animate-pulse" : ""}`} />
       </button>
       <button
         onClick={onOpenVolumeCalc}
         title="Volume calculator"
-        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
       >
-        <Calculator className="h-3 w-3" />
+        <Calculator className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onOpenSettings}
         title="Settings"
-        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
       >
-        <Settings className="h-3 w-3" />
+        <Settings className="h-3.5 w-3.5" />
       </button>
     </div>
   );
@@ -745,7 +745,7 @@ function FloatingActions({
 function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
   const accent = domainAccent[domain].primary;
   return (
-    <footer className="flex h-6 items-center justify-between border-t border-navy-border bg-navy-panel px-3 text-[10px]">
+    <footer className="flex h-6 items-center justify-between border-t border-navy-border bg-navy-panel px-3 text-[11px]">
       <div className="flex items-center gap-4">
         <span className="flex items-center gap-1.5 text-steel-light">
           <span
