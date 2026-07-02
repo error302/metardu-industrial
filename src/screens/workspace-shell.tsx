@@ -41,6 +41,8 @@ import {
   GitBranch,
   FolderOpen,
   Radio,
+  Boxes,
+  Bomb,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -62,6 +64,9 @@ import { S44CertificateDialog } from "@/components/s44-certificate-dialog";
 import { SvpEditorDialog } from "@/components/svp-editor-dialog";
 import { VesselConfigDialog } from "@/components/vessel-config-dialog";
 import { CubeDisambiguationDialog } from "@/components/cube-disambiguation-dialog";
+import { DredgeAuditWizard } from "@/components/dredge-audit-wizard";
+import { StockpileAuditWizard } from "@/components/stockpile-audit-wizard";
+import { BlastReportWizard } from "@/components/blast-report-wizard";
 import { CommandPalette, createCommandActions } from "@/components/command-palette";
 import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer";
 import { LiveStreamPanel } from "@/components/live-stream-panel";
@@ -98,6 +103,9 @@ export function WorkspaceShell() {
   const [svpOpen, setSvpOpen] = useState(false);
   const [vesselConfigOpen, setVesselConfigOpen] = useState(false);
   const [cubeDisambigOpen, setCubeDisambigOpen] = useState(false);
+  const [dredgeAuditOpen, setDredgeAuditOpen] = useState(false);
+  const [stockpileAuditOpen, setStockpileAuditOpen] = useState(false);
+  const [blastReportOpen, setBlastReportOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
@@ -147,6 +155,9 @@ export function WorkspaceShell() {
     onOpenSvp: () => setSvpOpen(true),
     onOpenVesselConfig: () => setVesselConfigOpen(true),
     onOpenCubeDisambig: () => setCubeDisambigOpen(true),
+    onOpenDredgeAudit: () => setDredgeAuditOpen(true),
+    onOpenStockpileAudit: () => setStockpileAuditOpen(true),
+    onOpenBlastReport: () => setBlastReportOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -189,6 +200,9 @@ export function WorkspaceShell() {
             onOpenSvp={() => setSvpOpen(true)}
             onOpenVesselConfig={() => setVesselConfigOpen(true)}
             onOpenCubeDisambig={() => setCubeDisambigOpen(true)}
+            onOpenDredgeAudit={() => setDredgeAuditOpen(true)}
+            onOpenStockpileAudit={() => setStockpileAuditOpen(true)}
+            onOpenBlastReport={() => setBlastReportOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -280,6 +294,9 @@ export function WorkspaceShell() {
         onClose={() => setCubeDisambigOpen(false)}
         surface={cubeSurface}
       />
+      <DredgeAuditWizard open={dredgeAuditOpen} onClose={() => setDredgeAuditOpen(false)} />
+      <StockpileAuditWizard open={stockpileAuditOpen} onClose={() => setStockpileAuditOpen(false)} />
+      <BlastReportWizard open={blastReportOpen} onClose={() => setBlastReportOpen(false)} />
     </div>
   );
 }
@@ -346,6 +363,9 @@ function LeftSidebar({
   onOpenSvp,
   onOpenVesselConfig,
   onOpenCubeDisambig,
+  onOpenDredgeAudit,
+  onOpenStockpileAudit,
+  onOpenBlastReport,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -361,6 +381,9 @@ function LeftSidebar({
   onOpenSvp: () => void;
   onOpenVesselConfig: () => void;
   onOpenCubeDisambig: () => void;
+  onOpenDredgeAudit: () => void;
+  onOpenStockpileAudit: () => void;
+  onOpenBlastReport: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -416,6 +439,17 @@ function LeftSidebar({
               label="ML Classification"
               onClick={onOpenMl}
             />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Boxes className="h-3 w-3" />}
+              label="Stockpile Audit"
+              onClick={onOpenStockpileAudit}
+            />
+            <SidebarItem
+              icon={<Bomb className="h-3 w-3" />}
+              label="Blast Report"
+              onClick={onOpenBlastReport}
+            />
           </SidebarSection>
         )}
 
@@ -459,6 +493,12 @@ function LeftSidebar({
               icon={<Brain className="h-3 w-3" />}
               label="ML Classification"
               onClick={onOpenMl}
+            />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="Dredge Audit"
+              onClick={onOpenDredgeAudit}
             />
           </SidebarSection>
         )}

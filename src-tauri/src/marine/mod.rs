@@ -1,8 +1,14 @@
-// Marine survey module — re-exports from the shared metardu-core crate.
+// Marine survey module — re-exports from the shared metardu-core crate
+// plus local-only modules that haven't been promoted to the shared crate.
 //
-// The actual source files live in crates/metardu-core/src/marine/.
-// This module re-exports them so the rest of the app can use them
-// without changing import paths.
+// The shared marine modules (CUBE, TPU, S-44, S-57, SVP) live in
+// crates/metardu-core/src/marine/ and are re-exported here. The dredge
+// module is currently app-local because it depends on the desktop app's
+// volume infrastructure; promote to metardu-core when the worker binary
+// needs it.
+
+#[allow(dead_code)]
+pub mod dredge;
 
 pub use metardu_core::marine::*;
 

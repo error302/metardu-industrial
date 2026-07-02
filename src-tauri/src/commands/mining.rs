@@ -163,7 +163,7 @@ fn decode_pixel(bytes: &[u8], sample_format: u16, bytes_per_sample: usize) -> f6
 /// For geographic DEMs (WGS84), we'd need to multiply by the cosine of the
 /// latitude at the grid center. Phase 1 assumes the DEM is projected —
 /// geographic DEMs get an approximate scale based on the equator.
-fn derive_cell_meters(header: &crate::formats::GeoTiffHeader) -> (f64, f64) {
+pub fn derive_cell_meters(header: &crate::formats::GeoTiffHeader) -> (f64, f64) {
     if let Some(scale) = header.model_pixel_scale {
         (scale[0].abs(), scale[1].abs())
     } else {

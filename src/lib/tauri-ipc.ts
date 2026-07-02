@@ -934,6 +934,58 @@ export type ReportType =
   | "blast_report"
   | "generic";
 
+// ──────────────────────────────────────────────────────────────────
+// Sprint 4 — Dredge pay-volume audit (Revenue Feature #2)
+
+export type DredgeCategory =
+  | "pay"
+  | "allowable_overdredge"
+  | "excessive_overdredge"
+  | "shoaling"
+  | "no_change";
+
+export interface DredgeCell {
+  category: DredgeCategory;
+  row: number;
+  col: number;
+  post_depth: number;
+  design_depth: number;
+  removed: number;
+}
+
+export interface DredgeVolumeResult {
+  pay_volume: number;
+  allowable_overdredge: number;
+  excessive_overdredge: number;
+  shoaling: number;
+  total_paid: number;
+  pay_cells: number;
+  allowable_cells: number;
+  excessive_cells: number;
+  shoaling_cells: number;
+  no_change_cells: number;
+  cell_area: number;
+  cells: DredgeCell[];
+  tolerance_m: number;
+  avg_dredge_depth: number;
+  max_excessive: number;
+}
+
+export interface DredgeAuditRequest {
+  postPath: string;
+  prePath: string;
+  designPath: string;
+  toleranceM: number;
+}
+
+/** Compute the four-bucket dredge pay-volume breakdown. */
+export async function computeDredgeAudit(
+  request: DredgeAuditRequest,
+): Promise<DredgeVolumeResult | null> {
+  if (!isTauri()) return null;
+  return invoke<DredgeVolumeResult>("compute_dredge_audit_cmd", { request });
+}
+
 export interface ReportTable {
   title: string;
   headers: string[];

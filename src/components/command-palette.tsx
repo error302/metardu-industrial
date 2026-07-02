@@ -12,7 +12,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Search, ArrowRight, Calculator, Layers3, Terminal, Shield,
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
-  TrendingUp, FileText,
+  TrendingUp, FileText, Boxes, Bomb,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -170,10 +170,16 @@ export function createCommandActions(callbacks: {
   onOpenSvp: () => void;
   onOpenVesselConfig: () => void;
   onOpenCubeDisambig: () => void;
+  onOpenDredgeAudit: () => void;
+  onOpenStockpileAudit: () => void;
+  onOpenBlastReport: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
     { id: "eom", label: "EoM Reconciliation Wizard", category: "Mining · Revenue", keywords: ["reconciliation", "volume", "report", "mining", "monthly"], icon: <Calculator className={icon} />, action: callbacks.onOpenEom },
+    { id: "stockpile", label: "Stockpile Inventory Audit", category: "Mining · Revenue", keywords: ["stockpile", "inventory", "tonnage", "audit", "rom", "pad"], icon: <Boxes className={icon} />, action: callbacks.onOpenStockpileAudit },
+    { id: "blast", label: "Blast Fragmentation Report", category: "Mining · Revenue", keywords: ["blast", "fragmentation", "p80", "p50", "muck", "powder"], icon: <Bomb className={icon} />, action: callbacks.onOpenBlastReport },
+    { id: "dredge", label: "Dredge Pay-Volume Audit", category: "Marine · Revenue", keywords: ["dredge", "pay", "overdredge", "shoaling", "channel", "port"], icon: <Waves className={icon} />, action: callbacks.onOpenDredgeAudit },
     { id: "volume", label: "Volume Calculator", category: "Mining", keywords: ["volume", "fill", "cut", "bench", "stockpile"], icon: <Calculator className={icon} />, action: callbacks.onOpenVolumeCalc },
     { id: "odm", label: "ODM Pipeline (Drone → Point Cloud)", category: "Mining", keywords: ["odm", "drone", "photogrammetry", "docker"], icon: <Terminal className={icon} />, action: callbacks.onOpenOdm },
     { id: "csf", label: "Classify Ground (CSF)", category: "Mining", keywords: ["classify", "ground", "csf", "cloth", "point cloud"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCsf },

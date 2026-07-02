@@ -1,6 +1,6 @@
 # MetaRDU Industrial — Development Roadmap & Revenue Strategy
 
-**Last updated**: 2026-07-03  
+**Last updated**: 2026-07-03 (Sprint 4 complete)
 **Status**: Living document — the single source of truth for what to build and why.
 
 ---
@@ -252,6 +252,7 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | TPU calculation | ~270 | 3 | ✅ |
 | S-44 compliance | ~310 | 5 | ✅ |
 | S-57 export | ~430 | 2 | ✅ |
+| Dredge pay-volume audit (Sprint 4) | ~370 | 8 | ✅ 4-bucket categorization |
 | Pipeline DSL + executor | ~280 | 4 | ✅ All 11 actions wired to real functions |
 | Watch folders | ~220 | 2 | ✅ |
 | Scheduled jobs | ~180 | 3 | ✅ |
@@ -262,15 +263,15 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Streaming ingest | ~260 | 3 | ✅ UDP listener + Deck.gl rendering |
 | WASM sandbox | ~280 | 3 | ✅ wasmtime behind feature flag |
 | AR companion scaffold | ~310 | 3 | ✅ |
-| Frontend (React/TS) | ~6,500 | — | ✅ 16 dialogs, 47 IPC commands |
+| Frontend (React/TS) | ~8,300 | — | ✅ 19 dialogs, 48 IPC commands |
 
 ### Build Stats
-- Rust source: ~13,500 lines
-- TypeScript source: ~6,500 lines
+- Rust source: ~14,000 lines
+- TypeScript source: ~8,300 lines
 - Shared crate (metardu-core): ~1,500 lines
-- Documentation: ~2,500 lines
-- Unit tests: 86+ (Rust)
-- IPC commands: 47
+- Documentation: ~2,600 lines
+- Unit tests: 94+ (Rust)
+- IPC commands: 48
 - Binaries: 2 (metardu-industrial + metardu-worker)
 - Release tags: 2 (v0.1.0-alpha.1, v0.1.0-beta.1)
 
@@ -293,10 +294,10 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 8. ~~**Vessel lever-arm config** (Priority #5)~~ — ✅ 2D diagram + offset inputs
 9. ~~**CUBE hypothesis disambiguation** (Priority #6)~~ — ✅ Heatmap + cell inspector
 
-### Sprint 4: More Revenue
-10. **Dredge pay-volume audit** (Revenue #2)
-11. **Stockpile inventory audit** (Revenue #4)
-12. **Blast fragmentation report** (Revenue #5)
+### Sprint 4: More Revenue — ✅ COMPLETE
+10. ~~**Dredge pay-volume audit** (Revenue #2)~~ — ✅ 4-bucket (pay / allowable OD / excessive OD / shoaling) + branded PDF
+11. ~~**Stockpile inventory audit** (Revenue #4)~~ — ✅ Flat-or-previous baseline + tonnage + branded PDF
+12. ~~**Blast fragmentation report** (Revenue #5)~~ — ✅ p20/p50/p80/p90 + muck volume + design-vs-actual + branded PDF
 
 ### Sprint 5: Polish & Scale
 13. **Layout profiles** (Priority #7)
