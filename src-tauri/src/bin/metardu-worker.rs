@@ -196,7 +196,8 @@ fn process_chunk(chunk: &WorkChunk) -> (String, serde_json::Value, Option<String
             };
 
             // Run real CUBE via metardu-core
-            match metardu_core::process_cube_tile(&soundings, &params) {
+            // Run FULL CUBE via metardu-core (same algorithm as desktop app)
+            match metardu_core::generate_cube_surface(&soundings, &params) {
                 Ok(surface) => {
                     println!(
                         "  CUBE: {} valid cells, {}×{} grid",

@@ -212,7 +212,7 @@ pub fn check_compliance(
             (margin, f)
         })
         .collect();
-    #[allow(clippy::manual_sort_by)]
+    #[allow(unknown_lints, clippy::manual_sort_by)]
     failures_with_margin.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     let worst_failures: Vec<S44Failure> = failures_with_margin
         .into_iter()
