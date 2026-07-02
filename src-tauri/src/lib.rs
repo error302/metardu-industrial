@@ -15,7 +15,9 @@ mod formats;
 mod geodesy;
 mod marine;
 mod mining;
+mod ml;
 mod modules;
+mod performance;
 mod pipelines;
 
 use commands::pipelines::OdmState;
