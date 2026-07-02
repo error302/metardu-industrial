@@ -9,34 +9,38 @@
 
 Based on 20 years of field experience across mining and marine survey operations.
 
-| Priority | Feature | Effort | Impact | Status |
-|---|---|---|---|---|
-| 1 | Binary stream IPC (ArrayBuffer instead of JSON) | Medium | Unlocks 100M+ point rendering | Pending |
-| 2 | Daylight high-contrast theme | Small | Unlocks outdoor field use | Pending |
-| 3 | SVP editor with interactive graph | Medium | Unlocks credible marine processing | Pending |
-| 4 | Command palette (Ctrl+K) | Small | Transforms daily workflow speed | Pending |
-| 5 | Vessel lever-arm configuration | Medium | Makes TPU calculations real | Pending |
-| 6 | CUBE hypothesis disambiguation UI | Medium | Turns CUBE from black box to tool | Pending |
-| 7 | Layout profiles (predefined panel arrangements) | Small | Multi-monitor survey control rooms | Pending |
-| 8 | SSS waterfall viewer | Large | Marine completeness | Pending |
-| 9 | 3D slice editor with reject brush | Large | Manual cleaning | Pending |
-| 10 | S-102 export | Large | Future-proofing (premature) | Pending |
+| Priority | Feature | Effort | Impact | Status | Sprint |
+|---|---|---|---|---|---|
+| 1 | Binary stream IPC (ArrayBuffer instead of JSON) | Medium | Unlocks 100M+ point rendering | ✅ DONE | Sprint 1 |
+| 2 | Daylight high-contrast theme | Small | Unlocks outdoor field use | ✅ DONE | Sprint 1 |
+| 3 | SVP editor with interactive graph | Medium | Unlocks credible marine processing | Pending | Sprint 3 |
+| 4 | Command palette (Ctrl+K) | Small | Transforms daily workflow speed | Pending | Sprint 2 |
+| 5 | Vessel lever-arm configuration | Medium | Makes TPU calculations real | Pending | Sprint 3 |
+| 6 | CUBE hypothesis disambiguation UI | Medium | Turns CUBE from black box to tool | Pending | Sprint 3 |
+| 7 | Layout profiles (predefined panel arrangements) | Small | Multi-monitor survey control rooms | Pending | Sprint 5 |
+| 8 | SSS waterfall viewer | Large | Marine completeness | Pending | Sprint 6+ |
+| 9 | 3D slice editor with reject brush | Large | Manual cleaning | Pending | Sprint 6+ |
+| 10 | S-102 export | Large | Future-proofing (premature) | Deferred | ~2027 |
 
 ### Detail on Each Priority
 
-#### 1. Binary Stream IPC (ArrayBuffer)
+#### 1. Binary Stream IPC (ArrayBuffer) — ✅ DONE (Sprint 1)
 Current architecture sends JSON arrays over Tauri IPC — 4 copies of data in memory and 3 serialization passes. On 10M-point cloud that's ~480MB of JSON text through the webview thread.
 
 **Fix**: Tauri's raw `ArrayBuffer` channel — Rust writes packed `f32` array into shared memory, webview receives as `ArrayBuffer`, Deck.gl's `Float32Array` wraps it with zero copies.
 
 **Acceptance criteria**: 100M-point LAS file renders at 30fps on a ruggedized Panasonic Toughbook with integrated graphics.
 
-#### 2. Daylight High-Contrast Theme
+**Implementation**: `read_las_points_binary` IPC command returns `Vec<u8>` (packed f32 LE). Frontend `readLasPointsBinary()` wraps as `Uint8Array` → `Float32Array`. PointCloudLayer uses binary path. 1M points = 12MB binary vs 40MB JSON. Legacy JSON path kept for backward compat.
+
+#### 2. Daylight High-Contrast Theme — ✅ DONE (Sprint 1)
 Navy `#0A192F` is perfect for dim survey cabins but unusable outdoors in direct sunlight.
 
 **Fix**: CSS custom property swap — `--color-scheme: light` variant with white background, dark text, high-contrast accent colors. Toggle in Settings + status bar.
 
 **Acceptance criteria**: UI fully readable on a laptop screen at noon in an open-pit mine.
+
+**Implementation**: CSS `[data-theme="light"]` overrides all tokens (navy→white, white→dark, orange→darker). Settings dialog has "Dark (Cabin)" vs "Daylight (Field)" toggle cards. App.tsx useEffect applies `data-theme` to document root. AppStore extended with `theme: "dark" | "light"`.
 
 #### 3. SVP Editor with Interactive Graph
 We parse SVP casts in the `.all` reader but have no UI for editing them. Surveyors need to import `.asvp`/`.svp`, inspect depth-vs-speed curve, edit bad casts, apply to ray tracing.
@@ -272,17 +276,17 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 
 ---
 
-## Part 5: Build Order — Next Sprint
+## Part 5: Build Order — Sprint Plan
 
-### Sprint 1: Foundation for Revenue
-1. **Binary stream IPC** (Priority #1) — unlocks performance
-2. **Daylight theme** (Priority #2) — unlocks field use
-3. **Branded PDF report engine** (Revenue #0) — infrastructure for all revenue features
+### Sprint 1: Foundation for Revenue — ✅ COMPLETE
+1. ~~**Binary stream IPC** (Priority #1)~~ — ✅ `read_las_points_binary` returns packed f32
+2. ~~**Daylight theme** (Priority #2)~~ — ✅ CSS `[data-theme="light"]` + Settings toggle
+3. ~~**Branded PDF report engine** (Revenue #0)~~ — ✅ `report_engine.rs` + `generate_report_cmd` IPC
 
-### Sprint 2: First Revenue Features
-4. **EoM Reconciliation wizard** (Revenue #1) — highest probability revenue
-5. **S-44 Compliance Certificate** (Revenue #3) — small effort, regulatory mandate
-6. **Command palette** (Priority #4) — workflow speed
+### Sprint 2: First Revenue Features — NEXT
+4. **EoM Reconciliation wizard** (Revenue #1) — highest probability revenue ($3-5K/seat)
+5. **S-44 Compliance Certificate** (Revenue #3) — small effort, regulatory mandate ($2-3K/seat)
+6. **Command palette** (Priority #4) — Ctrl+K fuzzy search, workflow speed
 
 ### Sprint 3: Marine Credibility
 7. **SVP editor** (Priority #3) — credible marine processing
