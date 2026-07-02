@@ -155,10 +155,28 @@ export interface KongsbergAllHeaderRpc {
   last_timestamp: number | null;
 }
 
+export interface ResonS7kHeaderRpc {
+  model: string;
+  version: number;
+  date: string;
+  seconds_since_epoch: number;
+  bathymetry_count: number;
+  position_count: number;
+  attitude_count: number;
+  svp_count: number;
+  sonar_settings_count: number;
+  side_scan_count: number;
+  snippet_count: number;
+  total_records: number;
+  first_timestamp: number | null;
+  last_timestamp: number | null;
+}
+
 export type FileProbeResult =
   | { kind: "las"; path: string; header: LasHeaderRpc }
   | { kind: "geo-tiff"; path: string; header: GeoTiffHeaderRpc }
   | { kind: "kongsberg-all"; path: string; header: KongsbergAllHeaderRpc }
+  | { kind: "reson-s7k"; path: string; header: ResonS7kHeaderRpc }
   | { kind: "mb-es"; path: string; vendor: string; size_bytes: number }
   | { kind: "other"; path: string; size_bytes: number; note: string };
 
@@ -174,6 +192,119 @@ export async function probeFile(path: string): Promise<FileProbeResult> {
     };
   }
   return invoke<FileProbeResult>("probe_file", { path });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Elevation profile — sample real elevation from a loaded GeoTIFF DEM
+
+export interface ProfileSampleResult {
+  /** Elevation samples (in DEM units — usually meters) */
+  elevations: number[];
+  /** Distance per sample in meters (haversine, lon/lat assumption) */
+  distances: number[];
+  /** Min elevation across the samples */
+  min_elevation: number;
+  /** Max elevation across the samples */
+  max_elevation: number;
+  /** True if from real DEM data, false if synthesized */
+  from_real_dem: boolean;
+}
+
+/**
+ * Sample elevation along a profile line in a loaded GeoTIFF DEM.
+ * Returns null in browser mode (no real DEM access).
+ */
+export async function sampleProfile(
+  path: string,
+  startLon: number,
+  startLat: number,
+  endLon: number,
+  endLat: number,
+  numSamples: number,
+): Promise<ProfileSampleResult | null> {
+  if (!isTauri()) return null;
+  return invoke<ProfileSampleResult>("sample_profile", {
+    path,
+    startLon,
+    startLat,
+    endLon,
+    endLat,
+    numSamples,
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Mining — Phase 1 Mining MVP commands
+
+export interface DroneImageRpc {
+  filename: string;
+  longitude: number;
+  latitude: number;
+  altitude: number;
+  yaw: number;
+  pitch: number;
+  roll: number;
+  timestamp: number;
+}
+
+export interface DroneManifestRpc {
+  source: string;
+  format: string;
+  image_count: number;
+  bounds: [number, number, number, number] | null; // min_lon, min_lat, max_lon, max_lat
+  min_altitude: number;
+  max_altitude: number;
+  drone_model: string | null;
+  camera_model: string | null;
+  images: DroneImageRpc[];
+}
+
+export interface BenchVolumeRpc {
+  z_min: number;
+  z_max: number;
+  fill_volume: number;
+  cut_volume: number;
+  net_volume: number;
+  fill_cells: number;
+  cut_cells: number;
+}
+
+export interface VolumeResultRpc {
+  fill_volume: number;
+  cut_volume: number;
+  net_volume: number;
+  cell_area: number;
+  fill_cells: number;
+  cut_cells: number;
+  benches: BenchVolumeRpc[];
+}
+
+/** Parse a drone manifest (.mrk / .json / .csv) → image metadata. */
+export async function parseDroneManifest(
+  path: string,
+): Promise<DroneManifestRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<DroneManifestRpc>("parse_drone_manifest", { path });
+}
+
+/**
+ * Compute fill/cut volumes by differencing two DEM surfaces.
+ * Reference path can be either a GeoTIFF path or "flat:Z" for a flat
+ * plane at elevation Z (useful for stockpile-to-base-plane volumes).
+ */
+export async function computeVolumes(
+  currentPath: string,
+  referencePath: string,
+  benchInterval: number,
+): Promise<VolumeResultRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<VolumeResultRpc>("compute_volumes_cmd", {
+    request: {
+      current_path: currentPath,
+      reference_path: referencePath,
+      benchInterval,
+    },
+  });
 }
 
 // ──────────────────────────────────────────────────────────────────

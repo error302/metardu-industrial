@@ -18,9 +18,11 @@ const KIND_LABEL: Record<SurveyFileKind, string> = {
   "mbes-all": "Kongsberg .all (MbES)",
   "mbes-s7k": "Reson .s7k (MbES)",
   "mbes-bsf": "R2Sonic .bsf (MbES)",
-  csv: "Tabular data",
+  csv: "Tabular / drone manifest CSV",
   geopkg: "GeoPackage vector",
   kml: "KML",
+  "drone-mrk": "DJI MMC drone manifest",
+  "drone-json": "DJI FlightHub JSON",
   unknown: "Unknown format",
 };
 
@@ -65,7 +67,9 @@ export function FileDropOverlay({ domain }: Props) {
         lower.endsWith(".csv") ||
         lower.endsWith(".tsv") ||
         lower.endsWith(".gpkg") ||
-        lower.endsWith(".kml");
+        lower.endsWith(".kml") ||
+        lower.endsWith(".mrk") ||
+        lower.endsWith(".json");
       if (ok) accepted.push(file);
       else rej.push(file.name);
     }

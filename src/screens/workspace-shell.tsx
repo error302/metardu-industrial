@@ -30,12 +30,14 @@ import {
   ChevronRight,
   Plus,
   TrendingUp,
+  Calculator,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
 import { CrsSwitchBanner } from "@/components/crs-switch-banner";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { ProfilePanel } from "@/components/profile-panel";
+import { VolumeCalcDialog } from "@/components/volume-calc-dialog";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import {
   colors,
@@ -52,6 +54,7 @@ export function WorkspaceShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [volumeCalcOpen, setVolumeCalcOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
 
@@ -69,7 +72,13 @@ export function WorkspaceShell() {
     <div className="flex h-full w-full flex-col bg-navy-base">
       <TitleBar domain={activeDomain} />
       <div className="flex flex-1 overflow-hidden">
-        {sidebarOpen && <LeftSidebar domain={activeDomain} onOpenSettings={() => setSettingsOpen(true)} />}
+        {sidebarOpen && (
+          <LeftSidebar
+            domain={activeDomain}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
+          />
+        )}
         <main className="relative flex-1 overflow-hidden">
           <MapCanvas
             domain={activeDomain}
@@ -82,6 +91,7 @@ export function WorkspaceShell() {
             onToggleSidebar={() => setSidebarOpen((v) => !v)}
             onToggleRight={() => setRightPanelOpen((v) => !v)}
             onOpenSettings={() => setSettingsOpen(true)}
+            onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
             profileActive={profileActive}
             onToggleProfile={() => setProfileActive((v) => !v)}
           />
@@ -111,6 +121,7 @@ export function WorkspaceShell() {
       </div>
       <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <VolumeCalcDialog open={volumeCalcOpen} onClose={() => setVolumeCalcOpen(false)} />
     </div>
   );
 }
@@ -165,9 +176,11 @@ function TitleBar({ domain }: { domain: DomainMode }) {
 function LeftSidebar({
   domain,
   onOpenSettings,
+  onOpenVolumeCalc,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
+  onOpenVolumeCalc: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -197,6 +210,12 @@ function LeftSidebar({
             <SidebarItem label="Stockpiles" indent />
             <SidebarItem label="Blast Designs" indent />
             <SidebarItem label="4D Monitoring" indent />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Calculator className="h-3 w-3" />}
+              label="Volume Calculator"
+              onClick={onOpenVolumeCalc}
+            />
           </SidebarSection>
         )}
 
@@ -478,12 +497,14 @@ function FloatingActions({
   onToggleSidebar,
   onToggleRight,
   onOpenSettings,
+  onOpenVolumeCalc,
   profileActive,
   onToggleProfile,
 }: {
   onToggleSidebar: () => void;
   onToggleRight: () => void;
   onOpenSettings: () => void;
+  onOpenVolumeCalc: () => void;
   profileActive: boolean;
   onToggleProfile: () => void;
 }) {
@@ -514,6 +535,13 @@ function FloatingActions({
         }}
       >
         <TrendingUp className="h-3 w-3" />
+      </button>
+      <button
+        onClick={onOpenVolumeCalc}
+        title="Volume calculator"
+        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+      >
+        <Calculator className="h-3 w-3" />
       </button>
       <button
         onClick={onOpenSettings}

@@ -1,14 +1,17 @@
 /**
  * Profile Panel — shows elevation profile along the line drawn on the map.
  *
- * Phase 0: synthesizes elevation from a Perlin-like noise function so the
- * UX is testable without a real DEM. Phase 1+ will sample actual elevation
- * from a loaded GeoTIFF DEM via the Rust core.
+ * Phase 1: when a GeoTIFF DEM is loaded in the survey store, calls
+ * sample_profile IPC to read real elevation values via the Rust core
+ * (bilinear interpolation across DEM strips). Falls back to synthesized
+ * elevation when no DEM is available or we're in browser mode.
  */
 
-import { useMemo } from "react";
-import { Activity } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, Database, Sparkles } from "lucide-react";
 import { colors, domainAccent, type DomainMode } from "@/lib/tokens";
+import { sampleProfile, type ProfileSampleResult } from "@/lib/tauri-ipc";
+import { useSurveyStore } from "@/stores/survey-store";
 
 interface Props {
   domain: DomainMode;
@@ -25,23 +28,65 @@ const SAMPLES = 200;
 
 export function ProfilePanel({ domain, line }: Props) {
   const accent = domainAccent[domain].primary;
+  const files = useSurveyStore((s) => s.files);
+  const [realProfile, setRealProfile] = useState<ProfileSampleResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [realError, setRealError] = useState<string | null>(null);
+
+  // Find the most recently loaded GeoTIFF DEM
+  const demFile = useMemo(() => {
+    return files.find((f) => f.kind === "geotiff" && f.status === "loaded");
+  }, [files]);
+
+  // Fetch real profile when line + DEM change
+  useEffect(() => {
+    if (!line || !demFile) {
+      setRealProfile(null);
+      return;
+    }
+    setLoading(true);
+    setRealError(null);
+    sampleProfile(
+      demFile.path,
+      line[0][0],
+      line[0][1],
+      line[1][0],
+      line[1][1],
+      SAMPLES,
+    )
+      .then((result) => {
+        setRealProfile(result);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        setRealError(err instanceof Error ? err.message : String(err));
+        setRealProfile(null);
+        setLoading(false);
+      });
+  }, [line, demFile]);
 
   const profile = useMemo<ProfilePoint[]>(() => {
     if (!line) return [];
+    if (realProfile && realProfile.from_real_dem) {
+      // Real DEM data — distances already provided
+      return realProfile.elevations.map((e, i) => ({
+        distance: realProfile.distances[i] ?? 0,
+        elevation: e,
+      }));
+    }
+    // Fallback: synthesize
     const [start, end] = line;
-    // Haversine distance for approximate meters (assumes lon/lat)
     const totalMeters = haversine(start, end);
     const pts: ProfilePoint[] = [];
     for (let i = 0; i <= SAMPLES; i++) {
       const t = i / SAMPLES;
       const lon = start[0] + (end[0] - start[0]) * t;
       const lat = start[1] + (end[1] - start[1]) * t;
-      // Phase 0: synthesize elevation via simple noise
       const elev = synthesizeElevation(lon, lat);
       pts.push({ distance: totalMeters * t, elevation: elev });
     }
     return pts;
-  }, [line]);
+  }, [line, realProfile]);
 
   if (!line) {
     return (
@@ -78,19 +123,55 @@ export function ProfilePanel({ domain, line }: Props) {
     })
     .join(" ");
 
+  const fromReal = realProfile?.from_real_dem ?? false;
+
   return (
     <div className="flex h-full flex-col p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-light">
           Elevation Profile
         </span>
-        <span
-          className="font-mono text-[10px]"
-          style={{ color: accent }}
-        >
+        <span className="font-mono text-[10px]" style={{ color: accent }}>
           {formatDistance(maxDist)}
         </span>
       </div>
+
+      {/* Source badge */}
+      <div className="mb-2 flex items-center gap-1.5">
+        {loading ? (
+          <span className="flex items-center gap-1 rounded-sm bg-navy-elevated px-1.5 py-0.5 text-[9px] text-steel-light">
+            <Activity className="h-2.5 w-2.5 animate-pulse" style={{ color: accent }} />
+            Sampling DEM…
+          </span>
+        ) : fromReal ? (
+          <span
+            className="flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[9px]"
+            style={{ background: `${colors.pass}20`, color: colors.pass }}
+          >
+            <Database className="h-2.5 w-2.5" />
+            Real DEM
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 rounded-sm bg-navy-elevated px-1.5 py-0.5 text-[9px] text-steel-gray">
+            <Sparkles className="h-2.5 w-2.5" />
+            Synthesized
+          </span>
+        )}
+        {demFile && (
+          <span className="truncate text-[9px] text-steel-gray" title={demFile.name}>
+            {demFile.name}
+          </span>
+        )}
+      </div>
+
+      {realError && (
+        <div
+          className="mb-2 rounded border px-2 py-1 text-[9px]"
+          style={{ borderColor: `${colors.fail}40`, color: colors.fail }}
+        >
+          {realError}
+        </div>
+      )}
 
       <div className="relative flex-1">
         <svg
@@ -150,7 +231,9 @@ export function ProfilePanel({ domain, line }: Props) {
       </div>
 
       <div className="mt-1 text-center text-[9px] text-steel-gray/70">
-        Phase 0: synthesized elevation · Phase 1+ samples real DEM
+        {fromReal
+          ? "Bilinear-sampled from real DEM"
+          : "Drop a GeoTIFF DEM to sample real elevations"}
       </div>
     </div>
   );

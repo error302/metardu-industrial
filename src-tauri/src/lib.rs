@@ -7,10 +7,12 @@
 
 mod commands;
 mod formats;
+mod mining;
 mod modules;
 
 use commands::{
-    app_version, get_settings, init_module, list_modules, ping, probe_file, save_settings,
+    app_version, get_settings, init_module, list_modules, mining::compute_volumes_cmd,
+    mining::parse_drone_manifest, ping, probe_file, sample_profile, save_settings,
 };
 use modules::ModuleRegistry;
 use std::sync::Mutex;
@@ -33,6 +35,9 @@ pub fn run() {
             get_settings,
             save_settings,
             probe_file,
+            sample_profile,
+            parse_drone_manifest,
+            compute_volumes_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

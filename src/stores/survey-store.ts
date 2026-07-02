@@ -11,11 +11,13 @@
 
 import { create } from "zustand";
 import {
+  parseDroneManifest,
   probeFile,
   type FileProbeResult,
   type GeoTiffHeaderRpc,
   type KongsbergAllHeaderRpc,
   type LasHeaderRpc,
+  type ResonS7kHeaderRpc,
 } from "@/lib/tauri-ipc";
 
 export type SurveyFileKind =
@@ -27,6 +29,8 @@ export type SurveyFileKind =
   | "csv" // tabular fix lists / control points
   | "geopkg" // GeoPackage vector
   | "kml"
+  | "drone-mrk" // DJI MMC drone manifest
+  | "drone-json" // DJI FlightHub JSON manifest
   | "unknown";
 
 export interface Bounds {
@@ -84,6 +88,8 @@ function classifyByExt(name: string): SurveyFileKind {
   if (lower.endsWith(".csv") || lower.endsWith(".tsv")) return "csv";
   if (lower.endsWith(".gpkg") || lower.endsWith(".geopkg")) return "geopkg";
   if (lower.endsWith(".kml")) return "kml";
+  if (lower.endsWith(".mrk")) return "drone-mrk";
+  if (lower.endsWith(".json")) return "drone-json";
   return "unknown";
 }
 
@@ -164,6 +170,41 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     }));
 
     try {
+      // Drone manifests go through a separate IPC command
+      if (file.kind === "drone-mrk" || file.kind === "drone-json") {
+        const manifest = await parseDroneManifest(file.path);
+        if (!manifest) {
+          // Browser mode — no real IPC
+          set((s) => ({
+            files: s.files.map((f) =>
+              f.id === id ? { ...f, status: "loaded" } : f,
+            ),
+          }));
+          return;
+        }
+        set((s) => ({
+          files: s.files.map((f) => {
+            if (f.id !== id) return f;
+            const updated: SurveyFile = {
+              ...f,
+              status: "loaded",
+              vendor: manifest.drone_model ?? undefined,
+              pointCount: manifest.image_count,
+            };
+            if (manifest.bounds) {
+              updated.bounds = {
+                min_x: manifest.bounds[0],
+                min_y: manifest.bounds[1],
+                max_x: manifest.bounds[2],
+                max_y: manifest.bounds[3],
+              };
+            }
+            return updated;
+          }),
+        }));
+        return;
+      }
+
       const result: FileProbeResult = await probeFile(file.path);
       set((s) => ({
         files: s.files.map((f) => {
@@ -203,6 +244,11 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
             // Kongsberg .all doesn't carry geographic bounds in the
             // header — they emerge after parsing position datagrams,
             // which is Phase 2 work. For now we leave bounds undefined.
+          } else if (result.kind === "reson-s7k") {
+            const h: ResonS7kHeaderRpc = result.header;
+            updated.vendor = h.model || "Reson";
+            updated.pointCount = h.bathymetry_count;
+            // S7K also doesn't carry geographic bounds in header — Phase 2 work.
           } else if (result.kind === "mb-es") {
             updated.vendor = result.vendor;
             updated.size = result.size_bytes;

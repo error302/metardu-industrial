@@ -2,9 +2,11 @@
 //
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
+pub mod mining;
+
 use crate::formats::{
-    read_geotiff_header, read_kongsberg_all_header, read_las_header, AllHeader, GeoTiffHeader,
-    LasHeader,
+    read_geotiff_header, read_kongsberg_all_header, read_las_header, read_s7k_header,
+    sample_profile, AllHeader, GeoTiffHeader, LasHeader, S7kHeader,
 };
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
 use serde::{Deserialize, Serialize};
@@ -85,10 +87,15 @@ pub enum FileProbeResult {
         path: String,
         header: Box<AllHeader>,
     },
-    /// Other multibeam vendor formats not yet fully parsed (.s7k, .bsf)
+    /// Reson Teledyne .s7k multibeam datagram file
+    ResonS7k {
+        path: String,
+        header: Box<S7kHeader>,
+    },
+    /// Other multibeam vendor formats not yet fully parsed (.bsf only)
     MbEs {
         path: String,
-        vendor: String, // "reson-s7k" | "r2sonic-bsf"
+        vendor: String, // "r2sonic-bsf"
         size_bytes: u64,
     },
     Other {
@@ -143,11 +150,13 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
                 header: Box::new(header),
             })
         }
-        "s7k" => Ok(FileProbeResult::MbEs {
-            path,
-            vendor: "reson-s7k".into(),
-            size_bytes,
-        }),
+        "s7k" => {
+            let header = read_s7k_header(&path_buf).map_err(|e| e.to_string())?;
+            Ok(FileProbeResult::ResonS7k {
+                path,
+                header: Box::new(header),
+            })
+        }
         "bsf" => Ok(FileProbeResult::MbEs {
             path,
             vendor: "r2sonic-bsf".into(),
@@ -159,6 +168,97 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
             note: format!("unsupported extension: .{other}"),
         }),
     }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Elevation profile — sample real elevation from a loaded GeoTIFF DEM.
+//
+// The frontend passes the GeoTIFF path, two endpoints in geographic
+// coords (lon/lat, assumed WGS84), and the number of samples to take.
+// We reproject endpoints to pixel coords using the GeoTIFF's
+// ModelTiepoint + ModelPixelScale, then call bilinear-sample along the
+// line and return the elevations.
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileSampleResult {
+    /// Elevation samples (in DEM units — usually meters)
+    pub elevations: Vec<f64>,
+    /// Distance per sample in meters (haversine, lon/lat assumption)
+    pub distances: Vec<f64>,
+    /// Min/max elevation across the samples
+    pub min_elevation: f64,
+    pub max_elevation: f64,
+    /// Whether the result came from real DEM data (true) or fell back to
+    /// a synthesized placeholder (false). Frontend uses this to badge.
+    pub from_real_dem: bool,
+}
+
+#[tauri::command]
+pub fn sample_profile(
+    path: String,
+    start_lon: f64,
+    start_lat: f64,
+    end_lon: f64,
+    end_lat: f64,
+    num_samples: usize,
+) -> Result<ProfileSampleResult, String> {
+    let path_buf = PathBuf::from(&path);
+    let header = read_geotiff_header(&path_buf).map_err(|e| e.to_string())?;
+
+    // Convert lon/lat to pixel coords using tiepoint + scale
+    // Tiepoint (i,j,k,x,y,z): pixel (i,j) corresponds to geo (x,y)
+    // For DEMs: x is typically lon, y is typically lat
+    let (start_px, end_px) = match (header.model_tiepoint, header.model_pixel_scale) {
+        (Some(tp), Some(scale)) => {
+            let tp_x = tp[3]; // geo x at tiepoint
+            let tp_y = tp[4]; // geo y at tiepoint
+            let tp_i = tp[0]; // pixel col at tiepoint
+            let tp_j = tp[1]; // pixel row at tiepoint
+            let sx = scale[0]; // geo units per pixel column
+            let sy = scale[1]; // geo units per pixel row
+            let start_px = (
+                tp_i + (start_lon - tp_x) / sx,
+                tp_j + (start_lat - tp_y) / sy,
+            );
+            let end_px = (tp_i + (end_lon - tp_x) / sx, tp_j + (end_lat - tp_y) / sy);
+            (start_px, end_px)
+        }
+        _ => {
+            return Err(
+                "GeoTIFF lacks ModelTiepoint or ModelPixelScale — cannot sample profile".into(),
+            );
+        }
+    };
+
+    // Haversine distance for the meters-per-sample (assumes WGS84)
+    let total_meters = haversine_meters(start_lon, start_lat, end_lon, end_lat);
+    let elevations = sample_profile(&path_buf, &header, start_px, end_px, num_samples)
+        .map_err(|e| e.to_string())?;
+
+    let distances: Vec<f64> = (0..num_samples)
+        .map(|i| total_meters * (i as f64) / (num_samples.saturating_sub(1) as f64))
+        .collect();
+
+    let min_elevation = elevations.iter().copied().fold(f64::INFINITY, f64::min);
+    let max_elevation = elevations.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+
+    Ok(ProfileSampleResult {
+        elevations,
+        distances,
+        min_elevation,
+        max_elevation,
+        from_real_dem: true,
+    })
+}
+
+fn haversine_meters(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> f64 {
+    let r = 6_371_000.0_f64;
+    let phi1 = lat1.to_radians();
+    let phi2 = lat2.to_radians();
+    let dphi = (lat2 - lat1).to_radians();
+    let dlambda = (lon2 - lon1).to_radians();
+    let h = (dphi / 2.0).sin().powi(2) + phi1.cos() * phi2.cos() * (dlambda / 2.0).sin().powi(2);
+    2.0 * r * h.sqrt().asin()
 }
 
 // ──────────────────────────────────────────────────────────────────

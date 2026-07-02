@@ -46,6 +46,15 @@ pub struct GeoTiffHeader {
     /// Derived geographic bounds (min_x, min_y, max_x, max_y)
     /// None if pixel scale + tiepoint aren't both present
     pub bounds: Option<[f64; 4]>,
+    /// Sample format per pixel: 1=uint, 2=int, 3=float (IEEE 32/64-bit)
+    /// Defaults to 1 (uint) when SampleFormat tag is absent
+    pub sample_format: u16,
+    /// Rows per strip — needed to compute which strip a row lives in
+    pub rows_per_strip: u32,
+    /// Strip offsets (file-position pointers) — populated for strip layout
+    pub strip_offsets: Vec<u64>,
+    /// Strip byte counts — size of each strip's payload
+    pub strip_byte_counts: Vec<u64>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -74,7 +83,15 @@ const TAG_COMPRESSION: u16 = 259;
 const TAG_PHOTOMETRIC: u16 = 262;
 const TAG_STRIP_OFFSETS: u16 = 273;
 const TAG_SAMPLES_PER_PIXEL: u16 = 277;
+const TAG_ROWS_PER_STRIP: u16 = 278;
+const TAG_STRIP_BYTE_COUNTS: u16 = 279;
+const TAG_SAMPLE_FORMAT: u16 = 339;
 const TAG_TILE_OFFSETS: u16 = 324;
+
+// TIFF sample format values
+const SAMPLE_FORMAT_UINT: u16 = 1;
+const SAMPLE_FORMAT_INT: u16 = 2;
+const SAMPLE_FORMAT_FLOAT: u16 = 3;
 
 // GeoTIFF tags
 const TAG_MODEL_PIXEL_SCALE: u16 = 33550;
@@ -136,6 +153,10 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
     let mut model_tiepoint: Option<[f64; 6]> = None;
     let mut geo_key_directory: Option<Vec<u16>> = None;
     let mut geo_ascii: Option<String> = None;
+    let mut sample_format: u16 = SAMPLE_FORMAT_UINT;
+    let mut rows_per_strip: u32 = 0;
+    let mut strip_offsets: Vec<u64> = Vec::new();
+    let mut strip_byte_counts: Vec<u64> = Vec::new();
 
     for i in 0..entry_count {
         let mut entry = [0u8; 12];
@@ -179,6 +200,51 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
             TAG_STRIP_OFFSETS => {
                 strip_count = count;
                 is_tiled = false;
+                // Read the offset array — type is SHORT (3) or LONG (4)
+                let bytes = read_value_data(
+                    &mut file,
+                    value_offset_bytes,
+                    inline,
+                    total_bytes,
+                    little_endian,
+                )?;
+                strip_offsets = match type_id {
+                    3 => bytes
+                        .chunks_exact(2)
+                        .map(|c| u64::from(read_u16(c, little_endian)))
+                        .collect(),
+                    4 => bytes
+                        .chunks_exact(4)
+                        .map(|c| u64::from(read_u32(c, little_endian)))
+                        .collect(),
+                    _ => Vec::new(),
+                };
+            }
+            TAG_STRIP_BYTE_COUNTS => {
+                let bytes = read_value_data(
+                    &mut file,
+                    value_offset_bytes,
+                    inline,
+                    total_bytes,
+                    little_endian,
+                )?;
+                strip_byte_counts = match type_id {
+                    3 => bytes
+                        .chunks_exact(2)
+                        .map(|c| u64::from(read_u16(c, little_endian)))
+                        .collect(),
+                    4 => bytes
+                        .chunks_exact(4)
+                        .map(|c| u64::from(read_u32(c, little_endian)))
+                        .collect(),
+                    _ => Vec::new(),
+                };
+            }
+            TAG_ROWS_PER_STRIP => {
+                rows_per_strip = read_ifd_value_u32(value_offset_bytes, type_id, little_endian);
+            }
+            TAG_SAMPLE_FORMAT => {
+                sample_format = read_ifd_value_u16(value_offset_bytes, type_id, little_endian);
             }
             TAG_TILE_OFFSETS => {
                 strip_count = count;
@@ -302,7 +368,153 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
         epsg,
         geo_ascii,
         bounds,
+        sample_format,
+        rows_per_strip,
+        strip_offsets,
+        strip_byte_counts,
     })
+}
+
+/// Sample elevation values along a profile line in a GeoTIFF DEM.
+///
+/// `start` and `end` are pixel coordinates (0,0 = top-left). For survey
+/// data in geographic CRS, use bilinear interpolation to get smooth
+/// profiles even when samples-per-pixel is low.
+///
+/// Returns `num_samples` elevation values along the line. Returns an
+/// error if the GeoTIFF is tiled (Phase 1 only supports strips) or
+/// uses an unsupported compression/sample format.
+pub fn sample_profile(
+    path: &Path,
+    header: &GeoTiffHeader,
+    start: (f64, f64), // (x, y) in pixels
+    end: (f64, f64),
+    num_samples: usize,
+) -> Result<Vec<f64>, GeoTiffError> {
+    if header.is_tiled {
+        return Err(GeoTiffError::UnsupportedCompression(0)); // reuse as "tiled not supported"
+    }
+    if header.compression != 1 {
+        return Err(GeoTiffError::UnsupportedCompression(header.compression));
+    }
+    if header.strip_offsets.is_empty() || header.rows_per_strip == 0 {
+        return Err(GeoTiffError::Truncated);
+    }
+
+    let mut file =
+        File::open(path).map_err(|_| GeoTiffError::NotFound(path.display().to_string()))?;
+    let bytes_per_sample = (header.bits_per_sample as usize) / 8;
+    let row_stride = header.width as usize * bytes_per_sample * header.samples_per_pixel as usize;
+
+    // Cache strip data on first access. Each strip covers rows_per_strip
+    // rows. For Phase 1 we load all strips up-front — feasible for
+    // survey DEMs (typically <100MB).
+    let mut strip_data: Vec<Vec<u8>> = Vec::with_capacity(header.strip_offsets.len());
+    for (i, &offset) in header.strip_offsets.iter().enumerate() {
+        let size = header.strip_byte_counts.get(i).copied().unwrap_or(0) as usize;
+        if size == 0 {
+            strip_data.push(Vec::new());
+            continue;
+        }
+        file.seek(SeekFrom::Start(offset))?;
+        let mut buf = vec![0u8; size];
+        file.read_exact(&mut buf)?;
+        strip_data.push(buf);
+    }
+
+    let mut samples = Vec::with_capacity(num_samples);
+    for i in 0..num_samples {
+        let t = if num_samples > 1 {
+            i as f64 / (num_samples - 1) as f64
+        } else {
+            0.0
+        };
+        let x = start.0 + (end.0 - start.0) * t;
+        let y = start.1 + (end.1 - start.1) * t;
+        let val = bilinear_sample(&strip_data, header, &x, &y, bytes_per_sample, row_stride);
+        samples.push(val);
+    }
+    Ok(samples)
+}
+
+/// Bilinear interpolation sample at (x, y) in pixel coordinates.
+fn bilinear_sample(
+    strip_data: &[Vec<u8>],
+    header: &GeoTiffHeader,
+    x: &f64,
+    y: &f64,
+    bytes_per_sample: usize,
+    row_stride: usize,
+) -> f64 {
+    let x0 = x.floor() as i64;
+    let y0 = y.floor() as i64;
+    let x1 = x0 + 1;
+    let y1 = y0 + 1;
+    let fx = x - x0 as f64;
+    let fy = y - y0 as f64;
+
+    // Clamp to image bounds
+    let w = header.width as i64;
+    let h = header.length as i64;
+    let cx0 = x0.clamp(0, w - 1) as usize;
+    let cx1 = x1.clamp(0, w - 1) as usize;
+    let cy0 = y0.clamp(0, h - 1) as usize;
+    let cy1 = y1.clamp(0, h - 1) as usize;
+
+    let v00 = sample_pixel(strip_data, header, cx0, cy0, bytes_per_sample, row_stride);
+    let v10 = sample_pixel(strip_data, header, cx1, cy0, bytes_per_sample, row_stride);
+    let v01 = sample_pixel(strip_data, header, cx0, cy1, bytes_per_sample, row_stride);
+    let v11 = sample_pixel(strip_data, header, cx1, cy1, bytes_per_sample, row_stride);
+
+    // Bilinear weights
+    let w00 = (1.0 - fx) * (1.0 - fy);
+    let w10 = fx * (1.0 - fy);
+    let w01 = (1.0 - fx) * fy;
+    let w11 = fx * fy;
+    v00 * w00 + v10 * w10 + v01 * w01 + v11 * w11
+}
+
+/// Sample a single pixel value at integer coordinates (col, row).
+fn sample_pixel(
+    strip_data: &[Vec<u8>],
+    header: &GeoTiffHeader,
+    col: usize,
+    row: usize,
+    bytes_per_sample: usize,
+    row_stride: usize,
+) -> f64 {
+    let strip_idx = row / (header.rows_per_strip as usize);
+    let row_in_strip = row % (header.rows_per_strip as usize);
+    let strip = match strip_data.get(strip_idx) {
+        Some(s) => s,
+        None => return 0.0,
+    };
+    let offset = row_in_strip * row_stride + col * bytes_per_sample;
+    if offset + bytes_per_sample > strip.len() {
+        return 0.0;
+    }
+    // Phase 1 simplification: assume little-endian pixel data.
+    // Most DEM-producing tools (QGIS, ArcGIS, GDAL) write LE by default.
+    let bytes = &strip[offset..offset + bytes_per_sample];
+    match (header.sample_format, bytes_per_sample) {
+        (SAMPLE_FORMAT_UINT, 1) => u8::from_le_bytes([bytes[0]]) as f64,
+        (SAMPLE_FORMAT_UINT, 2) => u16::from_le_bytes([bytes[0], bytes[1]]) as f64,
+        (SAMPLE_FORMAT_UINT, 4) => {
+            u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f64
+        }
+        (SAMPLE_FORMAT_INT, 1) => i8::from_le_bytes([bytes[0]]) as f64,
+        (SAMPLE_FORMAT_INT, 2) => i16::from_le_bytes([bytes[0], bytes[1]]) as f64,
+        (SAMPLE_FORMAT_INT, 4) => {
+            i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f64
+        }
+        (SAMPLE_FORMAT_FLOAT, 4) => {
+            f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f64
+        }
+        (SAMPLE_FORMAT_FLOAT, 8) => f64::from_le_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ]),
+        _ => 0.0,
+    }
 }
 
 /// Extract the EPSG code from the GeoKeyDirectory if present.
