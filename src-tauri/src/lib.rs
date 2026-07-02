@@ -40,7 +40,11 @@ use commands::{
     monitoring::compute_epoch_diff_cmd, monitoring::compute_progression_cmd, ping,
     pipelines::check_odm_availability, pipelines::get_odm_status, pipelines::run_odm_pipeline,
     plugins::get_supported_extensions, plugins::list_plugins, probe_file, read_las_points_cmd,
-    sample_profile, save_settings, transform_coords_cmd,
+    sample_profile, save_settings, streaming::enqueue_distributed_cube,
+    streaming::get_coordinator_status_cmd, streaming::get_stream_status_cmd,
+    streaming::merge_distributed_cube_results, streaming::start_coordinator_cmd,
+    streaming::start_stream_cmd, streaming::stop_coordinator_cmd, streaming::stop_stream_cmd,
+    transform_coords_cmd,
 };
 use modules::ModuleRegistry;
 use std::sync::Mutex;
@@ -96,6 +100,14 @@ pub fn run() {
             remove_scheduled_job,
             list_scheduled_jobs,
             check_due_jobs,
+            start_stream_cmd,
+            stop_stream_cmd,
+            get_stream_status_cmd,
+            start_coordinator_cmd,
+            stop_coordinator_cmd,
+            get_coordinator_status_cmd,
+            enqueue_distributed_cube,
+            merge_distributed_cube_results,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

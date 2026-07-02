@@ -3,6 +3,9 @@
 // Work-stealing scheduler for heavy processing jobs across multiple
 // worker processes or machines. Designed for CUBE on 50M+ soundings,
 // point cloud classification on 100M+ points, etc.
+
+#[allow(dead_code)]
+pub mod server;
 //
 // Architecture:
 //   - Coordinator: the main MetaRDU process (this code)

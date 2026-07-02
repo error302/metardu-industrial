@@ -8,6 +8,7 @@ pub mod mining;
 pub mod ml;
 pub mod monitoring;
 pub mod pipelines;
+pub mod streaming;
 
 use crate::formats::{
     read_geotiff_header, read_kongsberg_all_header, read_las_header, read_las_points,

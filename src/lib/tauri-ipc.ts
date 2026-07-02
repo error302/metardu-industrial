@@ -909,6 +909,66 @@ export async function listScheduledJobs(): Promise<ScheduledJobStatus[]> {
 }
 
 // ──────────────────────────────────────────────────────────────────
+// Streaming + Distributed — Phase 4
+
+export interface StreamConfig {
+  port: number;
+  buffer_size: number;
+  flush_interval_ms: number;
+  format: "json" | "km_binary" | "raw";
+}
+
+export interface StreamStatus {
+  is_running: boolean;
+  pings_received: number;
+  pings_buffered: number;
+  bytes_received: number;
+  elapsed_seconds: number;
+  pings_per_second: number;
+  last_error: string | null;
+}
+
+export interface ServerStatus {
+  is_running: boolean;
+  port: number;
+  workers_connected: number;
+  pending_chunks: number;
+  in_progress_chunks: number;
+  completed_chunks: number;
+  progress: number;
+}
+
+export async function startStream(config: StreamConfig): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("start_stream_cmd", { config });
+}
+
+export async function stopStream(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("stop_stream_cmd");
+}
+
+export async function getStreamStatus(): Promise<StreamStatus | null> {
+  if (!isTauri()) return null;
+  return invoke<StreamStatus>("get_stream_status_cmd");
+}
+
+export async function startCoordinator(port: number): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("start_coordinator_cmd", { port });
+}
+
+export async function stopCoordinator(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("stop_coordinator_cmd");
+}
+
+export async function getCoordinatorStatus(): Promise<ServerStatus | null> {
+  if (!isTauri()) return null;
+  return invoke<ServerStatus>("get_coordinator_status_cmd");
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Browser-mode stubs — mirror the registry in src-tauri/src/modules/registry.rs
 
 const BROWSER_MODULE_STUBS: ModuleInfo[] = [
