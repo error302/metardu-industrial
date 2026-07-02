@@ -308,6 +308,132 @@ export async function computeVolumes(
 }
 
 // ──────────────────────────────────────────────────────────────────
+// CSF point cloud ground classification
+
+export interface CsfParams {
+  cloth_resolution: number;
+  classification_threshold: number;
+  max_iterations: number;
+  rigidness: number;
+  time_step: number;
+  cloth_init_offset: number;
+}
+
+export interface CsfResult {
+  point_count: number;
+  ground_count: number;
+  non_ground_count: number;
+  is_ground: boolean[];
+  iterations_run: number;
+  cloth_dims: [number, number];
+  cloth_z_min: number;
+  cloth_z_max: number;
+}
+
+/** Run CSF ground extraction on a LAS point cloud. */
+export async function classifyGround(
+  path: string,
+  params: CsfParams,
+  maxPoints?: number,
+): Promise<CsfResult | null> {
+  if (!isTauri()) return null;
+  return invoke<CsfResult>("classify_ground", {
+    path,
+    params,
+    maxPoints: maxPoints ?? null,
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// ODM (OpenDroneMap) subprocess integration
+
+export interface OdmConfig {
+  image: string;
+  images_dir: string;
+  output_dir: string | null;
+  max_concurrency: number;
+  feature_quality: string;
+  skip_3dmodel: boolean;
+  pc_type: string;
+}
+
+export interface OdmCheckResult {
+  docker_available: boolean;
+  image_pulled: boolean;
+  image_name: string;
+}
+
+export interface OdmRunStatus {
+  phase: string;
+  last_log_line: string;
+  output_las_path: string | null;
+  error: string | null;
+  running: boolean;
+}
+
+/** Check if Docker + ODM image are available. */
+export async function checkOdmAvailability(
+  image?: string,
+): Promise<OdmCheckResult | null> {
+  if (!isTauri()) return null;
+  return invoke<OdmCheckResult>("check_odm_availability", {
+    image: image ?? null,
+  });
+}
+
+/** Run the ODM pipeline. Listen to 'odm://progress' events for updates. */
+export async function runOdmPipeline(
+  config: OdmConfig,
+): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string>("run_odm_pipeline", { config });
+}
+
+/** Get the latest ODM status (for refreshing after window reload). */
+export async function getOdmStatus(): Promise<OdmRunStatus | null> {
+  if (!isTauri()) return null;
+  return invoke<OdmRunStatus>("get_odm_status");
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Coordinate reprojection (geo feature flag)
+
+export interface Coord {
+  x: number;
+  y: number;
+  z: number | null;
+}
+
+export type TransformMethod = "proj" | "identity" | "unavailable";
+
+export interface TransformResult {
+  coords: Coord[];
+  from_crs: string;
+  to_crs: string;
+  method: TransformMethod;
+}
+
+/** Check if real PROJ-backed reprojection is available in this build. */
+export async function isProjAvailable(): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>("is_proj_available");
+}
+
+/** Transform a batch of coordinates from one CRS to another. */
+export async function transformCoords(
+  coords: Coord[],
+  fromCrs: string,
+  toCrs: string,
+): Promise<TransformResult | null> {
+  if (!isTauri()) return null;
+  return invoke<TransformResult>("transform_coords_cmd", {
+    coords,
+    fromCrs,
+    toCrs,
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Browser-mode stubs — mirror the registry in src-tauri/src/modules/registry.rs
 
 const BROWSER_MODULE_STUBS: ModuleInfo[] = [

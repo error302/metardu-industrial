@@ -20,20 +20,41 @@ tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["time", "sync", "rt-multi-thread", "macros"] }
+tokio = { version = "1", features = ["time", "sync", "rt-multi-thread", "macros", "process"] }
 thiserror = "1"
 
-# Geospatial core — Phase 0 placeholder deps. Uncomment as we implement modules.
-# gdal = { version = "0.17", features = ["bindgen"] }
-# proj = "0.27"
-# pdal-sys = "0.1"
-# polars = { version = "0.42", features = ["lazy", "csv", "parquet"] }
-# rusqlite = { version = "0.32", features = ["bundled", "spatialite"] }
-# tracing = "0.1"
-# tracing-subscriber = "0.3"
-# arrow = "52"
-# parquet = "52"
+# Geospatial core — opt-in via the 'geo' feature flag.
+# These crates require system libs (libproj-dev, libgdal-dev) that aren't
+# always available in dev environments. CI has them; for local dev the
+# pure-Rust parsers cover the Phase 1 needs. Enable the 'geo' feature
+# when you need real CRS reprojection (Phase 2 marine work) or GDAL raster
+# operations.
+proj = { version = "0.27", optional = true }
+gdal = { version = "0.17", optional = true, features = ["bindgen"] }
+pdal-sys = { version = "0.1", optional = true }
+polars = { version = "0.42", optional = true, features = ["lazy", "csv", "parquet"] }
+rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", optional = true }
+arrow = { version = "52", optional = true }
+parquet = { version = "52", optional = true }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+# Enable real geospatial libraries (PROJ, GDAL, PDAL, etc.). Requires
+# system libs: libproj-dev, libgdal-dev, libpdal-dev on Linux;
+# proj/gdal via Homebrew on macOS; PROJ/GDAL SDK on Windows.
+geo = [
+    "dep:proj",
+    "dep:gdal",
+    "dep:pdal-sys",
+    "dep:polars",
+    "dep:rusqlite",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "dep:arrow",
+    "dep:parquet",
+]
+# Geo-lite: just PROJ for CRS reprojection, no GDAL/PDAL. Lighter build.
+geo-proj = ["dep:proj", "dep:tracing", "dep:tracing-subscriber"]

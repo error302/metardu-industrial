@@ -31,6 +31,8 @@ import {
   Plus,
   TrendingUp,
   Calculator,
+  Layers3,
+  Terminal,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -38,6 +40,8 @@ import { CrsSwitchBanner } from "@/components/crs-switch-banner";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { ProfilePanel } from "@/components/profile-panel";
 import { VolumeCalcDialog } from "@/components/volume-calc-dialog";
+import { OdmPipelineDialog } from "@/components/odm-pipeline-dialog";
+import { CsfClassificationDialog } from "@/components/csf-classification-dialog";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import {
   colors,
@@ -55,6 +59,8 @@ export function WorkspaceShell() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumeCalcOpen, setVolumeCalcOpen] = useState(false);
+  const [odmOpen, setOdmOpen] = useState(false);
+  const [csfOpen, setCsfOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
 
@@ -77,6 +83,8 @@ export function WorkspaceShell() {
             domain={activeDomain}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
+            onOpenOdm={() => setOdmOpen(true)}
+            onOpenCsf={() => setCsfOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -122,6 +130,8 @@ export function WorkspaceShell() {
       <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <VolumeCalcDialog open={volumeCalcOpen} onClose={() => setVolumeCalcOpen(false)} />
+      <OdmPipelineDialog open={odmOpen} onClose={() => setOdmOpen(false)} />
+      <CsfClassificationDialog open={csfOpen} onClose={() => setCsfOpen(false)} />
     </div>
   );
 }
@@ -177,10 +187,14 @@ function LeftSidebar({
   domain,
   onOpenSettings,
   onOpenVolumeCalc,
+  onOpenOdm,
+  onOpenCsf,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
   onOpenVolumeCalc: () => void;
+  onOpenOdm: () => void;
+  onOpenCsf: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -211,6 +225,16 @@ function LeftSidebar({
             <SidebarItem label="Blast Designs" indent />
             <SidebarItem label="4D Monitoring" indent />
             <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Terminal className="h-3 w-3" />}
+              label="ODM Pipeline"
+              onClick={onOpenOdm}
+            />
+            <SidebarItem
+              icon={<Layers3 className="h-3 w-3" />}
+              label="Classify (CSF)"
+              onClick={onOpenCsf}
+            />
             <SidebarItem
               icon={<Calculator className="h-3 w-3" />}
               label="Volume Calculator"

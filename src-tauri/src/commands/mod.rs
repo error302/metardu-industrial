@@ -3,11 +3,13 @@
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
 pub mod mining;
+pub mod pipelines;
 
 use crate::formats::{
     read_geotiff_header, read_kongsberg_all_header, read_las_header, read_s7k_header,
-    sample_profile, AllHeader, GeoTiffHeader, LasHeader, S7kHeader,
+    sample_profile as sample_dem_profile, AllHeader, GeoTiffHeader, LasHeader, S7kHeader,
 };
+use crate::geodesy::{transform_coords, Coord, TransformResult};
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -232,7 +234,7 @@ pub fn sample_profile(
 
     // Haversine distance for the meters-per-sample (assumes WGS84)
     let total_meters = haversine_meters(start_lon, start_lat, end_lon, end_lat);
-    let elevations = sample_profile(&path_buf, &header, start_px, end_px, num_samples)
+    let elevations = sample_dem_profile(&path_buf, &header, start_px, end_px, num_samples)
         .map_err(|e| e.to_string())?;
 
     let distances: Vec<f64> = (0..num_samples)
@@ -259,6 +261,29 @@ fn haversine_meters(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> f64 {
     let dlambda = (lon2 - lon1).to_radians();
     let h = (dphi / 2.0).sin().powi(2) + phi1.cos() * phi2.cos() * (dlambda / 2.0).sin().powi(2);
     2.0 * r * h.sqrt().asin()
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Coordinate reprojection — conditional on 'geo' or 'geo-proj' feature.
+//
+// When the proj crate is enabled at build time, this delegates to real
+// PROJ 9.x transformations. Otherwise returns an error so the frontend
+// can fall back to displaying data in its native CRS.
+
+/// Check whether real PROJ-backed reprojection is available in this build.
+#[tauri::command]
+pub fn is_proj_available() -> bool {
+    crate::geodesy::is_proj_available()
+}
+
+/// Transform a batch of coordinates from one CRS to another.
+#[tauri::command]
+pub fn transform_coords_cmd(
+    coords: Vec<Coord>,
+    from_crs: String,
+    to_crs: String,
+) -> Result<TransformResult, String> {
+    transform_coords(&coords, &from_crs, &to_crs).map_err(|e| e.to_string())
 }
 
 // ──────────────────────────────────────────────────────────────────

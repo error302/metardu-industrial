@@ -204,6 +204,46 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
     })
 }
 
+/// Read point data from a LAS file into a flat Vec of (x, y, z) tuples.
+///
+/// Applies the scale + offset from the header to convert integer point
+/// records to floating-point coordinates. Returns up to `max_points`
+/// (0 = unlimited).
+///
+/// Phase 1 supports PDRF 0-10 (all standard LAS 1.2/1.3/1.4 formats).
+/// Each PDRF stores X/Y/Z as i32 at fixed offsets; we read just those.
+pub fn read_points(path: &Path, max_points: u64) -> Result<Vec<(f64, f64, f64)>, LasError> {
+    let header = read_header(path)?;
+    let mut file = File::open(path).map_err(|_| LasError::NotFound(path.display().to_string()))?;
+    file.seek(SeekFrom::Start(header.offset_to_point_data as u64))?;
+
+    let count = if max_points > 0 {
+        header.point_count.min(max_points)
+    } else {
+        header.point_count
+    };
+
+    let mut points = Vec::with_capacity(count as usize);
+    let record_len = header.point_data_record_length as usize;
+    let mut record_buf = vec![0u8; record_len];
+
+    for _ in 0..count {
+        if file.read_exact(&mut record_buf).is_err() {
+            break;
+        }
+        // PDRF 0-10 all store X, Y, Z as i32 at bytes 0, 4, 8
+        let xi = i32::from_le_bytes([record_buf[0], record_buf[1], record_buf[2], record_buf[3]]);
+        let yi = i32::from_le_bytes([record_buf[4], record_buf[5], record_buf[6], record_buf[7]]);
+        let zi = i32::from_le_bytes([record_buf[8], record_buf[9], record_buf[10], record_buf[11]]);
+        let x = xi as f64 * header.scale_x + header.offset_x;
+        let y = yi as f64 * header.scale_y + header.offset_y;
+        let z = zi as f64 * header.scale_z + header.offset_z;
+        points.push((x, y, z));
+    }
+
+    Ok(points)
+}
+
 /// Scan VLRs (Variable Length Records) for CRS info and LAZ detection.
 ///
 /// LAS VLRs live between the public header and the point data.

@@ -7,6 +7,6 @@ pub mod las;
 pub mod reson_s7k;
 
 pub use geotiff::{read_header as read_geotiff_header, sample_profile, GeoTiffHeader};
-pub use kongsberg_all::{read_header as read_kongsberg_all_header, AllError, AllHeader};
-pub use las::{read_header as read_las_header, LasHeader};
-pub use reson_s7k::{read_header as read_s7k_header, S7kError, S7kHeader};
+pub use kongsberg_all::{read_header as read_kongsberg_all_header, AllHeader};
+pub use las::{read_header as read_las_header, read_points as read_las_points, LasHeader};
+pub use reson_s7k::{read_header as read_s7k_header, S7kHeader};

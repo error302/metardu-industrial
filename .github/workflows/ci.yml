@@ -77,9 +77,14 @@ jobs:
         working-directory: src-tauri
         run: cargo fmt --all -- --check
 
-      - name: Cargo clippy
+      - name: Cargo clippy (default features)
         working-directory: src-tauri
         run: cargo clippy --all-targets -- -D warnings
+
+      - name: Cargo clippy (geo-proj feature)
+        working-directory: src-tauri
+        run: cargo clippy --all-targets --features geo-proj -- -D warnings
+        continue-on-error: true  # CI-only verification — system libs may be missing
 
   # ───────────────────────────────────────────────────────────────
   # Build the Tauri binary on all 3 platforms (only on main pushes)

@@ -1,9 +1,10 @@
 // Mining IPC commands — Phase 1 Mining MVP.
 //
-// Exposes the drone_ingest and volume modules to the frontend.
+// Exposes the drone_ingest, csf, and volume modules to the frontend.
 
 use crate::mining::{
-    compute_volumes as compute_volumes_core, parse_manifest, DroneManifest, VolumeResult,
+    classify_ground as csf_classify, compute_volumes as compute_volumes_core, parse_manifest,
+    CsfParams, CsfResult, DroneManifest, VolumeResult,
 };
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -13,6 +14,23 @@ use std::path::PathBuf;
 pub fn parse_drone_manifest(path: String) -> Result<DroneManifest, String> {
     let path_buf = PathBuf::from(&path);
     parse_manifest(&path_buf).map_err(|e| e.to_string())
+}
+
+/// Run CSF (Cloth Simulation Filter) ground extraction on a LAS point cloud.
+///
+/// Reads point data via the LAS module, runs CSF, returns per-point
+/// classification. The frontend can use this to render ground vs non-ground
+/// in different colors, or to filter the point cloud for DEM generation.
+#[tauri::command]
+pub async fn classify_ground(
+    path: String,
+    params: CsfParams,
+    max_points: Option<u64>,
+) -> Result<CsfResult, String> {
+    let path_buf = PathBuf::from(&path);
+    let points = crate::formats::read_las_points(&path_buf, max_points.unwrap_or(0))
+        .map_err(|e| e.to_string())?;
+    csf_classify(&points, &params).map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Deserialize)]
