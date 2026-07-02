@@ -41,7 +41,9 @@ pub fn decimate_points(points: &[(f64, f64, f64)], cell_size: f64) -> LodResult 
     }
 
     // Spatial hash: key = (col, row) → collect points per cell
-    let mut cells: HashMap<(i64, i64), Vec<(f64, f64, f64)>> = HashMap::new();
+    type CellPoints = Vec<(f64, f64, f64)>;
+    type CellKey = (i64, i64);
+    let mut cells: HashMap<CellKey, CellPoints> = HashMap::new();
     for &(x, y, z) in points {
         let col = (x / cell_size).floor() as i64;
         let row = (y / cell_size).floor() as i64;

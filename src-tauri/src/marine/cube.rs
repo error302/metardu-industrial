@@ -211,7 +211,7 @@ pub fn generate_surface(
 
             // Prune if too many hypotheses — keep the ones with most support
             if hypotheses.len() > params.max_hypotheses {
-                hypotheses.sort_by(|a, b| b.count.cmp(&a.count));
+                hypotheses.sort_by_key(|h| std::cmp::Reverse(h.count));
                 hypotheses.truncate(params.max_hypotheses);
             }
         }
