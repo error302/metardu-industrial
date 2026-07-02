@@ -582,6 +582,44 @@ export async function checkS44Compliance(
 }
 
 // ──────────────────────────────────────────────────────────────────
+// S-57 ENC export
+
+export type S57ObjectClass =
+  | "WRECKS"
+  | "OBSTRN"
+  | "UWTROC"
+  | "DEPARE"
+  | "SOUNDG"
+  | "COALNE"
+  | "LNDARE";
+
+export interface S57Attribute {
+  label: string;
+  value: string;
+}
+
+export type S57Geometry =
+  | { type: "point"; longitude: number; latitude: number }
+  | { type: "line"; coordinates: [number, number][] }
+  | { type: "polygon"; coordinates: [number, number][] };
+
+export interface S57Feature {
+  object_class: S57ObjectClass;
+  geometry: S57Geometry;
+  attributes: S57Attribute[];
+}
+
+/** Export features to an S-57 .000 file. */
+export async function exportS57(
+  features: S57Feature[],
+  path: string,
+): Promise<boolean> {
+  if (!isTauri()) return false;
+  await invoke<void>("export_s57", { features, path });
+  return true;
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Browser-mode stubs — mirror the registry in src-tauri/src/modules/registry.rs
 
 const BROWSER_MODULE_STUBS: ModuleInfo[] = [

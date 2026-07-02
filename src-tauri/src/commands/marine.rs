@@ -3,8 +3,8 @@
 // Exposes CUBE surface generation, TPU, and S-44 compliance to the frontend.
 
 use crate::marine::{
-    check_s44_compliance, compute_tpu, generate_cube_surface, CubeParams, S44CheckInput, S44Order,
-    Sounding, SoundingTpuInput,
+    check_s44_compliance, compute_tpu, generate_cube_surface, write_s57, CubeParams, S44CheckInput,
+    S44Order, S57Feature, Sounding, SoundingTpuInput,
 };
 use serde::Deserialize;
 
@@ -42,4 +42,11 @@ pub async fn check_s44_compliance_cmd(
     request: S44CheckRequest,
 ) -> Result<crate::marine::S44ComplianceResult, String> {
     check_s44_compliance(&request.soundings, request.target_order).map_err(|e| e.to_string())
+}
+
+/// Export features to an S-57 .000 file.
+#[tauri::command]
+pub fn export_s57(features: Vec<S57Feature>, path: String) -> Result<(), String> {
+    let path_buf = std::path::PathBuf::from(&path);
+    write_s57(&path_buf, &features).map_err(|e| e.to_string())
 }

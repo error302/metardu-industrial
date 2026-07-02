@@ -34,6 +34,8 @@ import {
   Layers3,
   Terminal,
   Shield,
+  Waves,
+  Anchor,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -44,9 +46,12 @@ import { VolumeCalcDialog } from "@/components/volume-calc-dialog";
 import { OdmPipelineDialog } from "@/components/odm-pipeline-dialog";
 import { CsfClassificationDialog } from "@/components/csf-classification-dialog";
 import { S44ComplianceDialog } from "@/components/s44-compliance-dialog";
+import { CubeSurfaceDialog } from "@/components/cube-surface-dialog";
+import { CubeSurfaceOverlay } from "@/components/cube-surface-overlay";
+import { S57ExportDialog } from "@/components/s57-export-dialog";
 import { PointCloudLayer } from "@/components/point-cloud-layer";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
-import type { CsfResult } from "@/lib/tauri-ipc";
+import type { CsfResult, CubeSurfaceRpc } from "@/lib/tauri-ipc";
 import {
   colors,
   domainAccent,
@@ -66,9 +71,12 @@ export function WorkspaceShell() {
   const [odmOpen, setOdmOpen] = useState(false);
   const [csfOpen, setCsfOpen] = useState(false);
   const [s44Open, setS44Open] = useState(false);
+  const [cubeOpen, setCubeOpen] = useState(false);
+  const [s57Open, setS57Open] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
+  const [cubeSurface, setCubeSurface] = useState<CubeSurfaceRpc | null>(null);
   const activeFileId = useSurveyStore((s) => s.activeFileId);
 
   const handleMapReady = useCallback((map: Map) => {
@@ -93,6 +101,8 @@ export function WorkspaceShell() {
             onOpenOdm={() => setOdmOpen(true)}
             onOpenCsf={() => setCsfOpen(true)}
             onOpenS44={() => setS44Open(true)}
+            onOpenCube={() => setCubeOpen(true)}
+            onOpenS57={() => setS57Open(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -101,6 +111,7 @@ export function WorkspaceShell() {
             epsg={settings.defaultEpsg}
             onMapReady={handleMapReady}
           />
+          <CubeSurfaceOverlay map={mapInstance} surface={cubeSurface} />
           <PointCloudLayer
             map={mapInstance}
             activeFileId={activeFileId}
@@ -150,6 +161,12 @@ export function WorkspaceShell() {
         onClassified={setCsfResult}
       />
       <S44ComplianceDialog open={s44Open} onClose={() => setS44Open(false)} />
+      <CubeSurfaceDialog
+        open={cubeOpen}
+        onClose={() => setCubeOpen(false)}
+        onSurfaceGenerated={setCubeSurface}
+      />
+      <S57ExportDialog open={s57Open} onClose={() => setS57Open(false)} />
     </div>
   );
 }
@@ -208,6 +225,8 @@ function LeftSidebar({
   onOpenOdm,
   onOpenCsf,
   onOpenS44,
+  onOpenCube,
+  onOpenS57,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -215,6 +234,8 @@ function LeftSidebar({
   onOpenOdm: () => void;
   onOpenCsf: () => void;
   onOpenS44: () => void;
+  onOpenCube: () => void;
+  onOpenS57: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -268,12 +289,21 @@ function LeftSidebar({
             <SidebarItem label="Survey Lines" indent />
             <SidebarItem label="SVP Casts" indent />
             <SidebarItem label="Tide Gauges" indent />
-            <SidebarItem label="CUBE Surfaces" indent />
             <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="CUBE Surface"
+              onClick={onOpenCube}
+            />
             <SidebarItem
               icon={<Shield className="h-3 w-3" />}
               label="S-44 Compliance"
               onClick={onOpenS44}
+            />
+            <SidebarItem
+              icon={<Anchor className="h-3 w-3" />}
+              label="S-57 Export"
+              onClick={onOpenS57}
             />
           </SidebarSection>
         )}
