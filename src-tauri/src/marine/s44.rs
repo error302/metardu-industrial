@@ -33,6 +33,7 @@ pub enum S44Order {
 impl S44Order {
     /// Vertical uncertainty threshold (95% confidence) in meters.
     /// Formula: sqrt(a² + (b × d)²)
+    #[allow(dead_code)]
     pub fn vertical_threshold(self, depth: f64) -> f64 {
         let (a, b) = match self {
             S44Order::Special => (0.25, 0.0075),
@@ -55,6 +56,7 @@ impl S44Order {
 
     /// Minimum feature detection size (cubic objects) in meters.
     /// None means no feature detection requirement.
+    #[allow(dead_code)]
     pub fn feature_detection_size(self) -> Option<f64> {
         match self {
             S44Order::Special => Some(1.0),
@@ -65,6 +67,7 @@ impl S44Order {
     }
 
     /// Whether full bottom search is required.
+    #[allow(dead_code)]
     pub fn requires_full_search(self) -> bool {
         matches!(self, S44Order::Special | S44Order::Order1a)
     }
@@ -198,7 +201,7 @@ pub fn check_compliance(
     let failing = total - passing;
     let pass_rate = passing as f64 / total as f64;
 
-    // Sort failures by worst margin violation
+    // Sort failures by worst margin violation (descending)
     failures.sort_by(|a, b| {
         let a_margin = (a.vertical_tpu_95 - a.vertical_threshold)
             .max(a.horizontal_tpu_95 - a.horizontal_threshold);
@@ -208,6 +211,8 @@ pub fn check_compliance(
             .partial_cmp(&a_margin)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
+    // Can't use sort_by_key because the key function borrows fields and
+    // the closure needs to return an owned value — sort_by is clearer here.
     let worst_failures = failures.into_iter().take(20).collect();
 
     let status = if pass_rate >= 0.95 {

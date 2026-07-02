@@ -241,8 +241,8 @@ mod tests {
             components: TpuComponents::default(),
         };
         let outer = SoundingTpuInput {
-            beam_angle: 1.0472,  // 60 degrees
-            travel_time: 0.1334, // longer path for 50m depth at 60°
+            beam_angle: std::f64::consts::FRAC_PI_3, // 60 degrees
+            travel_time: 0.1334,                     // longer path for 50m depth at 60°
             sound_speed: 1500.0,
             depth: 50.0,
             components: TpuComponents::default(),
