@@ -2,7 +2,7 @@
 //
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
-use crate::formats::{read_las_header, LasHeader};
+use crate::formats::{read_geotiff_header, read_las_header, GeoTiffHeader, LasHeader};
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -75,8 +75,7 @@ pub enum FileProbeResult {
     },
     Geotiff {
         path: String,
-        // TODO: parse GeoTIFF tags in Phase 1
-        size_bytes: u64,
+        header: Box<GeoTiffHeader>,
     },
     MbEs {
         path: String,
@@ -121,7 +120,13 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
             // but we surface a friendlier error here for the .laz extension
             Err("LAZ (compressed LAS) is not yet supported — coming in Phase 1".into())
         }
-        "tif" | "tiff" => Ok(FileProbeResult::Geotiff { path, size_bytes }),
+        "tif" | "tiff" => {
+            let header = read_geotiff_header(&path_buf).map_err(|e| e.to_string())?;
+            Ok(FileProbeResult::Geotiff {
+                path,
+                header: Box::new(header),
+            })
+        }
         "all" => Ok(FileProbeResult::MbEs {
             path,
             vendor: "kongsberg-all".into(),

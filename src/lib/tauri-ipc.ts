@@ -124,9 +124,25 @@ export interface LasHeaderRpc {
   geotiff_keys: number[] | null;
 }
 
+export interface GeoTiffHeaderRpc {
+  width: number;
+  length: number;
+  bits_per_sample: number;
+  samples_per_pixel: number;
+  compression: number;
+  photometric: number;
+  is_tiled: boolean;
+  strip_count: number;
+  model_pixel_scale: [number, number, number] | null;
+  model_tiepoint: [number, number, number, number, number, number] | null;
+  epsg: number | null;
+  geo_ascii: string | null;
+  bounds: [number, number, number, number] | null; // min_x, min_y, max_x, max_y
+}
+
 export type FileProbeResult =
   | { kind: "las"; path: string; header: LasHeaderRpc }
-  | { kind: "geo-tiff"; path: string; size_bytes: number }
+  | { kind: "geo-tiff"; path: string; header: GeoTiffHeaderRpc }
   | { kind: "mb-es"; path: string; vendor: string; size_bytes: number }
   | { kind: "other"; path: string; size_bytes: number; note: string };
 

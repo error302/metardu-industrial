@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Survey-domain discussion
+    url: https://github.com/error302/metardu-industrial/discussions
+    about: For questions about CUBE, S-44, mine grids, blast design, etc. — anything where the right answer is "it depends"
+  - name: 📖 Architecture document
+    url: https://github.com/error302/metardu-industrial/blob/main/docs/ARCHITECTURE.md
+    about: Read this before opening issues about scope, roadmap, or design decisions
+  - name: 🔒 Security report
+    url: https://github.com/error302/metardu-industrial/security/advisories/new
+    about: Don't open public issues for security vulnerabilities — use a private advisory

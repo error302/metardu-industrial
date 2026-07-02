@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
+import { CrsSwitchBanner } from "@/components/crs-switch-banner";
+import { SettingsDialog } from "@/components/settings-dialog";
 import {
   colors,
   domainAccent,
@@ -45,23 +47,27 @@ export function WorkspaceShell() {
   const { activeDomain, settings } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
       <TitleBar domain={activeDomain} />
       <div className="flex flex-1 overflow-hidden">
-        {sidebarOpen && <LeftSidebar domain={activeDomain} />}
+        {sidebarOpen && <LeftSidebar domain={activeDomain} onOpenSettings={() => setSettingsOpen(true)} />}
         <main className="relative flex-1 overflow-hidden">
           <MapCanvas domain={activeDomain} epsg={settings.defaultEpsg} />
           <FileDropOverlay domain={activeDomain} />
+          <CrsSwitchBanner />
           <FloatingActions
             onToggleSidebar={() => setSidebarOpen((v) => !v)}
             onToggleRight={() => setRightPanelOpen((v) => !v)}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
         </main>
         {rightPanelOpen && <RightPanel domain={activeDomain} />}
       </div>
       <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} />
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
@@ -113,7 +119,13 @@ function TitleBar({ domain }: { domain: DomainMode }) {
 
 /* ──────────────────────────────────────────────────────────── */
 
-function LeftSidebar({ domain }: { domain: DomainMode }) {
+function LeftSidebar({
+  domain,
+  onOpenSettings,
+}: {
+  domain: DomainMode;
+  onOpenSettings: () => void;
+}) {
   const accent = domainAccent[domain].primary;
 
   return (
@@ -157,7 +169,11 @@ function LeftSidebar({ domain }: { domain: DomainMode }) {
       </div>
 
       <div className="border-t border-navy-border p-2">
-        <SidebarItem icon={<Settings className="h-3 w-3" />} label="Settings" />
+        <SidebarItem
+          icon={<Settings className="h-3 w-3" />}
+          label="Settings"
+          onClick={onOpenSettings}
+        />
         <SidebarItem icon={<HelpCircle className="h-3 w-3" />} label="Help & Docs" />
       </div>
     </aside>
@@ -189,14 +205,17 @@ function SidebarItem({
   label,
   active = false,
   indent = false,
+  onClick,
 }: {
   icon?: React.ReactNode;
   label: string;
   active?: boolean;
   indent?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
+      onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-md py-1.5 text-xs transition-colors ${
         active
           ? "bg-navy-elevated text-white"
@@ -383,9 +402,11 @@ function StatTile({
 function FloatingActions({
   onToggleSidebar,
   onToggleRight,
+  onOpenSettings,
 }: {
   onToggleSidebar: () => void;
   onToggleRight: () => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <div className="absolute right-3 top-3 flex flex-col gap-1">
@@ -402,6 +423,13 @@ function FloatingActions({
         className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
       >
         <Layers className="h-3 w-3" />
+      </button>
+      <button
+        onClick={onOpenSettings}
+        title="Settings"
+        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+      >
+        <Settings className="h-3 w-3" />
       </button>
     </div>
   );

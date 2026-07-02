@@ -1,0 +1,64 @@
+name: ✨ Feature request
+description: Suggest a new workflow, automation, or capability
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening, please search existing issues to avoid duplicates.
+        For survey-domain discussion (e.g., "should we implement CUBE+ variant?"), open a Discussion instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: "I'm always frustrated when..."
+      placeholder: "I spend 30 minutes every morning running the same QC steps manually."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should MetaRDU Industrial do?
+      placeholder: "Add a watch folder that auto-runs the QC pipeline and emails me the PDF report."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options:
+        - Mining
+        - Marine
+        - Both
+        - Cross-cutting (UI, settings, CI, performance)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which roadmap phase does this fit?
+      description: See docs/ARCHITECTURE.md §10
+      options:
+        - Phase 0 — Foundation
+        - Phase 1 — Mining MVP
+        - Phase 2 — Marine MVP
+        - Phase 3 — Automation
+        - Phase 4 — Advanced
+        - Beyond roadmap
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "Tried using QGIS plugin X but it doesn't support Y."
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, sketches, links to specs, vendor docs, etc.

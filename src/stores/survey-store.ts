@@ -10,7 +10,12 @@
  */
 
 import { create } from "zustand";
-import { probeFile, type FileProbeResult, type LasHeaderRpc } from "@/lib/tauri-ipc";
+import {
+  probeFile,
+  type FileProbeResult,
+  type GeoTiffHeaderRpc,
+  type LasHeaderRpc,
+} from "@/lib/tauri-ipc";
 
 export type SurveyFileKind =
   | "las" // LAS/LAZ point cloud
@@ -45,12 +50,16 @@ export interface SurveyFile {
   lasVersion?: string;
   pdrf?: number;
   crsWkt?: string | null;
+  epsg?: number | null; // EPSG code extracted from GeoTIFF GeoKeyDirectory
+  dimensions?: { width: number; height: number }; // for rasters
   vendor?: string;
 }
 
 interface SurveyState {
   files: SurveyFile[];
   activeFileId: string | null;
+  /** Most recent file with an EPSG code — used for auto-CRS-switch prompts */
+  lastDetectedEpsg: string | null;
   addFile: (file: File) => string;
   addFileFromPath: (path: string, size: number) => string;
   removeFile: (id: string) => void;
@@ -92,6 +101,7 @@ function extractPath(file: File): string {
 export const useSurveyStore = create<SurveyState>((set, get) => ({
   files: [],
   activeFileId: null,
+  lastDetectedEpsg: null,
 
   addFile: (file) => {
     const id = makeId();
@@ -171,13 +181,31 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
             updated.pdrf = h.point_data_format;
             updated.crsWkt = h.crs_wkt;
           } else if (result.kind === "geo-tiff") {
-            updated.size = result.size_bytes;
+            const h: GeoTiffHeaderRpc = result.header;
+            if (h.bounds) {
+              updated.bounds = {
+                min_x: h.bounds[0],
+                min_y: h.bounds[1],
+                max_x: h.bounds[2],
+                max_y: h.bounds[3],
+              };
+            }
+            updated.epsg = h.epsg;
+            updated.dimensions = {
+              width: h.width,
+              height: h.length,
+            };
           } else if (result.kind === "mb-es") {
             updated.vendor = result.vendor;
             updated.size = result.size_bytes;
           }
           return updated;
         }),
+        // Track most recent EPSG detection for auto-CRS-switch prompts
+        lastDetectedEpsg:
+          result.kind === "geo-tiff" && result.header.epsg
+            ? `EPSG:${result.header.epsg}`
+            : get().lastDetectedEpsg,
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -191,5 +219,5 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
     }
   },
 
-  clear: () => set({ files: [], activeFileId: null }),
+  clear: () => set({ files: [], activeFileId: null, lastDetectedEpsg: null }),
 }));

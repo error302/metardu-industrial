@@ -1,0 +1,74 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill in the sections below.
+        If this is a survey-domain question (e.g., "how does CUBE handle X?"), open a Discussion instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the unexpected behavior.
+      placeholder: "Dropped a LAS file and the bounds rectangle didn't appear on the map."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: "The map should have zoomed to fit the LAS file's bounds."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal repro sequence.
+      placeholder: |
+        1. Launch `cargo tauri dev`
+        2. Complete onboarding (Mining, EPSG:4326)
+        3. Drop `survey.las` onto the map canvas
+        4. ...
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Ubuntu 24.04 / macOS 15.2 / Windows 11"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: MetaRDU Industrial version
+      placeholder: "0.1.0 (commit abc1234)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / console output
+      description: Output from the Tauri dev console or `~/.config/metardu-industrial/logs/`. Paste relevant excerpts.
+      render: shell
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Affected domain
+      options:
+        - Mining
+        - Marine
+        - Both
+        - Cross-cutting (UI, settings, CI)
+    validations:
+      required: true
