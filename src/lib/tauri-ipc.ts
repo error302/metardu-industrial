@@ -767,6 +767,148 @@ export async function getPluginExtensions(): Promise<string[]> {
 }
 
 // ──────────────────────────────────────────────────────────────────
+// Automation — Phase 3 (pipelines, watch folders, scheduled jobs)
+
+export type PipelineAction =
+  | "odm_pipeline"
+  | "classify_ground"
+  | "compute_volumes"
+  | "generate_report"
+  | "probe_file"
+  | "generate_cube_surface"
+  | "check_s44_compliance"
+  | "export_s57"
+  | "compute_epoch_diff"
+  | "shell_command"
+  | "noop";
+
+export interface PipelineStep {
+  id: string;
+  action: PipelineAction;
+  params: Record<string, unknown>;
+  outputs: Record<string, string>;
+}
+
+export interface Pipeline {
+  name: string;
+  description: string;
+  steps: PipelineStep[];
+  watch_folders?: string[];
+  schedule?: string | null;
+}
+
+export type PipelineStatus = "running" | "complete" | "failed" | "skipped";
+
+export interface StepResult {
+  id: string;
+  action: PipelineAction;
+  status: PipelineStatus;
+  elapsed_seconds: number;
+  outputs: Record<string, unknown>;
+  error: string | null;
+  log_lines: string[];
+}
+
+export interface PipelineRunResult {
+  pipeline_name: string;
+  status: PipelineStatus;
+  steps: StepResult[];
+  elapsed_seconds: number;
+  error: string | null;
+}
+
+export interface WatchFolder {
+  id: string;
+  path: string;
+  pipeline_name: string;
+  extensions: string[];
+  active: boolean;
+  poll_interval_secs: number;
+}
+
+export interface WatchFolderStatus {
+  id: string;
+  path: string;
+  pipeline_name: string;
+  active: boolean;
+  files_detected: number;
+  pipelines_triggered: number;
+  last_check: string | null;
+  last_file: string | null;
+  pending_files: string[];
+}
+
+export interface ScheduledJob {
+  id: string;
+  name: string;
+  pipeline_name: string;
+  interval_secs: number;
+  active: boolean;
+  params: Record<string, unknown>;
+}
+
+export interface ScheduledJobStatus {
+  id: string;
+  name: string;
+  pipeline_name: string;
+  active: boolean;
+  interval_secs: number;
+  runs_completed: number;
+  last_run: string | null;
+  next_run: string | null;
+}
+
+export async function parsePipelineCmd(yaml: string): Promise<Pipeline | null> {
+  if (!isTauri()) return null;
+  return invoke<Pipeline>("parse_pipeline_cmd", { yaml });
+}
+
+export async function runPipelineCmd(
+  pipeline: Pipeline,
+  input: Record<string, unknown>,
+): Promise<PipelineRunResult | null> {
+  if (!isTauri()) return null;
+  return invoke<PipelineRunResult>("run_pipeline_cmd", { pipeline, input });
+}
+
+export async function addWatchFolder(folder: WatchFolder): Promise<boolean> {
+  if (!isTauri()) return false;
+  await invoke<void>("add_watch_folder", { folder });
+  return true;
+}
+
+export async function removeWatchFolder(id: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("remove_watch_folder", { id });
+}
+
+export async function listWatchFolders(): Promise<WatchFolderStatus[]> {
+  if (!isTauri()) return [];
+  return invoke<WatchFolderStatus[]>("list_watch_folders");
+}
+
+export async function scanWatchFolders(): Promise<[string, string, string][]> {
+  if (!isTauri()) return [];
+  return invoke<[string, string, string][]>("scan_watch_folders");
+}
+
+export async function addScheduledJob(job: ScheduledJob): Promise<boolean> {
+  if (!isTauri()) return false;
+  await invoke<void>("add_scheduled_job", { job });
+  return true;
+}
+
+export async function removeScheduledJob(id: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("remove_scheduled_job", { id });
+}
+
+export async function listScheduledJobs(): Promise<ScheduledJobStatus[]> {
+  if (!isTauri()) return [];
+  return invoke<ScheduledJobStatus[]>("list_scheduled_jobs");
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Browser-mode stubs — mirror the registry in src-tauri/src/modules/registry.rs
 
 const BROWSER_MODULE_STUBS: ModuleInfo[] = [

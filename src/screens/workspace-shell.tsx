@@ -38,6 +38,8 @@ import {
   Anchor,
   Brain,
   History,
+  GitBranch,
+  FolderOpen,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -53,6 +55,7 @@ import { CubeSurfaceOverlay } from "@/components/cube-surface-overlay";
 import { S57ExportDialog } from "@/components/s57-export-dialog";
 import { Monitoring4DDialog } from "@/components/monitoring-4d-dialog";
 import { MlClassificationDialog } from "@/components/ml-classification-dialog";
+import { PipelineEditorDialog } from "@/components/pipeline-editor-dialog";
 import { PointCloudLayer } from "@/components/point-cloud-layer";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc } from "@/lib/tauri-ipc";
@@ -79,6 +82,7 @@ export function WorkspaceShell() {
   const [s57Open, setS57Open] = useState(false);
   const [monitoringOpen, setMonitoringOpen] = useState(false);
   const [mlOpen, setMlOpen] = useState(false);
+  const [pipelineOpen, setPipelineOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
@@ -111,6 +115,7 @@ export function WorkspaceShell() {
             onOpenS57={() => setS57Open(true)}
             onOpenMonitoring={() => setMonitoringOpen(true)}
             onOpenMl={() => setMlOpen(true)}
+            onOpenPipeline={() => setPipelineOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -177,6 +182,7 @@ export function WorkspaceShell() {
       <S57ExportDialog open={s57Open} onClose={() => setS57Open(false)} />
       <Monitoring4DDialog open={monitoringOpen} onClose={() => setMonitoringOpen(false)} />
       <MlClassificationDialog open={mlOpen} onClose={() => setMlOpen(false)} />
+      <PipelineEditorDialog open={pipelineOpen} onClose={() => setPipelineOpen(false)} />
     </div>
   );
 }
@@ -239,6 +245,7 @@ function LeftSidebar({
   onOpenS57,
   onOpenMonitoring,
   onOpenMl,
+  onOpenPipeline,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -250,6 +257,7 @@ function LeftSidebar({
   onOpenS57: () => void;
   onOpenMonitoring: () => void;
   onOpenMl: () => void;
+  onOpenPipeline: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -336,6 +344,25 @@ function LeftSidebar({
             />
           </SidebarSection>
         )}
+
+        {/* Automation — cross-cutting */}
+        <SidebarSection title="Automation" icon={<GitBranch className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<GitBranch className="h-3 w-3" />}
+            label="Pipelines"
+            onClick={onOpenPipeline}
+          />
+          <SidebarItem
+            icon={<FolderOpen className="h-3 w-3" />}
+            label="Watch Folders"
+            onClick={onOpenPipeline}
+          />
+          <SidebarItem
+            icon={<Clock className="h-3 w-3" />}
+            label="Scheduled Jobs"
+            onClick={onOpenPipeline}
+          />
+        </SidebarSection>
       </div>
 
       <div className="border-t border-navy-border p-2">

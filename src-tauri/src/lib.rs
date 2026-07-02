@@ -10,6 +10,7 @@
 #![allow(unknown_lints)]
 #![allow(never_type_fallback)]
 
+mod automation;
 mod commands;
 mod formats;
 mod geodesy;
@@ -24,7 +25,11 @@ mod plugins;
 
 use commands::pipelines::OdmState;
 use commands::{
-    app_version, get_settings, init_module, is_proj_available, list_modules,
+    app_version, automation::add_scheduled_job, automation::add_watch_folder,
+    automation::check_due_jobs, automation::list_scheduled_jobs, automation::list_watch_folders,
+    automation::parse_pipeline_cmd, automation::remove_scheduled_job,
+    automation::remove_watch_folder, automation::run_pipeline_cmd, automation::scan_watch_folders,
+    automation::serialize_pipeline_cmd, get_settings, init_module, is_proj_available, list_modules,
     marine::check_s44_compliance_cmd, marine::compute_tpu_batch, marine::export_s57,
     marine::generate_cube_surface_cmd, mining::classify_ground, mining::compute_volumes_cmd,
     mining::parse_drone_manifest, ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
@@ -76,6 +81,17 @@ pub fn run() {
             analyze_fragmentation_cmd,
             list_plugins,
             get_supported_extensions,
+            parse_pipeline_cmd,
+            serialize_pipeline_cmd,
+            run_pipeline_cmd,
+            add_watch_folder,
+            remove_watch_folder,
+            list_watch_folders,
+            scan_watch_folders,
+            add_scheduled_job,
+            remove_scheduled_job,
+            list_scheduled_jobs,
+            check_due_jobs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");
