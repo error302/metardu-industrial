@@ -14,6 +14,11 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    watch: {
+      // Ignore Rust build output — prevents EBUSY errors on Windows
+      // when Vite tries to watch files Cargo is writing to.
+      ignored: ['**/src-tauri/target/**'],
+    },
   },
   build: {
     // Target modern browsers — Tauri ships with a recent system webview,
