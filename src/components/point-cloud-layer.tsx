@@ -7,9 +7,9 @@
  *   - Non-ground: orange (#FFB347)
  *   - Unclassified (no CSF run): steel blue (#6B7280)
  *
- * The layer is embedded as an OpenLayers overlay via the deck.gl-OL
- * integration pattern: we create a Deck.gl canvas positioned absolutely
- * over the OL map, synchronized via view change events.
+ * Also renders live-streamed pings (from UDP streaming ingest) as a
+ * separate Deck.gl layer in turquoise — these update in real-time
+ * without reloading the main point cloud.
  */
 
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -21,11 +21,7 @@ import { colors } from "@/lib/tokens";
 import { readLasPoints, type CsfResult } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
 
-/**
- * Client-side LOD decimation — mirrors the Rust decimate_points function.
- * Uses spatial hashing: divides bounding box into cells of cell_size,
- * keeps one representative point per cell (median by Z).
- */
+/** Client-side LOD decimation — mirrors the Rust decimate_points function. */
 function decimateClientSide(
   points: [number, number, number][],
   cellSize: number,
@@ -48,30 +44,36 @@ function decimateClientSide(
   return result;
 }
 
-/** Determine LOD cell size based on map zoom and point count. */
 function lodCellSize(zoom: number, pointCount: number): number {
-  if (pointCount < 10000) return 0; // no decimation for small clouds
-  if (zoom >= 16) return 0;          // close enough to show all
-  if (zoom >= 14) return 1.0;        // 1m cells
-  if (zoom >= 12) return 5.0;        // 5m cells
-  if (zoom >= 10) return 25.0;       // 25m cells
-  return 100.0;                       // world view
+  if (pointCount < 10000) return 0;
+  if (zoom >= 16) return 0;
+  if (zoom >= 14) return 1.0;
+  if (zoom >= 12) return 5.0;
+  if (zoom >= 10) return 25.0;
+  return 100.0;
+}
+
+export interface StreamPing {
+  x: number;
+  y: number;
+  depth: number;
+  uncertainty: number;
+  timestamp: number;
 }
 
 interface PointCloudLayerProps {
   map: Map | null;
-  /** Active file ID to render. When null, no points are shown. */
   activeFileId: string | null;
-  /** CSF classification result (if run) — drives ground/non-ground coloring. */
   csfResult: CsfResult | null;
-  /** Max points to render (performance cap). Default 100000. */
   maxPoints?: number;
+  /** Live-streamed pings from UDP ingest — rendered as a separate layer */
+  streamPings?: StreamPing[];
 }
 
 interface PointData {
-  position: [number, number]; // Web Mercator [x, y]
-  z: number; // elevation in meters
-  isGround: boolean | null; // null = unclassified
+  position: [number, number];
+  z: number;
+  isGround: boolean | null;
   index: number;
 }
 
@@ -82,6 +84,7 @@ export function PointCloudLayer({
   activeFileId,
   csfResult,
   maxPoints = DEFAULT_MAX_POINTS,
+  streamPings = [],
 }: PointCloudLayerProps) {
   const deckRef = useRef<Deck | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -91,7 +94,6 @@ export function PointCloudLayer({
   const [currentZoom, setCurrentZoom] = useState(2);
   const files = useSurveyStore((s) => s.files);
 
-  // Load points when active file changes
   useEffect(() => {
     if (!activeFileId) {
       setRawPoints([]);
@@ -104,28 +106,17 @@ export function PointCloudLayer({
       setPointCount(0);
       return;
     }
-
     setLoading(true);
     readLasPoints(file.path, maxPoints)
       .then((pts) => {
-        if (!pts) {
-          setRawPoints([]);
-          setPointCount(0);
-          setLoading(false);
-          return;
-        }
+        if (!pts) { setRawPoints([]); setPointCount(0); setLoading(false); return; }
         setRawPoints(pts);
         setPointCount(pts.length);
         setLoading(false);
       })
-      .catch(() => {
-        setRawPoints([]);
-        setPointCount(0);
-        setLoading(false);
-      });
+      .catch(() => { setRawPoints([]); setPointCount(0); setLoading(false); });
   }, [activeFileId, files, maxPoints, csfResult]);
 
-  // Track zoom changes for LOD
   useEffect(() => {
     if (!map) return;
     const updateZoom = () => {
@@ -137,7 +128,6 @@ export function PointCloudLayer({
     return () => { map.un("moveend", updateZoom); };
   }, [map]);
 
-  // Apply LOD decimation based on current zoom
   const points = useMemo<PointData[]>(() => {
     if (rawPoints.length === 0) return [];
     const cellSize = lodCellSize(currentZoom, rawPoints.length);
@@ -150,10 +140,17 @@ export function PointCloudLayer({
     }));
   }, [rawPoints, currentZoom, csfResult]);
 
-  // Initialize Deck.gl canvas over the OL map
+  // Convert streamed pings to Deck.gl positions
+  const streamPoints = useMemo(() => {
+    if (streamPings.length === 0) return [];
+    return streamPings.map((p) => ({
+      position: fromLonLat([p.x, p.y]) as [number, number],
+      depth: p.depth,
+    }));
+  }, [streamPings]);
+
   useEffect(() => {
     if (!map || !canvasRef.current) return;
-
     const deck = new Deck({
       canvas: canvasRef.current,
       width: "100%",
@@ -162,66 +159,83 @@ export function PointCloudLayer({
       controller: false,
       layers: [],
     });
-
     deckRef.current = deck;
-
-    // Sync Deck.gl view with OL view
     const syncView = () => {
       const view = map.getView();
       const center = view.getCenter();
       const zoom = view.getZoom();
       if (!center || zoom === undefined) return;
       const [lon, lat] = toLonLat(center);
-      // OL zoom → Deck.gl zoom (approximate: OL Web Mercator zoom ≈ Deck.gl zoom)
       deck.setProps({
-        initialViewState: { longitude: lon, latitude: lat, zoom: zoom, bearing: 0, pitch: 0 },
+        initialViewState: { longitude: lon, latitude: lat, zoom, bearing: 0, pitch: 0 },
       });
     };
-
     map.on("moveend", syncView);
     syncView();
-
-    return () => {
-      map.un("moveend", syncView);
-      deck.finalize();
-      deckRef.current = null;
-    };
+    return () => { map.un("moveend", syncView); deck.finalize(); deckRef.current = null; };
   }, [map]);
 
-  // Update Deck.gl layers when points change
+  // Update Deck.gl layers when points or stream pings change
   useEffect(() => {
     if (!deckRef.current) return;
 
-    const layer = new ScatterplotLayer({
-      id: "point-cloud",
-      data: points,
-      pickable: false,
-      opacity: 0.8,
-      stroked: false,
-      filled: true,
-      radiusScale: 1,
-      radiusMinPixels: 1,
-      radiusMaxPixels: 4,
-      getPosition: (d: unknown) => {
-        const p = d as PointData;
-        return [p.position[0], p.position[1], 0];
-      },
-      getRadius: 2,
-      getFillColor: (d: unknown) => {
-        const p = d as PointData;
-        if (p.isGround === true) {
-          return [16, 185, 129, 200]; // green for ground
-        } else if (p.isGround === false) {
-          return [255, 179, 71, 200]; // orange for non-ground
-        }
-        return [107, 114, 128, 180]; // steel gray for unclassified
-      },
-      // Anti-aliasing for smoother point edges
-      antialiasing: true,
-    });
+    const layers: ScatterplotLayer[] = [];
 
-    deckRef.current.setProps({ layers: [layer] });
-  }, [points]);
+    // Main point cloud layer (from LAS)
+    if (points.length > 0) {
+      layers.push(
+        new ScatterplotLayer({
+          id: "point-cloud",
+          data: points,
+          pickable: false,
+          opacity: 0.8,
+          stroked: false,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 1,
+          radiusMaxPixels: 4,
+          getPosition: (d: unknown) => {
+            const p = d as PointData;
+            return [p.position[0], p.position[1], 0];
+          },
+          getRadius: 2,
+          getFillColor: (d: unknown) => {
+            const p = d as PointData;
+            if (p.isGround === true) return [16, 185, 129, 200];
+            if (p.isGround === false) return [255, 179, 71, 200];
+            return [107, 114, 128, 180];
+          },
+          antialiasing: true,
+        }),
+      );
+    }
+
+    // Live stream layer (from UDP ingest) — turquoise, larger radius
+    if (streamPoints.length > 0) {
+      layers.push(
+        new ScatterplotLayer({
+          id: "stream-pings",
+          data: streamPoints,
+          pickable: false,
+          opacity: 0.9,
+          stroked: false,
+          filled: true,
+          radiusScale: 1,
+          radiusMinPixels: 2,
+          radiusMaxPixels: 6,
+          getPosition: (d: unknown) => {
+            const p = d as { position: [number, number] };
+            return [p.position[0], p.position[1], 0];
+          },
+          getRadius: 3,
+          getFillColor: () => [32, 178, 170, 220], // marine turquoise
+          antialiasing: true,
+        }),
+      );
+    }
+
+    deckRef.current.setProps({ layers });
+  }, [points, streamPoints]);
 
   if (!map) return null;
 
@@ -256,6 +270,12 @@ export function PointCloudLayer({
               Non-ground: {csfResult ? csfResult.non_ground_count.toLocaleString() : "—"}
             </span>
           </span>
+          {streamPings.length > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: colors.marineTurquoise }} />
+              <span className="text-steel-gray">Stream: {streamPings.length}</span>
+            </span>
+          )}
         </div>
       )}
     </>

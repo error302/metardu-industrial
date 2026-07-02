@@ -24,6 +24,7 @@ tokio = { version = "1", features = ["time", "sync", "rt-multi-thread", "macros"
 thiserror = "1"
 serde_yaml = "0.9"
 libloading = "0.8"
+metardu-core = { path = "../crates/metardu-core" }
 
 # Geospatial core — opt-in via the 'geo' feature flag.
 # These crates require system libs (libproj-dev, libgdal-dev) that aren't

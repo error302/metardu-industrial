@@ -86,6 +86,10 @@ jobs:
         run: cargo clippy --all-targets --features geo-proj -- -D warnings
         continue-on-error: true  # CI-only verification — system libs may be missing
 
+      - name: Build metardu-worker binary
+        working-directory: src-tauri
+        run: cargo build --bin metardu-worker --release
+
   # ───────────────────────────────────────────────────────────────
   # Build the Tauri binary on all 3 platforms (only on main pushes)
   # ───────────────────────────────────────────────────────────────
@@ -152,6 +156,10 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
 
+      - name: Build metardu-worker binary
+        working-directory: src-tauri
+        run: cargo build --bin metardu-worker --release --target ${{ matrix.target }}
+
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -164,5 +172,6 @@ jobs:
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+            src-tauri/target/${{ matrix.target }}/release/metardu-worker*
           retention-days: 14
           if-no-files-found: warn

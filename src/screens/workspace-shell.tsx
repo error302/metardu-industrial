@@ -40,6 +40,7 @@ import {
   History,
   GitBranch,
   FolderOpen,
+  Radio,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -56,7 +57,8 @@ import { S57ExportDialog } from "@/components/s57-export-dialog";
 import { Monitoring4DDialog } from "@/components/monitoring-4d-dialog";
 import { MlClassificationDialog } from "@/components/ml-classification-dialog";
 import { PipelineEditorDialog } from "@/components/pipeline-editor-dialog";
-import { PointCloudLayer } from "@/components/point-cloud-layer";
+import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer";
+import { LiveStreamPanel } from "@/components/live-stream-panel";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc } from "@/lib/tauri-ipc";
 import {
@@ -87,6 +89,8 @@ export function WorkspaceShell() {
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
   const [cubeSurface, setCubeSurface] = useState<CubeSurfaceRpc | null>(null);
+  const [streamPings, setStreamPings] = useState<StreamPing[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
   const activeFileId = useSurveyStore((s) => s.activeFileId);
 
   const handleMapReady = useCallback((map: Map) => {
@@ -129,6 +133,7 @@ export function WorkspaceShell() {
             map={mapInstance}
             activeFileId={activeFileId}
             csfResult={csfResult}
+            streamPings={streamPings}
           />
           <FileDropOverlay domain={activeDomain} />
           <CrsSwitchBanner />
@@ -139,6 +144,15 @@ export function WorkspaceShell() {
             onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
             profileActive={profileActive}
             onToggleProfile={() => setProfileActive((v) => !v)}
+            isStreaming={isStreaming}
+            onToggleStream={() => {
+              setIsStreaming((v) => !v);
+              if (!isStreaming) setStreamPings([]);
+            }}
+          />
+          <LiveStreamPanel
+            isStreaming={isStreaming}
+            onPings={(pings) => setStreamPings((prev) => [...prev.slice(-5000), ...pings])}
           />
           {profileActive && (
             <div
@@ -635,6 +649,8 @@ function FloatingActions({
   onOpenVolumeCalc,
   profileActive,
   onToggleProfile,
+  isStreaming,
+  onToggleStream,
 }: {
   onToggleSidebar: () => void;
   onToggleRight: () => void;
@@ -642,6 +658,8 @@ function FloatingActions({
   onOpenVolumeCalc: () => void;
   profileActive: boolean;
   onToggleProfile: () => void;
+  isStreaming: boolean;
+  onToggleStream: () => void;
 }) {
   return (
     <div className="absolute right-3 top-3 flex flex-col gap-1">
@@ -670,6 +688,18 @@ function FloatingActions({
         }}
       >
         <TrendingUp className="h-3 w-3" />
+      </button>
+      <button
+        onClick={onToggleStream}
+        title="Live stream (UDP)"
+        className="rounded border p-1.5 backdrop-blur transition-colors"
+        style={{
+          background: isStreaming ? colors.marineTurquoise : "rgba(10, 25, 47, 0.85)",
+          borderColor: isStreaming ? colors.marineTurquoise : colors.navyBorder,
+          color: isStreaming ? colors.navyBase : colors.steelLight,
+        }}
+      >
+        <Radio className={`h-3 w-3 ${isStreaming ? "animate-pulse" : ""}`} />
       </button>
       <button
         onClick={onOpenVolumeCalc}

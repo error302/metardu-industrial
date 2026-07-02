@@ -164,11 +164,64 @@ fn main() {
 
 fn process_chunk(chunk: &WorkChunk) -> (String, serde_json::Value, Option<String>) {
     match chunk.chunk_type.as_str() {
-        "cube_surface" => (
-            "complete".into(),
-            serde_json::json!({"valid_cells": 0, "ambiguous_cells": 0, "chunk_id": chunk.id}),
-            None,
-        ),
+        "cube_surface" => {
+            // Deserialize soundings from chunk params
+            let soundings_json = chunk
+                .params
+                .get("soundings")
+                .or_else(|| chunk.params.get("data"))
+                .cloned()
+                .unwrap_or(serde_json::json!([]));
+
+            let soundings: Vec<metardu_core::Sounding> =
+                match serde_json::from_value(soundings_json) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        return (
+                            "failed".into(),
+                            serde_json::json!({"chunk_id": chunk.id}),
+                            Some(format!("failed to deserialize soundings: {e}")),
+                        )
+                    }
+                };
+
+            // Parse CUBE params
+            let params = metardu_core::CubeParams {
+                resolution: chunk
+                    .params
+                    .get("resolution")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(1.0),
+                ..Default::default()
+            };
+
+            // Run real CUBE via metardu-core
+            match metardu_core::process_cube_tile(&soundings, &params) {
+                Ok(surface) => {
+                    println!(
+                        "  CUBE: {} valid cells, {}×{} grid",
+                        surface.valid_cells, surface.dims.0, surface.dims.1
+                    );
+                    (
+                        "complete".into(),
+                        serde_json::json!({
+                            "valid_cells": surface.valid_cells,
+                            "ambiguous_cells": surface.ambiguous_cells,
+                            "total_soundings": surface.total_soundings,
+                            "dims": [surface.dims.0, surface.dims.1],
+                            "bounds": surface.bounds,
+                            "chunk_id": chunk.id,
+                        }),
+                        None,
+                    )
+                }
+                Err(e) => (
+                    "failed".into(),
+                    serde_json::json!({"chunk_id": chunk.id}),
+                    Some(format!("CUBE failed: {e}")),
+                ),
+            }
+        }
         "classify_ground" => (
             "complete".into(),
             serde_json::json!({"ground_count": 0, "non_ground_count": 0, "chunk_id": chunk.id}),
