@@ -11,7 +11,7 @@
  * Color mode shifts based on activeDomain (mining/marine/both).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type Map from "ol/Map";
 import {
   Folder,
@@ -57,6 +57,9 @@ import { S57ExportDialog } from "@/components/s57-export-dialog";
 import { Monitoring4DDialog } from "@/components/monitoring-4d-dialog";
 import { MlClassificationDialog } from "@/components/ml-classification-dialog";
 import { PipelineEditorDialog } from "@/components/pipeline-editor-dialog";
+import { EomReconciliationWizard } from "@/components/eom-reconciliation-wizard";
+import { S44CertificateDialog } from "@/components/s44-certificate-dialog";
+import { CommandPalette, createCommandActions } from "@/components/command-palette";
 import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer";
 import { LiveStreamPanel } from "@/components/live-stream-panel";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
@@ -86,6 +89,9 @@ export function WorkspaceShell() {
   const [monitoringOpen, setMonitoringOpen] = useState(false);
   const [mlOpen, setMlOpen] = useState(false);
   const [pipelineOpen, setPipelineOpen] = useState(false);
+  const [eomOpen, setEomOpen] = useState(false);
+  const [s44CertOpen, setS44CertOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
@@ -103,6 +109,36 @@ export function WorkspaceShell() {
     active: profileActive,
     domain: activeDomain,
   });
+
+  // Ctrl+K opens command palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Command palette actions
+  const commandActions = useMemo(() => createCommandActions({
+    onOpenVolumeCalc: () => setVolumeCalcOpen(true),
+    onOpenOdm: () => setOdmOpen(true),
+    onOpenCsf: () => setCsfOpen(true),
+    onOpenS44: () => setS44Open(true),
+    onOpenCube: () => setCubeOpen(true),
+    onOpenS57: () => setS57Open(true),
+    onOpenMl: () => setMlOpen(true),
+    onOpenMonitoring: () => setMonitoringOpen(true),
+    onOpenPipeline: () => setPipelineOpen(true),
+    onOpenSettings: () => setSettingsOpen(true),
+    onToggleProfile: () => setProfileActive((v) => !v),
+    onToggleStream: () => setIsStreaming((v) => !v),
+    onOpenEom: () => setEomOpen(true),
+    onOpenS44Cert: () => setS44CertOpen(true),
+  }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
   useEffect(() => {
@@ -218,6 +254,13 @@ export function WorkspaceShell() {
       <Monitoring4DDialog open={monitoringOpen} onClose={() => setMonitoringOpen(false)} />
       <MlClassificationDialog open={mlOpen} onClose={() => setMlOpen(false)} />
       <PipelineEditorDialog open={pipelineOpen} onClose={() => setPipelineOpen(false)} />
+      <EomReconciliationWizard open={eomOpen} onClose={() => setEomOpen(false)} />
+      <S44CertificateDialog open={s44CertOpen} onClose={() => setS44CertOpen(false)} />
+      <CommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        actions={commandActions}
+      />
     </div>
   );
 }
