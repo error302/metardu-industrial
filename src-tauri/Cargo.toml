@@ -21,6 +21,7 @@ tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["time", "sync", "rt-multi-thread", "macros"] }
+thiserror = "1"
 
 # Geospatial core — Phase 0 placeholder deps. Uncomment as we implement modules.
 # gdal = { version = "0.17", features = ["bindgen"] }

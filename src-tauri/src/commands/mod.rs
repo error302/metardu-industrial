@@ -2,8 +2,10 @@
 //
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
+use crate::formats::{read_las_header, LasHeader};
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::State;
 
@@ -41,6 +43,85 @@ pub fn list_modules(
 ) -> Result<Vec<crate::modules::ModuleInfo>, String> {
     let registry = registry.lock().map_err(|e| e.to_string())?;
     Ok(registry.modules.clone())
+}
+
+// ──────────────────────────────────────────────────────────────────
+// File ingest — Phase 0 reads LAS headers; future formats to follow.
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum FileProbeResult {
+    Las {
+        path: String,
+        header: LasHeader,
+    },
+    Geotiff {
+        path: String,
+        // TODO: parse GeoTIFF tags in Phase 1
+        size_bytes: u64,
+    },
+    MbEs {
+        path: String,
+        vendor: String, // "kongsberg-all" | "reson-s7k" | "r2sonic-bsf"
+        size_bytes: u64,
+    },
+    Other {
+        path: String,
+        size_bytes: u64,
+        note: String,
+    },
+}
+
+/// Probe a file by extension + magic bytes, returning enough metadata
+/// for the frontend to render the file's bounds on the map canvas.
+///
+/// This is the entry point for the drag-and-drop workflow:
+///   1. User drops a file → frontend calls probe_file(path)
+///   2. Rust reads the header → returns FileProbeResult
+///   3. Frontend adds to survey store + renders bounds on canvas
+#[tauri::command]
+pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
+    let path_buf = PathBuf::from(&path);
+    let lower = path_buf
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_lowercase())
+        .unwrap_or_default();
+
+    let size_bytes = std::fs::metadata(&path_buf).map(|m| m.len()).unwrap_or(0);
+
+    match lower.as_str() {
+        "las" => {
+            let header = read_las_header(&path_buf).map_err(|e| e.to_string())?;
+            Ok(FileProbeResult::Las { path, header })
+        }
+        "laz" => {
+            // LAZ detection happens inside read_las_header (LasZip VLR scan)
+            // but we surface a friendlier error here for the .laz extension
+            Err("LAZ (compressed LAS) is not yet supported — coming in Phase 1".into())
+        }
+        "tif" | "tiff" => Ok(FileProbeResult::Geotiff { path, size_bytes }),
+        "all" => Ok(FileProbeResult::MbEs {
+            path,
+            vendor: "kongsberg-all".into(),
+            size_bytes,
+        }),
+        "s7k" => Ok(FileProbeResult::MbEs {
+            path,
+            vendor: "reson-s7k".into(),
+            size_bytes,
+        }),
+        "bsf" => Ok(FileProbeResult::MbEs {
+            path,
+            vendor: "r2sonic-bsf".into(),
+            size_bytes,
+        }),
+        other => Ok(FileProbeResult::Other {
+            path,
+            size_bytes,
+            note: format!("unsupported extension: .{other}"),
+        }),
+    }
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -85,10 +166,7 @@ pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
 
 #[tauri::command]
 pub fn save_settings(app: tauri::AppHandle, settings: AppSettings) -> Result<(), String> {
-    let dir = app
-        .path()
-        .app_config_dir()
-        .map_err(|e| e.to_string())?;
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let path = dir.join("settings.json");
     let raw = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;

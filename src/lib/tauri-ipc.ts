@@ -90,6 +90,61 @@ export async function saveSettings(
 }
 
 // ──────────────────────────────────────────────────────────────────
+// File probing — returns metadata + bounds for a survey file
+
+export interface LasHeaderRpc {
+  file_source_id: number;
+  global_encoding: number;
+  version_major: number;
+  version_minor: number;
+  system_identifier: string;
+  generating_software: string;
+  file_creation_day: number;
+  file_creation_year: number;
+  header_size: number;
+  offset_to_point_data: number;
+  number_of_vlrs: number;
+  point_data_format: number;
+  point_data_record_length: number;
+  point_count: number;
+  points_by_return: number[];
+  scale_x: number;
+  scale_y: number;
+  scale_z: number;
+  offset_x: number;
+  offset_y: number;
+  offset_z: number;
+  min_x: number;
+  min_y: number;
+  min_z: number;
+  max_x: number;
+  max_y: number;
+  max_z: number;
+  crs_wkt: string | null;
+  geotiff_keys: number[] | null;
+}
+
+export type FileProbeResult =
+  | { kind: "las"; path: string; header: LasHeaderRpc }
+  | { kind: "geo-tiff"; path: string; size_bytes: number }
+  | { kind: "mb-es"; path: string; vendor: string; size_bytes: number }
+  | { kind: "other"; path: string; size_bytes: number; note: string };
+
+/** Probe a survey file by path. Returns header + bounds metadata. */
+export async function probeFile(path: string): Promise<FileProbeResult> {
+  if (!isTauri()) {
+    // Browser fallback — synthesize a small placeholder
+    return {
+      kind: "other",
+      path,
+      size_bytes: 0,
+      note: "browser-mode stub",
+    };
+  }
+  return invoke<FileProbeResult>("probe_file", { path });
+}
+
+// ──────────────────────────────────────────────────────────────────
 // Browser-mode stubs — mirror the registry in src-tauri/src/modules/registry.rs
 
 const BROWSER_MODULE_STUBS: ModuleInfo[] = [

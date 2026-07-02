@@ -6,11 +6,14 @@
 // will be added incrementally per the roadmap (Phase 1: Mining MVP, etc.).
 
 mod commands;
+mod formats;
 mod modules;
 
-use std::sync::Mutex;
-use commands::{app_version, ping, init_module, list_modules, get_settings, save_settings};
+use commands::{
+    app_version, get_settings, init_module, list_modules, ping, probe_file, save_settings,
+};
 use modules::ModuleRegistry;
+use std::sync::Mutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -29,6 +32,7 @@ pub fn run() {
             list_modules,
             get_settings,
             save_settings,
+            probe_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

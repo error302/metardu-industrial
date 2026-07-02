@@ -25,23 +25,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: metardu-industrial/package-lock.json
+          node-version: 22
 
       - name: Install dependencies
-        working-directory: metardu-industrial
+        working-directory: .
         run: npm ci
 
-      - name: Type check
-        working-directory: metardu-industrial
-        run: npm run build -- --mode=production
+      - name: Type check + build
+        working-directory: .
+        run: npm run build
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: metardu-industrial/dist/
+          path: dist/
           retention-days: 7
 
   # ───────────────────────────────────────────────────────────────
@@ -73,22 +71,23 @@ jobs:
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "metardu-industrial/src-tauri"
+          workspaces: "src-tauri"
 
       - name: Cargo fmt
-        working-directory: metardu-industrial/src-tauri
+        working-directory: src-tauri
         run: cargo fmt --all -- --check
 
       - name: Cargo clippy
-        working-directory: metardu-industrial/src-tauri
+        working-directory: src-tauri
         run: cargo clippy --all-targets -- -D warnings
 
   # ───────────────────────────────────────────────────────────────
-  # Build the Tauri binary on all 3 platforms
+  # Build the Tauri binary on all 3 platforms (only on main pushes)
   # ───────────────────────────────────────────────────────────────
   build:
     name: Build ${{ matrix.os }}
     needs: [frontend-check, rust-check]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
@@ -112,9 +111,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: metardu-industrial/package-lock.json
+          node-version: 22
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -137,21 +134,17 @@ jobs:
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "metardu-industrial/src-tauri"
+          workspaces: "src-tauri"
 
       - name: Install frontend deps
-        working-directory: metardu-industrial
         run: npm ci
 
       - name: Install Tauri CLI
-        working-directory: metardu-industrial
         run: cargo install tauri-cli --version "^2.0" --locked
 
       - name: Build Tauri app
-        working-directory: metardu-industrial
         run: cargo tauri build --target ${{ matrix.target }}
         env:
-          # Prevent the bundler from trying to sign without certs
           TAURI_SIGNING_PRIVATE_KEY: ""
 
       - name: Upload bundle artifacts
@@ -159,12 +152,12 @@ jobs:
         with:
           name: metardu-industrial-${{ matrix.label }}
           path: |
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.app
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
-            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.app
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
           retention-days: 14
           if-no-files-found: warn

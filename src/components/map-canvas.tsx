@@ -9,6 +9,7 @@
  *   - WMS basemap (OSM standard as default, no API key)
  *   - Graticule for survey-grade grid overlay
  *   - Per-domain accent on crosshair and grid color
+ *   - Survey layer rendering dropped-file bounds as vector rectangles
  */
 
 import { useEffect, useRef } from "react";
@@ -18,14 +19,18 @@ import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import OSM from "ol/source/OSM";
-import { fromLonLat } from "ol/proj";
+import { fromLonLat, transformExtent } from "ol/proj";
 import { MousePosition, ScaleLine, FullScreen, Zoom } from "ol/control";
 import { createStringXY } from "ol/coordinate";
 import Graticule from "ol/layer/Graticule";
-import { Style, Stroke } from "ol/style";
+import { Style, Stroke, Fill, Text as TextStyle } from "ol/style";
+import Feature from "ol/Feature";
+import Polygon from "ol/geom/Polygon";
 import "ol/ol.css";
 
 import { colors, domainAccent, type DomainMode } from "@/lib/tokens";
+import { registerEpsg, getOlProjection } from "@/lib/crs-registry";
+import { useSurveyStore } from "@/stores/survey-store";
 
 interface MapCanvasProps {
   domain: DomainMode;
@@ -35,6 +40,8 @@ interface MapCanvasProps {
 export function MapCanvas({ domain, epsg }: MapCanvasProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
+  const surveySourceRef = useRef<VectorSource | null>(null);
+  const files = useSurveyStore((s) => s.files);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -43,19 +50,26 @@ export function MapCanvas({ domain, epsg }: MapCanvasProps) {
 
     // Empty vector layer — future home of survey features
     const surveySource = new VectorSource();
+    surveySourceRef.current = surveySource;
     const surveyLayer = new VectorLayer({
       source: surveySource,
       style: new Style({
         stroke: new Stroke({ color: accent, width: 2 }),
+        fill: new Fill({ color: `${accent}15` }),
       }),
     });
 
-    // Default view — center on world, EPSG:3857 (Web Mercator)
-    // Real impl uses proj4.defs(epsg, ...) for custom CRS
+    // Register the user's EPSG via proj4js (async, but we don't block map init)
+    // We default to EPSG:3857 for the initial view; if registration succeeds
+    // the view will be updated via the epsg-change effect below.
+    registerEpsg(epsg).catch((err) => {
+      console.warn(`Failed to register ${epsg}, falling back to EPSG:3857`, err);
+    });
+
     const view = new View({
       center: fromLonLat([0, 0]),
       zoom: 2,
-      projection: epsg === "EPSG:4326" ? "EPSG:4326" : "EPSG:3857",
+      projection: "EPSG:3857",
     });
 
     const map = new Map({
@@ -63,10 +77,8 @@ export function MapCanvas({ domain, epsg }: MapCanvasProps) {
       layers: [
         new TileLayer({
           source: new OSM(),
-          // Dim the basemap so survey data pops
           opacity: 0.65,
         }),
-        // Graticule — survey grid overlay, accent color per domain
         new Graticule({
           strokeStyle: new Stroke({
             color: `${accent}40`,
@@ -83,12 +95,10 @@ export function MapCanvas({ domain, epsg }: MapCanvasProps) {
       controls: [],
     });
 
-    // Add controls programmatically so we control placement
     map.addControl(new Zoom());
     map.addControl(new FullScreen());
     map.addControl(new ScaleLine({ units: "metric" }));
 
-    // Mouse position — monospaced, bottom-left, in active CRS
     const mousePosition = new MousePosition({
       coordinateFormat: createStringXY(6),
       projection: epsg,
@@ -101,33 +111,183 @@ export function MapCanvas({ domain, epsg }: MapCanvasProps) {
     return () => {
       map.setTarget(undefined);
       mapInstanceRef.current = null;
+      surveySourceRef.current = null;
     };
-  }, [domain, epsg]);
+  }, [domain]);
+
+  // When EPSG changes, re-register and update view + MousePosition
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        await registerEpsg(epsg);
+        if (cancelled) return;
+
+        const proj = getOlProjection(epsg);
+        if (!proj) {
+          console.warn(`OL projection ${epsg} not available`);
+          return;
+        }
+
+        // Preserve the current center, reprojected to the new CRS
+        const oldView = map.getView();
+        const oldCenter = oldView.getCenter();
+        const oldZoom = oldView.getZoom();
+        const oldProj = oldView.getProjection();
+        let newCenter: [number, number] = [0, 0];
+        if (oldCenter) {
+          try {
+            newCenter = transformExtent(
+              [oldCenter[0], oldCenter[1], oldCenter[0], oldCenter[1]],
+              oldProj,
+              proj,
+            ).slice(0, 2) as [number, number];
+          } catch {
+            newCenter = [0, 0];
+          }
+        }
+
+        map.setView(
+          new View({
+            projection: proj,
+            center: newCenter,
+            zoom: oldZoom ?? 2,
+          }),
+        );
+
+        // Refresh MousePosition projection
+        const controls = map.getControls().getArray();
+        const mp = controls.find((c) => c instanceof MousePosition) as
+          | MousePosition
+          | undefined;
+        if (mp) {
+          mp.setProjection(proj);
+        }
+      } catch (err) {
+        console.warn(`EPSG registration failed for ${epsg}:`, err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [epsg]);
+
+  // When survey files change, render their bounds as rectangles.
+  // Uses real bounds from the LAS header probe (via Rust IPC) when
+  // available. Falls back to placeholder rectangles for files that
+  // haven't been probed yet or don't have parseable bounds.
+  useEffect(() => {
+    const source = surveySourceRef.current;
+    if (!source) return;
+
+    source.clear();
+    if (files.length === 0) return;
+
+    const accent = domainAccent[domain].primary;
+    files.forEach((f, idx) => {
+      let coords: [number, number][] | null = null;
+
+      if (f.bounds) {
+        // Real bounds from LAS header — already in WGS84 / source CRS
+        // (Phase 0 assumes WGS84; future: reproject from source CRS)
+        const b = f.bounds;
+        coords = [
+          [b.min_x, b.min_y],
+          [b.max_x, b.min_y],
+          [b.max_x, b.max_y],
+          [b.min_x, b.max_y],
+          [b.min_x, b.min_y],
+        ];
+      } else {
+        // Placeholder: small rectangle near (0,0) so the user sees
+        // SOMETHING react when a file is dropped without real bounds yet
+        const lonOffset = (idx - (files.length - 1) / 2) * 2;
+        const latOffset = 0;
+        const size = 1.5;
+        coords = [
+          [lonOffset - size / 2, latOffset - size / 2],
+          [lonOffset + size / 2, latOffset - size / 2],
+          [lonOffset + size / 2, latOffset + size / 2],
+          [lonOffset - size / 2, latOffset + size / 2],
+          [lonOffset - size / 2, latOffset - size / 2],
+        ];
+      }
+
+      const mercatorCoords = coords.map(([lon, lat]) =>
+        fromLonLat([lon, lat]),
+      );
+      const feature = new Feature({
+        geometry: new Polygon([mercatorCoords]),
+        kind: "file-bounds",
+        fileName: f.name,
+        fileId: f.id,
+        fileKind: f.kind,
+        pointCount: f.pointCount,
+        lasVersion: f.lasVersion,
+        pdrf: f.pdrf,
+      });
+      const label = f.pointCount
+        ? `${f.name} · ${f.pointCount.toLocaleString()} pts`
+        : `${f.name} · probing…`;
+      feature.setStyle(
+        new Style({
+          stroke: new Stroke({ color: accent, width: 2 }),
+          fill: new Fill({ color: `${accent}25` }),
+          text: new TextStyle({
+            text: label,
+            font: "11px JetBrains Mono, monospace",
+            fill: new Fill({ color: colors.white }),
+            stroke: new Stroke({ color: colors.navyBase, width: 3 }),
+            offsetY: -12,
+          }),
+        }),
+      );
+      feature.setId(f.id);
+      source.addFeature(feature);
+    });
+  }, [files, domain]);
+
+  // Zoom to fit all features when files change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const source = surveySourceRef.current;
+    if (!map || !source) return;
+    if (source.getFeatures().length === 0) return;
+
+    const extent = source.getExtent();
+    if (!extent || extent.some((v) => !Number.isFinite(v))) return;
+    map.getView().fit(extent, { padding: [80, 80, 80, 80], maxZoom: 8 });
+  }, [files]);
 
   return (
     <div className="relative h-full w-full">
       <div ref={mapRef} className="h-full w-full" />
 
       {/* Overlay: empty-state hint */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="rounded-lg border border-navy-border bg-navy-base/80 px-6 py-4 text-center backdrop-blur-sm">
-          <div className="font-mono text-[10px] tracking-[0.2em] text-steel-gray">
-            OPENLAYERS 10 · {epsg}
-          </div>
-          <div className="mt-1 text-sm text-steel-light">
-            No survey loaded. Drag a LAS / GeoTIFF / .all file here, or open
-            from the menu.
-          </div>
-          <div
-            className="mt-2 text-xs font-medium"
-            style={{ color: domainAccent[domain].primary }}
-          >
-            {domainAccent[domain].label} mode active
+      {files.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="rounded-lg border border-navy-border bg-navy-base/80 px-6 py-4 text-center backdrop-blur-sm">
+            <div className="font-mono text-[10px] tracking-[0.2em] text-steel-gray">
+              OPENLAYERS 10 · {epsg}
+            </div>
+            <div className="mt-1 text-sm text-steel-light">
+              No survey loaded. Drag a LAS / GeoTIFF / .all file here, or open
+              from the menu.
+            </div>
+            <div
+              className="mt-2 text-xs font-medium"
+              style={{ color: domainAccent[domain].primary }}
+            >
+              {domainAccent[domain].label} mode active
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Style overrides for OL controls */}
       <style>{`
         .metardu-mouse-position {
           position: absolute !important;

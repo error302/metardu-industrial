@@ -1,11 +1,16 @@
 /**
  * Survey ingest store — tracks dropped/opened survey files.
  *
- * Phase 0: just tracks the file metadata so the UI can react.
- * Phase 1+: invokes Rust core to actually parse and render the data.
+ * Phase 0:
+ *   - Tracks file metadata so the UI can react
+ *   - Calls Rust probe_file() to get real bounds/header info
+ *   - Stores bounds for rendering on the OpenLayers canvas
+ * Phase 1+:
+ *   - Triggers full ingest pipeline (classification, CUBE, etc.)
  */
 
 import { create } from "zustand";
+import { probeFile, type FileProbeResult, type LasHeaderRpc } from "@/lib/tauri-ipc";
 
 export type SurveyFileKind =
   | "las" // LAS/LAZ point cloud
@@ -18,6 +23,13 @@ export type SurveyFileKind =
   | "kml"
   | "unknown";
 
+export interface Bounds {
+  min_x: number;
+  min_y: number;
+  max_x: number;
+  max_y: number;
+}
+
 export interface SurveyFile {
   id: string;
   name: string;
@@ -25,8 +37,15 @@ export interface SurveyFile {
   size: number;
   kind: SurveyFileKind;
   addedAt: number;
-  status: "pending" | "loading" | "loaded" | "error";
+  status: "pending" | "probing" | "loaded" | "error";
   errorMessage?: string;
+  // Populated after probe
+  bounds?: Bounds;
+  pointCount?: number;
+  lasVersion?: string;
+  pdrf?: number;
+  crsWkt?: string | null;
+  vendor?: string;
 }
 
 interface SurveyState {
@@ -41,6 +60,7 @@ interface SurveyState {
     status: SurveyFile["status"],
     errorMessage?: string,
   ) => void;
+  probeFile: (id: string) => Promise<void>;
   clear: () => void;
 }
 
@@ -61,28 +81,32 @@ function makeId(): string {
   return `sf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export const useSurveyStore = create<SurveyState>((set) => ({
+/** Extract path from a browser File (Tauri provides it; browsers don't). */
+function extractPath(file: File): string {
+  if (typeof file === "object" && file !== null && "path" in file) {
+    return String((file as { path?: string }).path ?? file.name);
+  }
+  return file.name;
+}
+
+export const useSurveyStore = create<SurveyState>((set, get) => ({
   files: [],
   activeFileId: null,
 
   addFile: (file) => {
     const id = makeId();
-    // Browser File objects don't expose .path; Tauri drag-drop events
-    // provide paths separately and call addFileFromPath instead.
-    const path =
-      typeof file === "object" && file !== null && "path" in file
-        ? String((file as { path?: string }).path ?? file.name)
-        : file.name;
     const survey: SurveyFile = {
       id,
       name: file.name,
-      path,
+      path: extractPath(file),
       size: file.size,
       kind: classifyByExt(file.name),
       addedAt: Date.now(),
       status: "pending",
     };
     set((s) => ({ files: [...s.files, survey], activeFileId: id }));
+    // Kick off probe immediately
+    void get().probeFile(id);
     return id;
   },
 
@@ -99,6 +123,7 @@ export const useSurveyStore = create<SurveyState>((set) => ({
       status: "pending",
     };
     set((s) => ({ files: [...s.files, survey], activeFileId: id }));
+    void get().probeFile(id);
     return id;
   },
 
@@ -116,6 +141,55 @@ export const useSurveyStore = create<SurveyState>((set) => ({
         f.id === id ? { ...f, status, errorMessage } : f,
       ),
     })),
+
+  probeFile: async (id) => {
+    const file = get().files.find((f) => f.id === id);
+    if (!file) return;
+
+    set((s) => ({
+      files: s.files.map((f) =>
+        f.id === id ? { ...f, status: "probing" } : f,
+      ),
+    }));
+
+    try {
+      const result: FileProbeResult = await probeFile(file.path);
+      set((s) => ({
+        files: s.files.map((f) => {
+          if (f.id !== id) return f;
+          const updated: SurveyFile = { ...f, status: "loaded" };
+          if (result.kind === "las") {
+            const h: LasHeaderRpc = result.header;
+            updated.bounds = {
+              min_x: h.min_x,
+              min_y: h.min_y,
+              max_x: h.max_x,
+              max_y: h.max_y,
+            };
+            updated.pointCount = h.point_count;
+            updated.lasVersion = `${h.version_major}.${h.version_minor}`;
+            updated.pdrf = h.point_data_format;
+            updated.crsWkt = h.crs_wkt;
+          } else if (result.kind === "geo-tiff") {
+            updated.size = result.size_bytes;
+          } else if (result.kind === "mb-es") {
+            updated.vendor = result.vendor;
+            updated.size = result.size_bytes;
+          }
+          return updated;
+        }),
+      }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      set((s) => ({
+        files: s.files.map((f) =>
+          f.id === id
+            ? { ...f, status: "error", errorMessage: msg }
+            : f,
+        ),
+      }));
+    }
+  },
 
   clear: () => set({ files: [], activeFileId: null }),
 }));
