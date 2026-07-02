@@ -202,7 +202,8 @@ pub fn check_compliance(
     let pass_rate = passing as f64 / total as f64;
 
     // Sort failures by worst margin violation (descending).
-    // Extract margin into a tuple to satisfy clippy's sort_by_key.
+    // f64 doesn't implement Ord so sort_by_key isn't usable directly;
+    // sort_by with partial_cmp is the idiomatic approach.
     let mut failures_with_margin: Vec<(f64, S44Failure)> = failures
         .into_iter()
         .map(|f| {
@@ -211,6 +212,7 @@ pub fn check_compliance(
             (margin, f)
         })
         .collect();
+    #[allow(clippy::manual_sort_by)]
     failures_with_margin.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     let worst_failures: Vec<S44Failure> = failures_with_margin
         .into_iter()
