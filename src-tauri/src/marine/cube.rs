@@ -114,7 +114,7 @@ pub enum CubeError {
 }
 
 /// A single depth sounding with position and uncertainty.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Sounding {
     pub x: f64,
     pub y: f64,

@@ -9,11 +9,8 @@ pub mod cube;
 pub mod s44;
 pub mod tpu;
 
-pub use cube::{
-    generate_surface as generate_cube_surface, CubeError, CubeParams, CubeSurface, Sounding,
-};
+pub use cube::{generate_surface as generate_cube_surface, CubeParams, CubeSurface, Sounding};
 pub use s44::{
-    check_compliance as check_s44_compliance, S44CheckInput, S44ComplianceResult, S44Error,
-    S44Order, S44Status,
+    check_compliance as check_s44_compliance, S44CheckInput, S44ComplianceResult, S44Order,
 };
-pub use tpu::{compute_tpu, SoundingTpuInput, TpuComponents, TpuError, TpuResult};
+pub use tpu::{compute_tpu, SoundingTpuInput, TpuResult};
