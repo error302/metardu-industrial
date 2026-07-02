@@ -15,8 +15,10 @@ mod formats;
 mod geodesy;
 mod marine;
 mod mining;
+#[allow(dead_code)]
 mod ml;
 mod modules;
+#[allow(dead_code)]
 mod performance;
 mod pipelines;
 
