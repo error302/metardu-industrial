@@ -7,7 +7,7 @@ use crate::modules::{ModuleLoadResult, ModuleRegistry};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::State;
+use tauri::{Manager, State};
 
 /// Health-check command — frontend calls this to verify IPC bridge.
 #[tauri::command]
@@ -28,11 +28,38 @@ pub async fn init_module(
     id: String,
     registry: State<'_, Mutex<ModuleRegistry>>,
 ) -> Result<ModuleLoadResult, String> {
-    // The Mutex here is fine because init is a short-lived operation;
-    // for true parallel init across modules we'd use a RwLock or a
-    // dedicated actor. Phase 0 simplicity wins.
-    let registry = registry.lock().map_err(|e| e.to_string())?;
-    Ok(registry.init(&id).await)
+    // Clone the module info we need so we don't hold the MutexGuard
+    // across the .await — that would make the future !Send and break
+    // Tauri's command handler. The registry itself is read-only after
+    // construction in Phase 0; for true parallel init in Phase 1+ we'll
+    // switch to an RwLock or actor model.
+    let module_exists = {
+        let registry = registry.lock().map_err(|e| e.to_string())?;
+        registry.modules.iter().any(|m| m.id == id)
+    };
+    if !module_exists {
+        return Err(format!("unknown module: {id}"));
+    }
+    // Run the simulated init outside the lock
+    let start = std::time::Instant::now();
+    let load_ms = match id.as_str() {
+        "geodesy" => 700,
+        "raster" => 900,
+        "pointcloud" => 800,
+        "spatialite" => 350,
+        "coord-reg" => 500,
+        "marine" => 600,
+        "mining" => 650,
+        "reporting" => 400,
+        _ => 0,
+    };
+    tokio::time::sleep(std::time::Duration::from_millis(load_ms)).await;
+    Ok(ModuleLoadResult {
+        id,
+        status: crate::modules::ModuleStatus::Ok,
+        load_time_ms: start.elapsed().as_millis() as u64,
+        error: None,
+    })
 }
 
 /// List all known modules with their metadata. Used by the frontend
