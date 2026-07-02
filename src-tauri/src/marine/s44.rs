@@ -201,19 +201,22 @@ pub fn check_compliance(
     let failing = total - passing;
     let pass_rate = passing as f64 / total as f64;
 
-    // Sort failures by worst margin violation (descending)
-    failures.sort_by(|a, b| {
-        let a_margin = (a.vertical_tpu_95 - a.vertical_threshold)
-            .max(a.horizontal_tpu_95 - a.horizontal_threshold);
-        let b_margin = (b.vertical_tpu_95 - b.vertical_threshold)
-            .max(b.horizontal_tpu_95 - b.horizontal_threshold);
-        b_margin
-            .partial_cmp(&a_margin)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
-    // Can't use sort_by_key because the key function borrows fields and
-    // the closure needs to return an owned value — sort_by is clearer here.
-    let worst_failures = failures.into_iter().take(20).collect();
+    // Sort failures by worst margin violation (descending).
+    // Extract margin into a tuple to satisfy clippy's sort_by_key.
+    let mut failures_with_margin: Vec<(f64, S44Failure)> = failures
+        .into_iter()
+        .map(|f| {
+            let margin = (f.vertical_tpu_95 - f.vertical_threshold)
+                .max(f.horizontal_tpu_95 - f.horizontal_threshold);
+            (margin, f)
+        })
+        .collect();
+    failures_with_margin.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    let worst_failures: Vec<S44Failure> = failures_with_margin
+        .into_iter()
+        .take(20)
+        .map(|(_, f)| f)
+        .collect();
 
     let status = if pass_rate >= 0.95 {
         S44Status::Pass

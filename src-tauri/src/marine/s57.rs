@@ -64,6 +64,7 @@ impl S57ObjectClass {
         }
     }
 
+    #[allow(dead_code)]
     pub fn acronym(&self) -> &'static str {
         match self {
             S57ObjectClass::Wrecks => "WT",

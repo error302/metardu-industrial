@@ -16,5 +16,5 @@ pub use cube::{generate_surface as generate_cube_surface, CubeParams, CubeSurfac
 pub use s44::{
     check_compliance as check_s44_compliance, S44CheckInput, S44ComplianceResult, S44Order,
 };
-pub use s57::{write_s57, S57Attribute, S57Error, S57Feature, S57Geometry, S57ObjectClass};
+pub use s57::{write_s57, S57Feature};
 pub use tpu::{compute_tpu, SoundingTpuInput, TpuResult};
