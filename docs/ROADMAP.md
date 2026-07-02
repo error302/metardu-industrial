@@ -14,7 +14,7 @@ Based on 20 years of field experience across mining and marine survey operations
 | 1 | Binary stream IPC (ArrayBuffer instead of JSON) | Medium | Unlocks 100M+ point rendering | ✅ DONE | Sprint 1 |
 | 2 | Daylight high-contrast theme | Small | Unlocks outdoor field use | ✅ DONE | Sprint 1 |
 | 3 | SVP editor with interactive graph | Medium | Unlocks credible marine processing | Pending | Sprint 3 |
-| 4 | Command palette (Ctrl+K) | Small | Transforms daily workflow speed | Pending | Sprint 2 |
+| 4 | Command palette (Ctrl+K) | Small | Transforms daily workflow speed | ✅ DONE | Sprint 2 |
 | 5 | Vessel lever-arm configuration | Medium | Makes TPU calculations real | Pending | Sprint 3 |
 | 6 | CUBE hypothesis disambiguation UI | Medium | Turns CUBE from black box to tool | Pending | Sprint 3 |
 | 7 | Layout profiles (predefined panel arrangements) | Small | Multi-monitor survey control rooms | Pending | Sprint 5 |
@@ -283,10 +283,10 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 2. ~~**Daylight theme** (Priority #2)~~ — ✅ CSS `[data-theme="light"]` + Settings toggle
 3. ~~**Branded PDF report engine** (Revenue #0)~~ — ✅ `report_engine.rs` + `generate_report_cmd` IPC
 
-### Sprint 2: First Revenue Features — NEXT
-4. **EoM Reconciliation wizard** (Revenue #1) — highest probability revenue ($3-5K/seat)
-5. **S-44 Compliance Certificate** (Revenue #3) — small effort, regulatory mandate ($2-3K/seat)
-6. **Command palette** (Priority #4) — Ctrl+K fuzzy search, workflow speed
+### Sprint 2: First Revenue Features — ✅ COMPLETE
+4. ~~**EoM Reconciliation wizard** (Revenue #1)~~ — ✅ 5-step wizard + branded PDF
+5. ~~**S-44 Compliance Certificate** (Revenue #3)~~ — ✅ branded PDF certificate
+6. ~~**Command palette** (Priority #4)~~ — ✅ Ctrl+K fuzzy search, 14 commands
 
 ### Sprint 3: Marine Credibility
 7. **SVP editor** (Priority #3) — credible marine processing
