@@ -33,26 +33,15 @@ pub async fn init_module(
     // Tauri's command handler. The registry itself is read-only after
     // construction in Phase 0; for true parallel init in Phase 1+ we'll
     // switch to an RwLock or actor model.
-    let module_exists = {
+    let load_ms = {
         let registry = registry.lock().map_err(|e| e.to_string())?;
-        registry.modules.iter().any(|m| m.id == id)
+        if registry.find(&id).is_none() {
+            return Err(format!("unknown module: {id}"));
+        }
+        registry.simulated_load_ms(&id)
     };
-    if !module_exists {
-        return Err(format!("unknown module: {id}"));
-    }
     // Run the simulated init outside the lock
     let start = std::time::Instant::now();
-    let load_ms = match id.as_str() {
-        "geodesy" => 700,
-        "raster" => 900,
-        "pointcloud" => 800,
-        "spatialite" => 350,
-        "coord-reg" => 500,
-        "marine" => 600,
-        "mining" => 650,
-        "reporting" => 400,
-        _ => 0,
-    };
     tokio::time::sleep(std::time::Duration::from_millis(load_ms)).await;
     Ok(ModuleLoadResult {
         id,
@@ -80,7 +69,9 @@ pub fn list_modules(
 pub enum FileProbeResult {
     Las {
         path: String,
-        header: LasHeader,
+        // Boxed to avoid large-variant clippy warning — LasHeader is ~200B,
+        // other variants are <50B. Box keeps the enum discriminant small.
+        header: Box<LasHeader>,
     },
     Geotiff {
         path: String,
@@ -120,7 +111,10 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
     match lower.as_str() {
         "las" => {
             let header = read_las_header(&path_buf).map_err(|e| e.to_string())?;
-            Ok(FileProbeResult::Las { path, header })
+            Ok(FileProbeResult::Las {
+                path,
+                header: Box::new(header),
+            })
         }
         "laz" => {
             // LAZ detection happens inside read_las_header (LasZip VLR scan)

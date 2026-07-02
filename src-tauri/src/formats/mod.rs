@@ -7,4 +7,4 @@
 
 pub mod las;
 
-pub use las::{read_header as read_las_header, LasError, LasHeader};
+pub use las::{read_header as read_las_header, LasHeader};

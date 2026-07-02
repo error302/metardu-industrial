@@ -81,7 +81,7 @@ pub enum LasError {
 ///   - Bytes 6-7: global encoding
 ///   - Bytes 24-25: version major
 ///   - Bytes 26-27: version minor
-///   ... etc
+///   - (and so on)
 pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
     let mut file = File::open(path).map_err(|_| LasError::NotFound(path.display().to_string()))?;
 
@@ -157,17 +157,18 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
 
     // Scan VLRs for WKT (LAS 1.4) or GeoTIFF keys (LAS 1.2/1.3)
     // and for LasZip VLR (LAZ detection)
-    let (crs_wkt, geotiff_keys, is_laz) =
-        scan_vlrs(&mut file, number_of_vlrs, offset_to_point_data as u64)?;
+    let vlr_scan = scan_vlrs(&mut file, number_of_vlrs, offset_to_point_data as u64)?;
+    let crs_wkt = vlr_scan.crs_wkt;
+    let geotiff_keys = vlr_scan.geotiff_keys;
+    let is_laz = vlr_scan.is_laz;
 
     if is_laz {
         return Err(LasError::LazUnsupported);
     }
 
-    // PDRF validation — only common formats are explicitly supported
-    match point_data_format {
-        0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 => {}
-        _ => return Err(LasError::UnsupportedPdrf(point_data_format)),
+    // PDRF validation — LAS 1.4 spec defines formats 0-10
+    if point_data_format > 10 {
+        return Err(LasError::UnsupportedPdrf(point_data_format));
     }
 
     Ok(LasHeader {
@@ -213,11 +214,14 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
 ///   - Record ID 34737: GeoAsciiParamsTag
 ///   - Record ID 2112: WKT (LAS 1.4)
 ///   - User ID "laszip encoded": LAZ detection
-fn scan_vlrs(
-    file: &mut File,
-    count: u32,
-    offset_to_point_data: u64,
-) -> Result<(Option<String>, Option<Vec<u16>>, bool), LasError> {
+/// Result of scanning a LAS file's Variable Length Records.
+struct VlrScan {
+    crs_wkt: Option<String>,
+    geotiff_keys: Option<Vec<u16>>,
+    is_laz: bool,
+}
+
+fn scan_vlrs(file: &mut File, count: u32, offset_to_point_data: u64) -> Result<VlrScan, LasError> {
     let mut crs_wkt: Option<String> = None;
     let mut geotiff_keys: Option<Vec<u16>> = None;
     let mut is_laz = false;
@@ -263,7 +267,11 @@ fn scan_vlrs(
     // Reset position so callers can continue reading from point data if needed
     let _ = file.seek(SeekFrom::Start(offset_to_point_data));
 
-    Ok((crs_wkt, geotiff_keys, is_laz))
+    Ok(VlrScan {
+        crs_wkt,
+        geotiff_keys,
+        is_laz,
+    })
 }
 
 // ──────────────────────────────────────────────────────────────────

@@ -18,9 +18,6 @@
 //   - reporting → printpdf + custom KML/DXF/S-57 writers
 
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use std::time::Instant;
-use tokio::time::sleep;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModuleInfo {
@@ -116,59 +113,28 @@ impl ModuleRegistry {
         }
     }
 
-    /// Initialize a single module by id. Returns the load result.
+    /// Look up a module by id.
+    pub fn find(&self, id: &str) -> Option<&ModuleInfo> {
+        self.modules.iter().find(|m| m.id == id)
+    }
+
+    /// Simulated load time (ms) for a module by id.
     ///
-    /// In Phase 0 this is a simulated load with timing close to the
-    /// frontend's hardcoded durations. Real implementations will replace
-    /// the match arms with actual library init code.
-    pub async fn init(&self, id: &str) -> ModuleLoadResult {
-        let start = Instant::now();
-        let module = self.modules.iter().find(|m| m.id == id);
-
-        let module = match module {
-            Some(m) => m,
-            None => {
-                return ModuleLoadResult {
-                    id: id.into(),
-                    status: ModuleStatus::Fail,
-                    load_time_ms: 0,
-                    error: Some(format!("unknown module: {id}")),
-                };
-            }
-        };
-
-        // Simulated load times (ms) per module — matching frontend expectations.
-        // Real implementations will replace these arms.
-        let (load_ms, can_init): (u64, bool) = match module.id.as_str() {
-            "geodesy" => (700, true),
-            "raster" => (900, true),
-            "pointcloud" => (800, true),
-            "spatialite" => (350, true),
-            "coord-reg" => (500, true),
-            "marine" => (600, true),
-            "mining" => (650, true),
-            "reporting" => (400, true),
-            _ => (0, false),
-        };
-
-        sleep(Duration::from_millis(load_ms)).await;
-
-        let elapsed = start.elapsed().as_millis() as u64;
-
-        if can_init {
-            ModuleLoadResult {
-                id: module.id.clone(),
-                status: ModuleStatus::Ok,
-                load_time_ms: elapsed,
-                error: None,
-            }
-        } else {
-            ModuleLoadResult {
-                id: module.id.clone(),
-                status: ModuleStatus::Fail,
-                load_time_ms: elapsed,
-                error: Some("module not yet implemented".into()),
-            }
+    /// In Phase 0 this returns hardcoded timings matching the frontend's
+    /// expectations. Real implementations will replace this with actual
+    /// library init code (PROJ database load, GDAL driver registration,
+    /// PDAL pipeline construction, etc.).
+    pub fn simulated_load_ms(&self, id: &str) -> u64 {
+        match id {
+            "geodesy" => 700,
+            "raster" => 900,
+            "pointcloud" => 800,
+            "spatialite" => 350,
+            "coord-reg" => 500,
+            "marine" => 600,
+            "mining" => 650,
+            "reporting" => 400,
+            _ => 0,
         }
     }
 }
