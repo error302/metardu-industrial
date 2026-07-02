@@ -16,6 +16,7 @@ pub mod server;
 // Phase 4 scaffold: defines the coordinator trait, work chunk model,
 // and TCP protocol. Actual worker binary is a separate Phase 4 task.
 
+use serde::Deserialize as _;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::net::SocketAddr;
@@ -48,7 +49,7 @@ pub enum WorkChunkType {
 }
 
 /// Result of a completed work chunk.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkResult {
     pub chunk_id: String,
     pub status: WorkStatus,
@@ -58,7 +59,7 @@ pub struct WorkResult {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum WorkStatus {
     Complete,

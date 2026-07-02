@@ -122,7 +122,7 @@ pub struct PipelineRunResult {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum PipelineStatus {
     Running,

@@ -43,8 +43,7 @@ type CreateFileReaderFn = unsafe fn() -> *mut dyn FileReaderPlugin;
 ///   - The plugin's info function returns null
 pub fn load_file_reader_plugin(path: &Path) -> Result<PluginInfo, PluginLoadError> {
     unsafe {
-        let library =
-            Library::load(path).map_err(|e| PluginLoadError::LoadFailed(e.to_string()))?;
+        let library = Library::new(path).map_err(|e| PluginLoadError::LoadFailed(e.to_string()))?;
 
         // Get plugin info
         let info_fn: Symbol<unsafe fn() -> *const PluginInfo> = library
