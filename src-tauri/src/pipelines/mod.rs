@@ -5,4 +5,4 @@
 
 pub mod odm;
 
-pub use odm::{check_odm, estimate_progress, run_odm, OdmConfig, OdmError};
+pub use odm::{check_odm, estimate_progress, run_odm, OdmConfig};

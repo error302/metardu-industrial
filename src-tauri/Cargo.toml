@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Specialised desktop app for mining and marine survey workflows"
 authors = ["error302"]
 edition = "2021"
-rust-version = "1.77"
+rust-version = "1.87"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

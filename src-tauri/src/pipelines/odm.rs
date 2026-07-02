@@ -93,6 +93,7 @@ pub struct OdmStatus {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum OdmError {
     #[error("docker not found — install Docker Desktop or docker engine")]
     DockerNotFound,

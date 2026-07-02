@@ -27,6 +27,7 @@ pub struct TransformResult {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum TransformMethod {
     /// Used the real proj crate (feature 'geo' or 'geo-proj' enabled)
     Proj,
@@ -37,6 +38,7 @@ pub enum TransformMethod {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum GeodesyError {
     #[error("proj feature not enabled — rebuild with --features geo or geo-proj")]
     ProjNotEnabled,
