@@ -10,6 +10,7 @@
 #![allow(unknown_lints)]
 #![allow(never_type_fallback)]
 
+mod ar_companion;
 mod automation;
 mod commands;
 #[allow(dead_code)]
@@ -26,6 +27,8 @@ mod pipelines;
 mod plugins;
 #[allow(dead_code)]
 mod streaming;
+#[allow(dead_code)]
+mod wasm_sandbox;
 
 use commands::pipelines::OdmState;
 use commands::{

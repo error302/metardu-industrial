@@ -11,7 +11,7 @@
  * Color mode shifts based on activeDomain (mining/marine/both).
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type Map from "ol/Map";
 import {
   Folder,
@@ -61,6 +61,7 @@ import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer
 import { LiveStreamPanel } from "@/components/live-stream-panel";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc } from "@/lib/tauri-ipc";
+import { startStream, stopStream } from "@/lib/tauri-ipc";
 import {
   colors,
   domainAccent,
@@ -102,6 +103,26 @@ export function WorkspaceShell() {
     active: profileActive,
     domain: activeDomain,
   });
+
+  // Start/stop UDP streaming listener when the Radio button is toggled
+  useEffect(() => {
+    if (isStreaming) {
+      startStream({
+        port: 4000,
+        buffer_size: 1000,
+        flush_interval_ms: 500,
+        format: "json",
+      }).catch((err: unknown) => {
+        console.error("Failed to start stream:", err);
+        setIsStreaming(false);
+      });
+    } else {
+      stopStream().catch((err: unknown) => {
+        console.error("Failed to stop stream:", err);
+      });
+      setStreamPings([]);
+    }
+  }, [isStreaming]);
 
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
