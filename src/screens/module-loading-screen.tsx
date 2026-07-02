@@ -3,136 +3,90 @@
  * Shows module-by-module initialization. Critical for surveyors — if PDAL
  * or GDAL fails to load, they need to see WHICH module failed, not a
  * generic "application failed to start" message.
+ *
+ * Uses the Tauri IPC layer (src/lib/tauri-ipc.ts) for real init calls when
+ * running in the native shell. Falls back to simulated timings in browser.
  */
 
 import { useEffect, useState } from "react";
 import { Check, AlertCircle, Loader2, FileText } from "lucide-react";
 import { colors, APP_NAME } from "@/lib/tokens";
 import { useAppStore } from "@/stores/app-store";
-
-type ModuleStatus = "pending" | "loading" | "ok" | "fail";
-
-interface ModuleEntry {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  loadTimeMs: number;
-  canFail?: boolean; // optional modules won't block boot
-}
-
-const MODULES: ModuleEntry[] = [
-  {
-    id: "geodesy",
-    name: "Geodesy engine",
-    version: "PROJ 9.4",
-    description: "Coordinate transforms, CRS management, datum shifts",
-    loadTimeMs: 700,
-  },
-  {
-    id: "raster",
-    name: "Raster I/O",
-    version: "GDAL 3.8",
-    description: "GeoTIFF/COG read, warp, mosaic, reprojection",
-    loadTimeMs: 900,
-  },
-  {
-    id: "pointcloud",
-    name: "Point cloud engine",
-    version: "PDAL 2.6",
-    description: "LAS/LAZ ingest, classification, ground extraction",
-    loadTimeMs: 800,
-  },
-  {
-    id: "spatialite",
-    name: "Spatial index",
-    version: "SpatiaLite 5.1",
-    description: "Embedded local cache, project metadata, search",
-    loadTimeMs: 350,
-  },
-  {
-    id: "coord-reg",
-    name: "Coordinate registry",
-    version: "internal",
-    description: "Least-squares adjustment, deformation tracking",
-    loadTimeMs: 500,
-  },
-  {
-    id: "marine",
-    name: "Marine sonar readers",
-    version: ".all / .s7k / .bsf",
-    description: "Kongsberg, Reson, R2Sonic multibeam ingest",
-    loadTimeMs: 600,
-    canFail: true,
-  },
-  {
-    id: "mining",
-    name: "Mining drone pipelines",
-    version: "DJI / SenseFly",
-    description: "UAV photogrammetry ingest, ODM bindings",
-    loadTimeMs: 650,
-    canFail: true,
-  },
-  {
-    id: "reporting",
-    name: "Reporting engine",
-    version: "internal",
-    description: "PDF, KML, DXF, S-57, GeoTIFF export",
-    loadTimeMs: 400,
-  },
-];
+import {
+  listModules,
+  initModule,
+  type ModuleInfo,
+  type ModuleLoadResult,
+  type ModuleStatus,
+} from "@/lib/tauri-ipc";
 
 export function ModuleLoadingScreen() {
   const setPhase = useAppStore((s) => s.setPhase);
-  const hasCompletedOnboarding = useAppStore(
-    (s) => s.hasCompletedOnboarding,
-  );
-  const [statuses, setStatuses] = useState<Record<string, ModuleStatus>>(
-    Object.fromEntries(MODULES.map((m) => [m.id, "pending"])),
-  );
+  const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
+
+  const [modules, setModules] = useState<ModuleInfo[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, ModuleStatus>>({});
   const [loadTimes, setLoadTimes] = useState<Record<string, number>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [showLogs, setShowLogs] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    async function loadModules() {
-      for (const mod of MODULES) {
+    async function loadAll() {
+      // Fetch module list from Rust core (or browser stub)
+      const mods = await listModules();
+      if (!mounted) return;
+      setModules(mods);
+      const initial: Record<string, ModuleStatus> = {};
+      for (const m of mods) initial[m.id] = "pending";
+      setStatuses(initial);
+
+      // Sequential load — preserves dependency order (geodesy before raster, etc.)
+      for (const mod of mods) {
         if (!mounted) return;
         setStatuses((s) => ({ ...s, [mod.id]: "loading" }));
-        const start = performance.now();
-        // Simulate load — real impl calls Tauri command `init_module`
-        await new Promise((r) => setTimeout(r, mod.loadTimeMs));
-        if (!mounted) return;
-        const elapsed = Math.round(performance.now() - start);
-        setLoadTimes((t) => ({ ...t, [mod.id]: elapsed }));
-        setStatuses((s) => ({ ...s, [mod.id]: "ok" }));
+        try {
+          const result: ModuleLoadResult = await initModule(mod.id);
+          if (!mounted) return;
+          setStatuses((s) => ({ ...s, [mod.id]: result.status }));
+          setLoadTimes((t) => ({ ...t, [mod.id]: result.load_time_ms }));
+          if (result.error) {
+            setErrors((e) => ({ ...e, [mod.id]: result.error! }));
+          }
+        } catch (err) {
+          if (!mounted) return;
+          setStatuses((s) => ({ ...s, [mod.id]: "fail" }));
+          setErrors((e) => ({
+            ...e,
+            [mod.id]: err instanceof Error ? err.message : String(err),
+          }));
+        }
       }
-      if (!mounted) return;
-      // All loaded — proceed to onboarding or workspace
+
+      // Brief beat, then advance
       setTimeout(() => {
         if (!mounted) return;
         setPhase(hasCompletedOnboarding ? "workspace" : "onboarding");
-      }, 400);
+      }, 500);
     }
-    loadModules();
+    loadAll();
     return () => {
       mounted = false;
     };
   }, [setPhase, hasCompletedOnboarding]);
 
-  const allDone = Object.values(statuses).every((s) => s === "ok" || s === "fail");
+  const completedCount = Object.values(statuses).filter(
+    (s) => s === "ok" || s === "fail",
+  ).length;
+  const allDone = modules.length > 0 && completedCount === modules.length;
 
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
-      {/* Header */}
       <header className="flex h-12 items-center justify-between border-b border-navy-border px-6">
         <div className="flex items-center gap-3">
           <div
             className="flex h-7 w-7 items-center justify-center rounded font-bold"
-            style={{
-              background: colors.industrialOrange,
-              color: colors.navyBase,
-            }}
+            style={{ background: colors.industrialOrange, color: colors.navyBase }}
           >
             M
           </div>
@@ -145,9 +99,7 @@ export function ModuleLoadingScreen() {
         </div>
       </header>
 
-      {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Module list */}
         <div className="flex-1 overflow-y-auto p-8">
           <div className="mx-auto max-w-2xl">
             <h2 className="mb-1 text-lg font-semibold text-white">
@@ -159,8 +111,9 @@ export function ModuleLoadingScreen() {
             </p>
 
             <div className="space-y-1">
-              {MODULES.map((mod) => {
-                const status = statuses[mod.id];
+              {modules.map((mod) => {
+                const status = statuses[mod.id] ?? "pending";
+                const err = errors[mod.id];
                 return (
                   <div
                     key={mod.id}
@@ -177,10 +130,7 @@ export function ModuleLoadingScreen() {
                         />
                       )}
                       {status === "ok" && (
-                        <Check
-                          className="h-4 w-4"
-                          style={{ color: colors.pass }}
-                        />
+                        <Check className="h-4 w-4" style={{ color: colors.pass }} />
                       )}
                       {status === "fail" && (
                         <AlertCircle
@@ -203,14 +153,18 @@ export function ModuleLoadingScreen() {
                         <span className="font-mono text-[10px] text-steel-gray">
                           {mod.version}
                         </span>
-                        {mod.canFail && (
+                        {mod.can_fail && (
                           <span className="rounded-sm bg-navy-border px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-steel-light">
                             optional
                           </span>
                         )}
                       </div>
                       <div className="truncate text-xs text-steel-gray">
-                        {mod.description}
+                        {err ? (
+                          <span style={{ color: colors.fail }}>{err}</span>
+                        ) : (
+                          mod.description
+                        )}
                       </div>
                     </div>
                     <div className="flex-shrink-0 font-mono text-[10px] tabular-nums text-steel-gray">
@@ -227,29 +181,19 @@ export function ModuleLoadingScreen() {
                   <div
                     className="h-full transition-all duration-300"
                     style={{
-                      width: `${
-                        (Object.values(statuses).filter(
-                          (s) => s === "ok" || s === "fail",
-                        ).length /
-                          MODULES.length) *
-                        100
-                      }%`,
+                      width: `${modules.length ? (completedCount / modules.length) * 100 : 0}%`,
                       background: colors.industrialOrange,
                     }}
                   />
                 </div>
                 <span>
-                  {Object.values(statuses).filter(
-                    (s) => s === "ok" || s === "fail",
-                  ).length}{" "}
-                  / {MODULES.length}
+                  {completedCount} / {modules.length}
                 </span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Log panel */}
         {showLogs && (
           <div className="w-96 border-l border-navy-border bg-navy-panel">
             <div className="flex h-full flex-col">
@@ -265,8 +209,9 @@ export function ModuleLoadingScreen() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-3 font-mono text-[10px] leading-relaxed text-steel-light">
-                {MODULES.filter((m) => statuses[m.id] !== "pending").map(
-                  (m) => (
+                {modules
+                  .filter((m) => statuses[m.id] && statuses[m.id] !== "pending")
+                  .map((m) => (
                     <div key={m.id}>
                       <span className="text-steel-gray">
                         {new Date().toLocaleTimeString()}{" "}
@@ -276,17 +221,17 @@ export function ModuleLoadingScreen() {
                       </span>{" "}
                       {statuses[m.id] === "ok"
                         ? `loaded in ${loadTimes[m.id]}ms`
-                        : "loading…"}
+                        : statuses[m.id] === "fail"
+                          ? `FAILED: ${errors[m.id] ?? "unknown"}`
+                          : "loading…"}
                     </div>
-                  ),
-                )}
+                  ))}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
       <footer className="flex h-10 items-center justify-between border-t border-navy-border px-6">
         <button
           onClick={() => setShowLogs((v) => !v)}

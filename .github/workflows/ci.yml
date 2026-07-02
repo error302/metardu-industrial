@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Cancel previous runs of the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ───────────────────────────────────────────────────────────────
+  # Type-check + lint the frontend (fast, runs on every push)
+  # ───────────────────────────────────────────────────────────────
+  frontend-check:
+    name: Frontend typecheck + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: metardu-industrial/package-lock.json
+
+      - name: Install dependencies
+        working-directory: metardu-industrial
+        run: npm ci
+
+      - name: Type check
+        working-directory: metardu-industrial
+        run: npm run build -- --mode=production
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: metardu-industrial/dist/
+          retention-days: 7
+
+  # ───────────────────────────────────────────────────────────────
+  # Rust formatting + clippy (fast, runs on every push)
+  # ───────────────────────────────────────────────────────────────
+  rust-check:
+    name: Rust fmt + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux Tauri deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev \
+            libssl-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "metardu-industrial/src-tauri"
+
+      - name: Cargo fmt
+        working-directory: metardu-industrial/src-tauri
+        run: cargo fmt --all -- --check
+
+      - name: Cargo clippy
+        working-directory: metardu-industrial/src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+  # ───────────────────────────────────────────────────────────────
+  # Build the Tauri binary on all 3 platforms
+  # ───────────────────────────────────────────────────────────────
+  build:
+    name: Build ${{ matrix.os }}
+    needs: [frontend-check, rust-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            label: linux-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            label: windows-x64
+          - os: macos-14
+            target: aarch64-apple-darwin
+            label: macos-arm64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            label: macos-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: metardu-industrial/package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux Tauri deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev \
+            libssl-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "metardu-industrial/src-tauri"
+
+      - name: Install frontend deps
+        working-directory: metardu-industrial
+        run: npm ci
+
+      - name: Install Tauri CLI
+        working-directory: metardu-industrial
+        run: cargo install tauri-cli --version "^2.0" --locked
+
+      - name: Build Tauri app
+        working-directory: metardu-industrial
+        run: cargo tauri build --target ${{ matrix.target }}
+        env:
+          # Prevent the bundler from trying to sign without certs
+          TAURI_SIGNING_PRIVATE_KEY: ""
+
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: metardu-industrial-${{ matrix.label }}
+          path: |
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.app
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            metardu-industrial/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+          retention-days: 14
+          if-no-files-found: warn

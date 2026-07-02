@@ -20,6 +20,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tokio = { version = "1", features = ["time", "sync", "rt-multi-thread", "macros"] }
 
 # Geospatial core — Phase 0 placeholder deps. Uncomment as we implement modules.
 # gdal = { version = "0.17", features = ["bindgen"] }
@@ -27,7 +28,6 @@ serde_json = "1"
 # pdal-sys = "0.1"
 # polars = { version = "0.42", features = ["lazy", "csv", "parquet"] }
 # rusqlite = { version = "0.32", features = ["bundled", "spatialite"] }
-# tokio = { version = "1", features = ["full"] }
 # tracing = "0.1"
 # tracing-subscriber = "0.3"
 # arrow = "52"

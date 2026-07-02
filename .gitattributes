@@ -1,0 +1,36 @@
+# Auto-detect text files and normalize line endings to LF on commit
+* text=auto eol=lf
+
+# Force LF on source files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.rs text eol=lf
+
+# Force CRLF on Windows-only files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files — never diff/merge
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.svg binary
+*.pdf binary
+*.parquet binary
+*.geotiff binary
+*.tif binary
+*.tiff binary
+*.las binary
+*.laz binary

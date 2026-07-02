@@ -30,6 +30,7 @@ import {
   Plus,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
+import { FileDropOverlay } from "@/components/file-drop-overlay";
 import {
   colors,
   domainAccent,
@@ -38,6 +39,7 @@ import {
   type DomainMode,
 } from "@/lib/tokens";
 import { useAppStore } from "@/stores/app-store";
+import { useSurveyStore } from "@/stores/survey-store";
 
 export function WorkspaceShell() {
   const { activeDomain, settings } = useAppStore();
@@ -51,6 +53,7 @@ export function WorkspaceShell() {
         {sidebarOpen && <LeftSidebar domain={activeDomain} />}
         <main className="relative flex-1 overflow-hidden">
           <MapCanvas domain={activeDomain} epsg={settings.defaultEpsg} />
+          <FileDropOverlay domain={activeDomain} />
           <FloatingActions
             onToggleSidebar={() => setSidebarOpen((v) => !v)}
             onToggleRight={() => setRightPanelOpen((v) => !v)}
@@ -213,6 +216,13 @@ function SidebarItem({
 
 function RightPanel({ domain }: { domain: DomainMode }) {
   const accent = domainAccent[domain].primary;
+  const files = useSurveyStore((s) => s.files);
+  const activeFileId = useSurveyStore((s) => s.activeFileId);
+  const setActiveFile = useSurveyStore((s) => s.setActiveFile);
+  const removeFile = useSurveyStore((s) => s.removeFile);
+
+  const fileCount = files.length;
+  const loadedCount = files.filter((f) => f.status === "loaded").length;
 
   return (
     <aside className="flex w-80 flex-col border-l border-navy-border bg-navy-panel">
@@ -229,18 +239,79 @@ function RightPanel({ domain }: { domain: DomainMode }) {
             <span className="text-xs text-steel-gray">Survey ready</span>
             <span
               className="rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-              style={{ background: `${colors.investigate}20`, color: colors.investigate }}
+              style={
+                fileCount > 0
+                  ? { background: `${colors.pass}20`, color: colors.pass }
+                  : {
+                      background: `${colors.investigate}20`,
+                      color: colors.investigate,
+                    }
+              }
             >
-              No Data
+              {fileCount > 0 ? `${loadedCount}/${fileCount} loaded` : "No Data"}
             </span>
           </div>
-          <div className="mt-3 text-2xl font-bold text-white">—</div>
+          <div className="mt-3 text-2xl font-bold text-white">
+            {fileCount > 0 ? fileCount : "—"}
+          </div>
           <div className="text-xs text-steel-gray">
-            {domain === "marine"
-              ? "Soundings ingested"
-              : "Points classified"}
+            {domain === "marine" ? "Files staged" : "Files staged"}
           </div>
         </div>
+
+        {/* Dropped files list */}
+        {fileCount > 0 && (
+          <div className="mt-4">
+            <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+              Staged Files
+            </h4>
+            <div className="space-y-1.5">
+              {files.map((f) => (
+                <div
+                  key={f.id}
+                  onClick={() => setActiveFile(f.id)}
+                  className={`cursor-pointer rounded-md border px-2.5 py-2 transition-colors ${
+                    activeFileId === f.id
+                      ? "bg-navy-elevated"
+                      : "border-navy-border bg-navy-base hover:bg-navy-elevated/50"
+                  }`}
+                  style={
+                    activeFileId === f.id
+                      ? { borderColor: `${accent}80` }
+                      : undefined
+                  }
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-medium text-white">
+                      {f.name}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(f.id);
+                      }}
+                      className="text-steel-gray hover:text-fail"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="mt-0.5 flex items-center justify-between text-[10px] text-steel-gray">
+                    <span className="font-mono uppercase">{f.kind}</span>
+                    <span>{formatBytes(f.size)}</span>
+                  </div>
+                  {f.status === "error" && f.errorMessage && (
+                    <div
+                      className="mt-1 text-[10px]"
+                      style={{ color: colors.fail }}
+                    >
+                      {f.errorMessage}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick stats */}
         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -253,36 +324,33 @@ function RightPanel({ domain }: { domain: DomainMode }) {
           <StatTile label="Last sync" value="—" />
         </div>
 
-        {/* Recent activity */}
-        <div className="mt-6">
-          <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
-            Recent Activity
-          </h4>
-          <div className="space-y-1.5 text-xs text-steel-light">
-            <ActivityRow time="—" text="No activity yet" />
-          </div>
-        </div>
-
         {/* Hint card */}
         <div
           className="mt-6 rounded-md border p-3 text-xs"
-          style={{
-            borderColor: `${accent}40`,
-            background: `${accent}10`,
-          }}
+          style={{ borderColor: `${accent}40`, background: `${accent}10` }}
         >
           <div className="mb-1 font-semibold" style={{ color: accent }}>
             Tip
           </div>
           <p className="leading-relaxed text-steel-light">
-            {domain === "marine"
-              ? "Drop a Kongsberg .all or Reson .s7k file anywhere to start the ingest pipeline."
-              : "Drop a LAS/LAZ point cloud or drone photogrammetry export to begin."}
+            {fileCount === 0
+              ? domain === "marine"
+                ? "Drop a Kongsberg .all or Reson .s7k file anywhere to start the ingest pipeline."
+                : "Drop a LAS/LAZ point cloud or drone photogrammetry export to begin."
+              : "Click a file to focus it on the map. Right-click for processing options."}
           </p>
         </div>
       </div>
     </aside>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }
 
 function StatTile({
@@ -306,15 +374,6 @@ function StatTile({
       >
         {value}
       </div>
-    </div>
-  );
-}
-
-function ActivityRow({ time, text }: { time: string; text: string }) {
-  return (
-    <div className="flex items-start gap-2">
-      <span className="font-mono text-[10px] text-steel-gray">{time}</span>
-      <span className="flex-1">{text}</span>
     </div>
   );
 }
