@@ -7,5 +7,5 @@
 pub mod geotiff;
 pub mod las;
 
-pub use geotiff::{read_header as read_geotiff_header, GeoTiffError, GeoTiffHeader};
+pub use geotiff::{read_header as read_geotiff_header, GeoTiffHeader};
 pub use las::{read_header as read_las_header, LasHeader};

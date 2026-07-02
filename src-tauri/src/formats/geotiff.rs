@@ -244,23 +244,21 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
                     }
                 }
             }
-            TAG_GEO_ASCII_PARAMS => {
-                if type_id == 2 {
-                    let bytes = read_value_data(
-                        &mut file,
-                        value_offset_bytes,
-                        inline,
-                        total_bytes,
-                        little_endian,
-                    )?;
-                    // ASCII params use '|' as field terminator
-                    let s = String::from_utf8_lossy(&bytes)
-                        .trim_end_matches('|')
-                        .trim()
-                        .to_string();
-                    if !s.is_empty() {
-                        geo_ascii = Some(s);
-                    }
+            TAG_GEO_ASCII_PARAMS if type_id == 2 => {
+                let bytes = read_value_data(
+                    &mut file,
+                    value_offset_bytes,
+                    inline,
+                    total_bytes,
+                    little_endian,
+                )?;
+                // ASCII params use '|' as field terminator
+                let s = String::from_utf8_lossy(&bytes)
+                    .trim_end_matches('|')
+                    .trim()
+                    .to_string();
+                if !s.is_empty() {
+                    geo_ascii = Some(s);
                 }
             }
             _ => {} // ignore tags we don't need for Phase 0
@@ -330,16 +328,13 @@ fn extract_epsg_from_geokeys(geo_keys: &Option<Vec<u16>>) -> Option<u16> {
         let _count = keys[i + 2];
         let value_offset = keys[i + 3];
 
-        // When tiff_tag_location == 0, the value is stored inline in value_offset
-        if tiff_tag_location == 0 {
-            match key_id {
-                GEOKEY_GEOGRAPHIC_TYPE | GEOKEY_PROJECTED_CSTYPE => {
-                    if value_offset > 0 {
-                        return Some(value_offset);
-                    }
-                }
-                _ => {}
+        // When tiff_tag_location == 0, the value is stored inline in value_offset.
+        // Match with guard collapses the outer if + inner match.
+        match (key_id, tiff_tag_location) {
+            (GEOKEY_GEOGRAPHIC_TYPE | GEOKEY_PROJECTED_CSTYPE, 0) if value_offset > 0 => {
+                return Some(value_offset);
             }
+            _ => {}
         }
         i += 4;
     }
