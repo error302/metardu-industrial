@@ -35,9 +35,11 @@ import { useSurveyStore } from "@/stores/survey-store";
 interface MapCanvasProps {
   domain: DomainMode;
   epsg: string;
+  /** Called once after the OL Map instance is created. */
+  onMapReady?: (map: Map) => void;
 }
 
-export function MapCanvas({ domain, epsg }: MapCanvasProps) {
+export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
   const surveySourceRef = useRef<VectorSource | null>(null);
@@ -107,6 +109,7 @@ export function MapCanvas({ domain, epsg }: MapCanvasProps) {
     map.addControl(mousePosition);
 
     mapInstanceRef.current = map;
+    onMapReady?.(map);
 
     return () => {
       map.setTarget(undefined);

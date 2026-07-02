@@ -11,7 +11,8 @@
  * Color mode shifts based on activeDomain (mining/marine/both).
  */
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import type Map from "ol/Map";
 import {
   Folder,
   FileBox,
@@ -28,11 +29,14 @@ import {
   Clock,
   ChevronRight,
   Plus,
+  TrendingUp,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
 import { CrsSwitchBanner } from "@/components/crs-switch-banner";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { ProfilePanel } from "@/components/profile-panel";
+import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import {
   colors,
   domainAccent,
@@ -48,6 +52,18 @@ export function WorkspaceShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mapInstance, setMapInstance] = useState<Map | null>(null);
+  const [profileActive, setProfileActive] = useState(false);
+
+  const handleMapReady = useCallback((map: Map) => {
+    setMapInstance(map);
+  }, []);
+
+  const { line: profileLine, clear: clearProfile } = useProfileTool({
+    map: mapInstance,
+    active: profileActive,
+    domain: activeDomain,
+  });
 
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
@@ -55,16 +71,43 @@ export function WorkspaceShell() {
       <div className="flex flex-1 overflow-hidden">
         {sidebarOpen && <LeftSidebar domain={activeDomain} onOpenSettings={() => setSettingsOpen(true)} />}
         <main className="relative flex-1 overflow-hidden">
-          <MapCanvas domain={activeDomain} epsg={settings.defaultEpsg} />
+          <MapCanvas
+            domain={activeDomain}
+            epsg={settings.defaultEpsg}
+            onMapReady={handleMapReady}
+          />
           <FileDropOverlay domain={activeDomain} />
           <CrsSwitchBanner />
           <FloatingActions
             onToggleSidebar={() => setSidebarOpen((v) => !v)}
             onToggleRight={() => setRightPanelOpen((v) => !v)}
             onOpenSettings={() => setSettingsOpen(true)}
+            profileActive={profileActive}
+            onToggleProfile={() => setProfileActive((v) => !v)}
           />
+          {profileActive && (
+            <div
+              className="pointer-events-none absolute left-1/2 top-12 z-30 -translate-x-1/2 rounded-md border px-3 py-1.5 text-[11px] backdrop-blur"
+              style={{
+                background: "rgba(10, 25, 47, 0.95)",
+                borderColor: `${domainAccent[activeDomain].primary}60`,
+                color: colors.steelLight,
+              }}
+            >
+              {profileLine
+                ? "Profile drawn — click again to redraw"
+                : "Click two points on the map to draw a profile line"}
+            </div>
+          )}
         </main>
-        {rightPanelOpen && <RightPanel domain={activeDomain} />}
+        {rightPanelOpen && (
+          <RightPanel
+            domain={activeDomain}
+            profileLine={profileLine}
+            onClearProfile={clearProfile}
+            profileActive={profileActive}
+          />
+        )}
       </div>
       <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -233,7 +276,17 @@ function SidebarItem({
 
 /* ──────────────────────────────────────────────────────────── */
 
-function RightPanel({ domain }: { domain: DomainMode }) {
+function RightPanel({
+  domain,
+  profileLine,
+  onClearProfile,
+  profileActive,
+}: {
+  domain: DomainMode;
+  profileLine: ProfileLine | null;
+  onClearProfile: () => void;
+  profileActive: boolean;
+}) {
   const accent = domainAccent[domain].primary;
   const files = useSurveyStore((s) => s.files);
   const activeFileId = useSurveyStore((s) => s.activeFileId);
@@ -360,6 +413,28 @@ function RightPanel({ domain }: { domain: DomainMode }) {
           </p>
         </div>
       </div>
+
+      {/* Profile panel — slides in when profile tool is active */}
+      {profileActive && (
+        <div className="border-t border-navy-border">
+          <div className="flex items-center justify-between border-b border-navy-border px-3 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-light">
+              Profile
+            </span>
+            {profileLine && (
+              <button
+                onClick={onClearProfile}
+                className="text-[10px] text-steel-gray hover:text-white"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="h-44">
+            <ProfilePanel domain={domain} line={profileLine ? [profileLine.start, profileLine.end] : null} />
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
@@ -403,10 +478,14 @@ function FloatingActions({
   onToggleSidebar,
   onToggleRight,
   onOpenSettings,
+  profileActive,
+  onToggleProfile,
 }: {
   onToggleSidebar: () => void;
   onToggleRight: () => void;
   onOpenSettings: () => void;
+  profileActive: boolean;
+  onToggleProfile: () => void;
 }) {
   return (
     <div className="absolute right-3 top-3 flex flex-col gap-1">
@@ -423,6 +502,18 @@ function FloatingActions({
         className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
       >
         <Layers className="h-3 w-3" />
+      </button>
+      <button
+        onClick={onToggleProfile}
+        title="Profile tool"
+        className="rounded border p-1.5 backdrop-blur transition-colors"
+        style={{
+          background: profileActive ? colors.industrialOrange : "rgba(10, 25, 47, 0.85)",
+          borderColor: profileActive ? colors.industrialOrange : colors.navyBorder,
+          color: profileActive ? colors.navyBase : colors.steelLight,
+        }}
+      >
+        <TrendingUp className="h-3 w-3" />
       </button>
       <button
         onClick={onOpenSettings}

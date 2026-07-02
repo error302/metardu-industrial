@@ -140,9 +140,25 @@ export interface GeoTiffHeaderRpc {
   bounds: [number, number, number, number] | null; // min_x, min_y, max_x, max_y
 }
 
+export interface KongsbergAllHeaderRpc {
+  model: string;
+  model_id: number;
+  date: string;
+  seconds_since_epoch: number;
+  ping_count: number;
+  position_count: number;
+  attitude_count: number;
+  svp_count: number;
+  runtime_count: number;
+  total_datagrams: number;
+  first_timestamp: number | null;
+  last_timestamp: number | null;
+}
+
 export type FileProbeResult =
   | { kind: "las"; path: string; header: LasHeaderRpc }
   | { kind: "geo-tiff"; path: string; header: GeoTiffHeaderRpc }
+  | { kind: "kongsberg-all"; path: string; header: KongsbergAllHeaderRpc }
   | { kind: "mb-es"; path: string; vendor: string; size_bytes: number }
   | { kind: "other"; path: string; size_bytes: number; note: string };
 

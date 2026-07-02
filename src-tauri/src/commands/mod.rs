@@ -2,7 +2,10 @@
 //
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
-use crate::formats::{read_geotiff_header, read_las_header, GeoTiffHeader, LasHeader};
+use crate::formats::{
+    read_geotiff_header, read_kongsberg_all_header, read_las_header, AllHeader, GeoTiffHeader,
+    LasHeader,
+};
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -77,9 +80,15 @@ pub enum FileProbeResult {
         path: String,
         header: Box<GeoTiffHeader>,
     },
+    /// Kongsberg .all multibeam datagram file
+    KongsbergAll {
+        path: String,
+        header: Box<AllHeader>,
+    },
+    /// Other multibeam vendor formats not yet fully parsed (.s7k, .bsf)
     MbEs {
         path: String,
-        vendor: String, // "kongsberg-all" | "reson-s7k" | "r2sonic-bsf"
+        vendor: String, // "reson-s7k" | "r2sonic-bsf"
         size_bytes: u64,
     },
     Other {
@@ -127,11 +136,13 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
                 header: Box::new(header),
             })
         }
-        "all" => Ok(FileProbeResult::MbEs {
-            path,
-            vendor: "kongsberg-all".into(),
-            size_bytes,
-        }),
+        "all" => {
+            let header = read_kongsberg_all_header(&path_buf).map_err(|e| e.to_string())?;
+            Ok(FileProbeResult::KongsbergAll {
+                path,
+                header: Box::new(header),
+            })
+        }
         "s7k" => Ok(FileProbeResult::MbEs {
             path,
             vendor: "reson-s7k".into(),

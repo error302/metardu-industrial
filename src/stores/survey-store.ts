@@ -14,6 +14,7 @@ import {
   probeFile,
   type FileProbeResult,
   type GeoTiffHeaderRpc,
+  type KongsbergAllHeaderRpc,
   type LasHeaderRpc,
 } from "@/lib/tauri-ipc";
 
@@ -195,6 +196,13 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
               width: h.width,
               height: h.length,
             };
+          } else if (result.kind === "kongsberg-all") {
+            const h: KongsbergAllHeaderRpc = result.header;
+            updated.vendor = h.model;
+            updated.pointCount = h.ping_count;
+            // Kongsberg .all doesn't carry geographic bounds in the
+            // header — they emerge after parsing position datagrams,
+            // which is Phase 2 work. For now we leave bounds undefined.
           } else if (result.kind === "mb-es") {
             updated.vendor = result.vendor;
             updated.size = result.size_bytes;
