@@ -214,6 +214,7 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
 ///   - Record ID 34737: GeoAsciiParamsTag
 ///   - Record ID 2112: WKT (LAS 1.4)
 ///   - User ID "laszip encoded": LAZ detection
+///
 /// Result of scanning a LAS file's Variable Length Records.
 struct VlrScan {
     crs_wkt: Option<String>,
