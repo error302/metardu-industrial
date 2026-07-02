@@ -33,6 +33,7 @@ import {
   Calculator,
   Layers3,
   Terminal,
+  Shield,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -42,7 +43,10 @@ import { ProfilePanel } from "@/components/profile-panel";
 import { VolumeCalcDialog } from "@/components/volume-calc-dialog";
 import { OdmPipelineDialog } from "@/components/odm-pipeline-dialog";
 import { CsfClassificationDialog } from "@/components/csf-classification-dialog";
+import { S44ComplianceDialog } from "@/components/s44-compliance-dialog";
+import { PointCloudLayer } from "@/components/point-cloud-layer";
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
+import type { CsfResult } from "@/lib/tauri-ipc";
 import {
   colors,
   domainAccent,
@@ -61,8 +65,11 @@ export function WorkspaceShell() {
   const [volumeCalcOpen, setVolumeCalcOpen] = useState(false);
   const [odmOpen, setOdmOpen] = useState(false);
   const [csfOpen, setCsfOpen] = useState(false);
+  const [s44Open, setS44Open] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
+  const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
+  const activeFileId = useSurveyStore((s) => s.activeFileId);
 
   const handleMapReady = useCallback((map: Map) => {
     setMapInstance(map);
@@ -85,6 +92,7 @@ export function WorkspaceShell() {
             onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
             onOpenOdm={() => setOdmOpen(true)}
             onOpenCsf={() => setCsfOpen(true)}
+            onOpenS44={() => setS44Open(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -92,6 +100,11 @@ export function WorkspaceShell() {
             domain={activeDomain}
             epsg={settings.defaultEpsg}
             onMapReady={handleMapReady}
+          />
+          <PointCloudLayer
+            map={mapInstance}
+            activeFileId={activeFileId}
+            csfResult={csfResult}
           />
           <FileDropOverlay domain={activeDomain} />
           <CrsSwitchBanner />
@@ -131,7 +144,12 @@ export function WorkspaceShell() {
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <VolumeCalcDialog open={volumeCalcOpen} onClose={() => setVolumeCalcOpen(false)} />
       <OdmPipelineDialog open={odmOpen} onClose={() => setOdmOpen(false)} />
-      <CsfClassificationDialog open={csfOpen} onClose={() => setCsfOpen(false)} />
+      <CsfClassificationDialog
+        open={csfOpen}
+        onClose={() => setCsfOpen(false)}
+        onClassified={setCsfResult}
+      />
+      <S44ComplianceDialog open={s44Open} onClose={() => setS44Open(false)} />
     </div>
   );
 }
@@ -189,12 +207,14 @@ function LeftSidebar({
   onOpenVolumeCalc,
   onOpenOdm,
   onOpenCsf,
+  onOpenS44,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
   onOpenVolumeCalc: () => void;
   onOpenOdm: () => void;
   onOpenCsf: () => void;
+  onOpenS44: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -249,7 +269,12 @@ function LeftSidebar({
             <SidebarItem label="SVP Casts" indent />
             <SidebarItem label="Tide Gauges" indent />
             <SidebarItem label="CUBE Surfaces" indent />
-            <SidebarItem label="S-44 Reports" indent />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Shield className="h-3 w-3" />}
+              label="S-44 Compliance"
+              onClick={onOpenS44}
+            />
           </SidebarSection>
         )}
       </div>

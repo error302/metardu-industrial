@@ -22,6 +22,9 @@ import { useSurveyStore } from "@/stores/survey-store";
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** Called when classification completes — passes the result so the
+   * point cloud layer can color points by ground/non-ground. */
+  onClassified?: (result: CsfResult) => void;
 }
 
 const DEFAULT_PARAMS: CsfParams = {
@@ -33,7 +36,7 @@ const DEFAULT_PARAMS: CsfParams = {
   cloth_init_offset: 10.0,
 };
 
-export function CsfClassificationDialog({ open, onClose }: Props) {
+export function CsfClassificationDialog({ open, onClose, onClassified }: Props) {
   const files = useSurveyStore((s) => s.files);
   const lasFiles = files.filter((f) => f.kind === "las" && f.status === "loaded");
 
@@ -56,6 +59,7 @@ export function CsfClassificationDialog({ open, onClose }: Props) {
       const r = await classifyGround(lasPath, params, maxPoints > 0 ? maxPoints : undefined);
       if (r) {
         setResult(r);
+        onClassified?.(r);
       } else {
         setError("Browser mode — CSF requires the native Tauri shell");
       }

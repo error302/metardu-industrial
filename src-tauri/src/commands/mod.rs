@@ -2,12 +2,14 @@
 //
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
+pub mod marine;
 pub mod mining;
 pub mod pipelines;
 
 use crate::formats::{
-    read_geotiff_header, read_kongsberg_all_header, read_las_header, read_s7k_header,
-    sample_profile as sample_dem_profile, AllHeader, GeoTiffHeader, LasHeader, S7kHeader,
+    read_geotiff_header, read_kongsberg_all_header, read_las_header, read_las_points,
+    read_s7k_header, sample_profile as sample_dem_profile, AllHeader, GeoTiffHeader, LasHeader,
+    S7kHeader,
 };
 use crate::geodesy::{transform_coords, Coord, TransformResult};
 use crate::modules::{ModuleLoadResult, ModuleRegistry};
@@ -170,6 +172,15 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
             note: format!("unsupported extension: .{other}"),
         }),
     }
+}
+
+/// Read LAS point data (x, y, z tuples) for point cloud rendering.
+/// Returns up to max_points points (0 = all). Used by the Deck.gl
+/// point cloud layer in the frontend.
+#[tauri::command]
+pub fn read_las_points_cmd(path: String, max_points: u64) -> Result<Vec<(f64, f64, f64)>, String> {
+    let path_buf = PathBuf::from(&path);
+    read_las_points(&path_buf, max_points).map_err(|e| e.to_string())
 }
 
 // ──────────────────────────────────────────────────────────────────

@@ -344,6 +344,18 @@ export async function classifyGround(
   });
 }
 
+/** Read LAS point data (x, y, z tuples) for point cloud rendering. */
+export async function readLasPoints(
+  path: string,
+  maxPoints: number,
+): Promise<[number, number, number][] | null> {
+  if (!isTauri()) return null;
+  return invoke<[number, number, number][]>("read_las_points", {
+    path,
+    maxPoints,
+  });
+}
+
 // ──────────────────────────────────────────────────────────────────
 // ODM (OpenDroneMap) subprocess integration
 
@@ -430,6 +442,142 @@ export async function transformCoords(
     coords,
     fromCrs,
     toCrs,
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Marine — Phase 2 Marine MVP (CUBE, TPU, S-44)
+
+export interface SoundingRpc {
+  x: number;
+  y: number;
+  depth: number;
+  uncertainty: number;
+}
+
+export interface CubeParams {
+  resolution: number;
+  capture_distance: number;
+  init_uncertainty: number;
+  max_hypotheses: number;
+  min_soundings: number;
+}
+
+export interface CubeSurfaceRpc {
+  dims: [number, number];
+  resolution: number;
+  bounds: [number, number, number, number];
+  depths: number[];
+  uncertainties: number[];
+  sounding_counts: number[];
+  hypothesis_counts: number[];
+  total_soundings: number;
+  valid_cells: number;
+  ambiguous_cells: number;
+}
+
+export interface TpuComponents {
+  beam_angle_sigma: number;
+  range_sigma: number;
+  attitude_roll_sigma: number;
+  attitude_pitch_sigma: number;
+  attitude_yaw_sigma: number;
+  attitude_heave_sigma: number;
+  attitude_latency_sigma: number;
+  svp_sigma: number;
+  tide_sigma: number;
+  datum_sigma: number;
+}
+
+export interface SoundingTpuInput {
+  beam_angle: number;
+  travel_time: number;
+  sound_speed: number;
+  depth: number;
+  components: TpuComponents;
+}
+
+export interface TpuContributions {
+  sensor_variance: number;
+  attitude_variance: number;
+  svp_variance: number;
+  tide_variance: number;
+  datum_variance: number;
+}
+
+export interface TpuResult {
+  vertical_tpu_1sigma: number;
+  vertical_tpu_95: number;
+  horizontal_tpu_1sigma: number;
+  horizontal_tpu_95: number;
+  vertical_contributions: TpuContributions;
+  horizontal_contributions: TpuContributions;
+}
+
+export type S44Order = "special" | "order_1a" | "order_1b" | "order_2";
+
+export interface S44CheckInput {
+  depth: number;
+  vertical_tpu_95: number;
+  horizontal_tpu_95: number;
+}
+
+export type S44Status = "pass" | "investigate" | "fail";
+
+export interface S44Failure {
+  index: number;
+  depth: number;
+  vertical_tpu_95: number;
+  vertical_threshold: number;
+  horizontal_tpu_95: number;
+  horizontal_threshold: number;
+  violation: "vertical" | "horizontal" | "both";
+}
+
+export interface S44ComplianceResult {
+  target_order: S44Order;
+  total_soundings: number;
+  passing_soundings: number;
+  failing_soundings: number;
+  pass_rate: number;
+  status: S44Status;
+  is_compliant: boolean[];
+  vertical_margins: number[];
+  horizontal_margins: number[];
+  min_depth: number;
+  max_depth: number;
+  mean_depth: number;
+  worst_failures: S44Failure[];
+}
+
+/** Generate a CUBE bathymetric surface from soundings. */
+export async function generateCubeSurface(
+  soundings: SoundingRpc[],
+  params: CubeParams,
+): Promise<CubeSurfaceRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<CubeSurfaceRpc>("generate_cube_surface_cmd", { soundings, params });
+}
+
+/** Compute TPU for a batch of soundings. */
+export async function computeTpuBatch(
+  soundings: SoundingTpuInput[],
+): Promise<TpuResult[] | null> {
+  if (!isTauri()) return null;
+  return invoke<TpuResult[]>("compute_tpu_batch", { soundings });
+}
+
+/** Check S-44 compliance for a batch of soundings. */
+export async function checkS44Compliance(
+  soundings: S44CheckInput[],
+  targetOrder: S44Order,
+): Promise<S44ComplianceResult | null> {
+  if (!isTauri()) return null;
+  return invoke<S44ComplianceResult>("check_s44_compliance_cmd", {
+    request: {
+      soundings,
+      targetOrder,
+    },
   });
 }
 

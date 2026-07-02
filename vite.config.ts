@@ -38,6 +38,9 @@ export default defineConfig({
             if (id.includes('/lucide-react/')) {
               return 'icons-vendor'
             }
+            if (id.includes('/@deck.gl/') || id.includes('/@luma.gl/') || id.includes('/@math.gl/')) {
+              return 'deckgl-vendor'
+            }
           }
           return undefined
         },
