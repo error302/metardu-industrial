@@ -167,6 +167,9 @@ export function createCommandActions(callbacks: {
   onToggleStream: () => void;
   onOpenEom: () => void;
   onOpenS44Cert: () => void;
+  onOpenSvp: () => void;
+  onOpenVesselConfig: () => void;
+  onOpenCubeDisambig: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -184,5 +187,8 @@ export function createCommandActions(callbacks: {
     { id: "profile", label: "Toggle Profile Tool", category: "Map", keywords: ["profile", "elevation", "cross-section", "dem"], icon: <TrendingUp className={icon} />, action: callbacks.onToggleProfile },
     { id: "stream", label: "Toggle Live Stream (UDP)", category: "Map", keywords: ["stream", "udp", "live", "real-time", "sonar"], icon: <Radio className={icon} />, action: callbacks.onToggleStream },
     { id: "settings", label: "Settings", category: "App", keywords: ["settings", "theme", "epsg", "crs", "density"], icon: <Settings className={icon} />, action: callbacks.onOpenSettings },
+    { id: "svp", label: "SVP Editor (Sound Velocity)", category: "Marine", keywords: ["svp", "sound", "velocity", "profile", "ray", "tracing"], icon: <Waves className={icon} />, action: callbacks.onOpenSvp },
+    { id: "vessel", label: "Vessel Configuration (Lever-Arms)", category: "Marine", keywords: ["vessel", "lever", "arm", "offset", "imu", "transducer", "gnss", "tpu"], icon: <Anchor className={icon} />, action: callbacks.onOpenVesselConfig },
+    { id: "disambig", label: "CUBE Hypothesis Disambiguation", category: "Marine", keywords: ["cube", "hypothesis", "disambiguation", "ambiguous", "qc"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCubeDisambig },
   ];
 }

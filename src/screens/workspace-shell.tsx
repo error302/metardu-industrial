@@ -59,6 +59,9 @@ import { MlClassificationDialog } from "@/components/ml-classification-dialog";
 import { PipelineEditorDialog } from "@/components/pipeline-editor-dialog";
 import { EomReconciliationWizard } from "@/components/eom-reconciliation-wizard";
 import { S44CertificateDialog } from "@/components/s44-certificate-dialog";
+import { SvpEditorDialog } from "@/components/svp-editor-dialog";
+import { VesselConfigDialog } from "@/components/vessel-config-dialog";
+import { CubeDisambiguationDialog } from "@/components/cube-disambiguation-dialog";
 import { CommandPalette, createCommandActions } from "@/components/command-palette";
 import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer";
 import { LiveStreamPanel } from "@/components/live-stream-panel";
@@ -92,6 +95,9 @@ export function WorkspaceShell() {
   const [eomOpen, setEomOpen] = useState(false);
   const [s44CertOpen, setS44CertOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [svpOpen, setSvpOpen] = useState(false);
+  const [vesselConfigOpen, setVesselConfigOpen] = useState(false);
+  const [cubeDisambigOpen, setCubeDisambigOpen] = useState(false);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
@@ -138,6 +144,9 @@ export function WorkspaceShell() {
     onToggleStream: () => setIsStreaming((v) => !v),
     onOpenEom: () => setEomOpen(true),
     onOpenS44Cert: () => setS44CertOpen(true),
+    onOpenSvp: () => setSvpOpen(true),
+    onOpenVesselConfig: () => setVesselConfigOpen(true),
+    onOpenCubeDisambig: () => setCubeDisambigOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -177,6 +186,9 @@ export function WorkspaceShell() {
             onOpenMonitoring={() => setMonitoringOpen(true)}
             onOpenMl={() => setMlOpen(true)}
             onOpenPipeline={() => setPipelineOpen(true)}
+            onOpenSvp={() => setSvpOpen(true)}
+            onOpenVesselConfig={() => setVesselConfigOpen(true)}
+            onOpenCubeDisambig={() => setCubeDisambigOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -261,6 +273,13 @@ export function WorkspaceShell() {
         onClose={() => setCommandPaletteOpen(false)}
         actions={commandActions}
       />
+      <SvpEditorDialog open={svpOpen} onClose={() => setSvpOpen(false)} />
+      <VesselConfigDialog open={vesselConfigOpen} onClose={() => setVesselConfigOpen(false)} />
+      <CubeDisambiguationDialog
+        open={cubeDisambigOpen}
+        onClose={() => setCubeDisambigOpen(false)}
+        surface={cubeSurface}
+      />
     </div>
   );
 }
@@ -324,6 +343,9 @@ function LeftSidebar({
   onOpenMonitoring,
   onOpenMl,
   onOpenPipeline,
+  onOpenSvp,
+  onOpenVesselConfig,
+  onOpenCubeDisambig,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -336,6 +358,9 @@ function LeftSidebar({
   onOpenMonitoring: () => void;
   onOpenMl: () => void;
   onOpenPipeline: () => void;
+  onOpenSvp: () => void;
+  onOpenVesselConfig: () => void;
+  onOpenCubeDisambig: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -406,6 +431,11 @@ function LeftSidebar({
               onClick={onOpenCube}
             />
             <SidebarItem
+              icon={<Layers3 className="h-3 w-3" />}
+              label="CUBE Disambiguation"
+              onClick={onOpenCubeDisambig}
+            />
+            <SidebarItem
               icon={<Shield className="h-3 w-3" />}
               label="S-44 Compliance"
               onClick={onOpenS44}
@@ -414,6 +444,16 @@ function LeftSidebar({
               icon={<Anchor className="h-3 w-3" />}
               label="S-57 Export"
               onClick={onOpenS57}
+            />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="SVP Editor"
+              onClick={onOpenSvp}
+            />
+            <SidebarItem
+              icon={<Anchor className="h-3 w-3" />}
+              label="Vessel Configuration"
+              onClick={onOpenVesselConfig}
             />
             <SidebarItem
               icon={<Brain className="h-3 w-3" />}

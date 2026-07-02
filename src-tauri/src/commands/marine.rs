@@ -2,6 +2,7 @@
 //
 // Exposes CUBE surface generation, TPU, and S-44 compliance to the frontend.
 
+use crate::marine::svp::{parse_svp, SvpProfile};
 use crate::marine::{
     check_s44_compliance, compute_tpu, generate_cube_surface, write_s57, CubeParams, S44CheckInput,
     S44Order, S57Feature, Sounding, SoundingTpuInput,
@@ -49,4 +50,11 @@ pub async fn check_s44_compliance_cmd(
 pub fn export_s57(features: Vec<S57Feature>, path: String) -> Result<(), String> {
     let path_buf = std::path::PathBuf::from(&path);
     write_s57(&path_buf, &features).map_err(|e| e.to_string())
+}
+
+/// Parse an SVP (Sound Velocity Profile) file.
+#[tauri::command]
+pub fn parse_svp_cmd(path: String) -> Result<SvpProfile, String> {
+    let path_buf = std::path::PathBuf::from(&path);
+    parse_svp(&path_buf).map_err(|e| e.to_string())
 }
