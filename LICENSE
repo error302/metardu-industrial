@@ -1,0 +1,27 @@
+MetaRDU Industrial
+Copyright (c) 2026 error302
+
+All rights reserved.
+
+LICENSE NOTICE
+==============
+
+This repository is currently in Phase 0 (Foundation) development. The
+final license has not yet been determined. The intent, per
+docs/ARCHITECTURE.md §1.4, is an "open core" model:
+
+  - Processing engine (Rust core, src-tauri/src/): MIT or Apache-2.0
+  - Frontend UI (src/): to be determined, likely MIT or Apache-2.0
+  - Pro plugins and commercial extensions: proprietary
+
+Until the license is finalized:
+
+  - You may read, fork, and study the source for evaluation purposes.
+  - You may NOT redistribute, modify, or incorporate this code into
+    other products without explicit written permission from the author.
+  - Contributions accepted via PR are accepted under the same tentative
+    terms — by submitting a PR you agree to license your contribution
+    under whatever final license MetaRDU Industrial adopts.
+
+Contact: open an issue at https://github.com/error302/metardu-industrial/issues
+for licensing questions.
