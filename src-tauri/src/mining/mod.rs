@@ -23,4 +23,7 @@ pub mod volume;
 
 pub use csf::{classify_ground, CsfParams, CsfResult};
 pub use drone_ingest::{parse_manifest, DroneManifest};
+pub use monitoring_4d::{
+    compute_epoch_diff, compute_progression, Monitoring4DParams, MonitoringError,
+};
 pub use volume::{compute_volumes, VolumeResult};
