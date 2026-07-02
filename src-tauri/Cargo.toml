@@ -5,6 +5,7 @@ description = "Specialised desktop app for mining and marine survey workflows"
 authors = ["error302"]
 edition = "2021"
 rust-version = "1.87"
+default-run = "metardu-industrial"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
