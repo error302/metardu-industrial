@@ -15,6 +15,6 @@ pub mod csf;
 pub mod drone_ingest;
 pub mod volume;
 
-pub use csf::{classify_ground, CsfError, CsfParams, CsfResult};
+pub use csf::{classify_ground, CsfParams, CsfResult};
 pub use drone_ingest::{parse_manifest, DroneManifest};
 pub use volume::{compute_volumes, VolumeResult};

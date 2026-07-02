@@ -4,7 +4,7 @@
 // via Tauri events rather than polled — the frontend subscribes to
 // 'odm://progress' events.
 
-use crate::pipelines::{check_odm, run_odm, OdmConfig, OdmError};
+use crate::pipelines::{check_odm, run_odm, OdmConfig};
 use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, State};
@@ -142,7 +142,3 @@ pub fn get_odm_status(state: State<'_, Mutex<OdmState>>) -> Result<Option<OdmRun
     let s = state.lock().map_err(|e| e.to_string())?;
     Ok(s.last_status.clone())
 }
-
-// Suppress unused warning for OdmError — it's used internally by check_odm/run_odm
-#[allow(unused_imports)]
-use OdmError as _OdmError;

@@ -50,8 +50,8 @@ pub enum GeodesyError {
 
 /// Transform a batch of coordinates from one CRS to another.
 ///
-/// When the 'proj' feature is enabled, uses the proj crate for real
-/// PROJ 9.x transformations. Otherwise returns an error.
+/// When the 'geo' or 'geo-proj' feature is enabled (which pulls in the proj
+/// crate), uses real PROJ 9.x transformations. Otherwise returns an error.
 pub fn transform_coords(
     coords: &[Coord],
     from_crs: &str,
@@ -67,19 +67,19 @@ pub fn transform_coords(
         });
     }
 
-    #[cfg(feature = "proj")]
+    #[cfg(any(feature = "geo", feature = "geo-proj"))]
     {
         return transform_via_proj(coords, from_crs, to_crs);
     }
 
-    #[cfg(not(feature = "proj"))]
+    #[cfg(not(any(feature = "geo", feature = "geo-proj")))]
     {
         let _ = coords;
         Err(GeodesyError::ProjNotEnabled)
     }
 }
 
-#[cfg(feature = "proj")]
+#[cfg(any(feature = "geo", feature = "geo-proj"))]
 fn transform_via_proj(
     coords: &[Coord],
     from_crs: &str,
@@ -112,5 +112,5 @@ fn transform_via_proj(
 
 /// Check if real PROJ-backed reprojection is available.
 pub fn is_proj_available() -> bool {
-    cfg!(feature = "proj")
+    cfg!(any(feature = "geo", feature = "geo-proj"))
 }

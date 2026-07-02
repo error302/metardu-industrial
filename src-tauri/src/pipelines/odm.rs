@@ -82,6 +82,7 @@ impl Default for OdmConfig {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[allow(dead_code)]
 pub struct OdmStatus {
     pub phase: String,
     pub progress: f64, // 0.0–1.0, estimated from log keywords

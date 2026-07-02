@@ -5,9 +5,9 @@
 // minimal — just the Tauri shell with the IPC bridge wired. Domain modules
 // will be added incrementally per the roadmap (Phase 1: Mining MVP, etc.).
 
-// Tauri 2's generate_handler! macro depends on never-type fallback being ().
-// This was previously accepted silently but is being phased out in Rust 2024.
-// Suppress the warning until Tauri ships a fix.
+// unknown_lints must be allowed first so never_type_fallback (which only
+// exists on newer Rust) doesn't cause a hard error on older toolchains.
+#![allow(unknown_lints)]
 #![allow(never_type_fallback)]
 
 mod commands;
