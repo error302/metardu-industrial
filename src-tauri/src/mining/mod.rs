@@ -17,12 +17,15 @@ pub mod csf;
 #[allow(dead_code)]
 pub mod drone_ingest;
 #[allow(dead_code)]
+pub mod highwall;
+#[allow(dead_code)]
 pub mod monitoring_4d;
 #[allow(dead_code)]
 pub mod volume;
 
 pub use csf::{classify_ground, CsfParams, CsfResult};
 pub use drone_ingest::{parse_manifest, DroneManifest};
+pub use highwall::{analyze_highwall, AlertLevel, HighwallReport, HighwallThresholds, TrendClass};
 pub use monitoring_4d::{
     compute_epoch_diff, compute_progression, Monitoring4DParams, MonitoringError,
 };

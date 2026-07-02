@@ -8,6 +8,8 @@
 // needs it.
 
 #[allow(dead_code)]
+pub mod cross_section;
+#[allow(dead_code)]
 pub mod dredge;
 
 pub use metardu_core::marine::*;

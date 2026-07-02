@@ -1,6 +1,6 @@
 # MetaRDU Industrial — Development Roadmap & Revenue Strategy
 
-**Last updated**: 2026-07-03 (Sprint 4 complete)
+**Last updated**: 2026-07-03 (Sprint 5 complete)
 **Status**: Living document — the single source of truth for what to build and why.
 
 ---
@@ -17,7 +17,7 @@ Based on 20 years of field experience across mining and marine survey operations
 | 4 | Command palette (Ctrl+K) | Small | Transforms daily workflow speed | ✅ DONE | Sprint 2 |
 | 5 | Vessel lever-arm configuration | Medium | Makes TPU calculations real | ✅ DONE | Sprint 3 |
 | 6 | CUBE hypothesis disambiguation UI | Medium | Turns CUBE from black box to tool | ✅ DONE | Sprint 3 |
-| 7 | Layout profiles (predefined panel arrangements) | Small | Multi-monitor survey control rooms | Pending | Sprint 5 |
+| 7 | Layout profiles (predefined panel arrangements) | Small | Multi-monitor survey control rooms | ✅ DONE | Sprint 5 |
 | 8 | SSS waterfall viewer | Large | Marine completeness | Pending | Sprint 6+ |
 | 9 | 3D slice editor with reject brush | Large | Manual cleaning | Pending | Sprint 6+ |
 | 10 | S-102 export | Large | Future-proofing (premature) | Deferred | ~2027 |
@@ -62,10 +62,12 @@ Our CUBE tracks multiple hypotheses per cell but UI just shows the count. Hydrog
 
 **Acceptance criteria**: Map overlay showing ambiguous cells in amber → click cell → popover with alternative depths + uncertainty → select hypothesis → mark as "accepted".
 
-#### 7. Layout Profiles
+#### 7. Layout Profiles — ✅ DONE (Sprint 5)
 Predefined panel arrangements for common workflows (Data Ingest, Bathymetry Clean, Volume Reporting). Toggle bar in header switches between layouts.
 
-**Acceptance criteria**: 3 preset layouts → one-click switch → panels rearrange → state preserved per layout.
+**Implementation**: `LayoutProfiles` component in title bar with 4 presets (default / data_ingest / bathymetry_clean / volume_reporting). Each preset toggles sidebar + right panel. Active layout persisted in `localStorage` so it survives restarts. One-click switch — no dialog, no settings dive.
+
+**Acceptance criteria**: 3 preset layouts → one-click switch → panels rearrange → state preserved per layout. ✅
 
 #### 8. SSS Waterfall Viewer
 Custom Canvas2D scrolling waterfall — X=across-track, Y=time (scrolling), pixel intensity=backscatter. Click two points to measure target height from shadow length.
@@ -185,36 +187,24 @@ After a blast, mine needs fragment size distribution + muck pile volume + diggab
 
 **Why it sells**: $2,000-3,000/seat. Mine with 200 blasts/year = 200 reports.
 
-#### 6. Highwall Deformation Monitoring
+#### 6. Highwall Deformation Monitoring — ✅ DONE (Sprint 5)
 Post-Brazil 2020, slope stability monitoring is legally required in many jurisdictions.
 
-**Workflow**:
-1. Import sequential TLS/drone scans (N epochs)
-2. Compute per-cell deformation (already in `monitoring_4d.rs`)
-3. Track displacement time-series per cell
-4. Threshold alerts (email/SMS when >50mm)
-5. Monthly deformation compliance report for regulator
+**Implementation**: New `mining/highwall.rs` module (~370 lines, 10 unit tests). Tracks per-cell displacement TIME-SERIES across N epochs, computes velocity (mm/day) and acceleration (mm/day²). Three alert levels (Advisory >25mm, Watch >50mm or >1mm/day, Critical >100mm or >5mm/day) per USACE EM 1110-2-1900. Trend classification (Stable / Creeping / Accelerating / Failure Imminent). `HighwallMonitoringWizard` produces regulator-ready PDF compliance report.
 
 **Why it sells**: $5,000-10,000/site/year. Safety-critical = non-negotiable budget.
 
-#### 7. Survey Deliverable Package Generator
+#### 7. Survey Deliverable Package Generator — ✅ DONE (Sprint 5)
 Marine surveyors assemble deliverable packages manually (4-6 hours).
 
-**Workflow**:
-1. One-click "Generate Deliverable Package" button
-2. Produces: GeoTIFF surface, S-57 .000, S-44 PDF, metadata XML, track plot PDF, tide log CSV
-3. Bundles into zip with project name
+**Implementation**: New `deliverable.rs` module (~640 lines, 7 unit tests). Bundles source files + ISO 19115 metadata XML + branded manifest HTML into a single ZIP. Added `zip` crate (pure-Rust, ~120KB). Manifest includes FNV-1a hash per file + warnings for missing files. `DeliverablePackageWizard` collects vessel/sonar/area metadata and source file paths.
 
 **Why it sells**: $3,000-5,000/seat. Saves 4-6 hours per survey delivery.
 
-#### 8. Cross-Section Profiler for Channel Design
+#### 8. Cross-Section Profiler for Channel Design — ✅ DONE (Sprint 5)
 Port engineers verify dredged channel meets design specs via cross-sections.
 
-**Workflow**:
-1. Draw centerline on map
-2. Specify cross-section spacing (e.g., 50m)
-3. Generate PDF with all cross-sections (surveyed vs. design)
-4. Highlight under-dredge areas in red
+**Implementation**: New `marine/cross_section.rs` module (~470 lines, 6 unit tests). Walks a user-drawn centerline at `spacing_m` intervals, samples a perpendicular cross-section of `half_width_m` on each side using bilinear interpolation on the GeoTIFF. Computes under-dredge / over-dredge areas per section + compliance %. `CrossSectionProfilerWizard` accepts centerline as projected-coordinate text input (Sprint 6+ will auto-populate from map-drawn polygon).
 
 **Why it sells**: $2,000-3,000/seat. Complements dredge volume engine.
 
@@ -253,6 +243,9 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | S-44 compliance | ~310 | 5 | ✅ |
 | S-57 export | ~430 | 2 | ✅ |
 | Dredge pay-volume audit (Sprint 4) | ~370 | 8 | ✅ 4-bucket categorization |
+| Highwall deformation monitoring (Sprint 5) | ~370 | 10 | ✅ Time-series + alerts + USACE thresholds |
+| Cross-section profiler (Sprint 5) | ~470 | 6 | ✅ Bilinear DEM sampling + under/over-dredge |
+| Survey deliverable package (Sprint 5) | ~640 | 7 | ✅ ZIP bundler + ISO 19115 metadata |
 | Pipeline DSL + executor | ~280 | 4 | ✅ All 11 actions wired to real functions |
 | Watch folders | ~220 | 2 | ✅ |
 | Scheduled jobs | ~180 | 3 | ✅ |
@@ -263,15 +256,15 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Streaming ingest | ~260 | 3 | ✅ UDP listener + Deck.gl rendering |
 | WASM sandbox | ~280 | 3 | ✅ wasmtime behind feature flag |
 | AR companion scaffold | ~310 | 3 | ✅ |
-| Frontend (React/TS) | ~8,300 | — | ✅ 19 dialogs, 48 IPC commands |
+| Frontend (React/TS) | ~11,500 | — | ✅ 22 dialogs, 51 IPC commands |
 
 ### Build Stats
-- Rust source: ~14,000 lines
-- TypeScript source: ~8,300 lines
+- Rust source: ~16,000 lines
+- TypeScript source: ~11,500 lines
 - Shared crate (metardu-core): ~1,500 lines
-- Documentation: ~2,600 lines
-- Unit tests: 94+ (Rust)
-- IPC commands: 48
+- Documentation: ~2,800 lines
+- Unit tests: 117+ (Rust)
+- IPC commands: 51
 - Binaries: 2 (metardu-industrial + metardu-worker)
 - Release tags: 2 (v0.1.0-alpha.1, v0.1.0-beta.1)
 
@@ -299,11 +292,11 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 11. ~~**Stockpile inventory audit** (Revenue #4)~~ — ✅ Flat-or-previous baseline + tonnage + branded PDF
 12. ~~**Blast fragmentation report** (Revenue #5)~~ — ✅ p20/p50/p80/p90 + muck volume + design-vs-actual + branded PDF
 
-### Sprint 5: Polish & Scale
-13. **Layout profiles** (Priority #7)
-14. **Highwall monitoring with alerts** (Revenue #6)
-15. **Survey deliverable package** (Revenue #7)
-16. **Cross-section profiler** (Revenue #8)
+### Sprint 5: Polish & Scale — ✅ COMPLETE
+13. ~~**Layout profiles** (Priority #7)~~ — ✅ 4 presets in title bar + localStorage persistence
+14. ~~**Highwall monitoring with alerts** (Revenue #6)~~ — ✅ N-epoch time-series + USACE thresholds + compliance PDF
+15. ~~**Survey deliverable package** (Revenue #7)~~ — ✅ ZIP bundler + ISO 19115 XML + branded manifest
+16. ~~**Cross-section profiler** (Revenue #8)~~ — ✅ Bilinear DEM sampling + under/over-dredge detection
 
 ### Sprint 6+: Advanced
 17. **SSS waterfall viewer** (Priority #8)

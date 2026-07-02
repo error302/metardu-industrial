@@ -932,6 +932,9 @@ export type ReportType =
   | "s44_compliance"
   | "stockpile_audit"
   | "blast_report"
+  | "highwall_report"
+  | "deliverable_package"
+  | "cross_section"
   | "generic";
 
 // ──────────────────────────────────────────────────────────────────
@@ -984,6 +987,212 @@ export async function computeDredgeAudit(
 ): Promise<DredgeVolumeResult | null> {
   if (!isTauri()) return null;
   return invoke<DredgeVolumeResult>("compute_dredge_audit_cmd", { request });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 5 — Highwall deformation monitoring (Revenue Feature #6)
+
+export type AlertLevel = "none" | "advisory" | "watch" | "critical";
+export type TrendClass = "stable" | "creeping" | "accelerating" | "failure_imminent";
+
+export interface HighwallThresholds {
+  advisory_mm: number;
+  watch_mm: number;
+  critical_mm: number;
+  velocity_watch_mm_per_day: number;
+  velocity_critical_mm_per_day: number;
+}
+
+export interface CellTimeSeries {
+  index: number;
+  row: number;
+  col: number;
+  displacements_mm: number[];
+  velocities_mm_per_day: number[];
+  cumulative_mm: number;
+  peak_velocity_mm_per_day: number;
+  acceleration_mm_per_day2: number;
+  alert: AlertLevel;
+  trend: TrendClass;
+}
+
+export interface HighwallAlert {
+  cell_index: number;
+  row: number;
+  col: number;
+  level: AlertLevel;
+  cumulative_mm: number;
+  velocity_mm_per_day: number;
+  trend: TrendClass;
+  message: string;
+}
+
+export interface HighwallStats {
+  stable_cells: number;
+  advisory_cells: number;
+  watch_cells: number;
+  critical_cells: number;
+  max_cumulative_mm: number;
+  max_velocity_mm_per_day: number;
+  mean_cumulative_mm: number;
+  cells_with_acceleration: number;
+  failure_imminent_cells: number;
+  compliance_pct: number;
+}
+
+export interface HighwallReport {
+  n_epochs: number;
+  cell_area_m2: number;
+  total_cells: number;
+  active_cells: number;
+  cells: CellTimeSeries[];
+  alerts: HighwallAlert[];
+  stats: HighwallStats;
+  thresholds: HighwallThresholds;
+  epoch_dates: string[];
+}
+
+export interface HighwallRequest {
+  paths: string[];
+  epochDates: string[];
+  cellAreaM2?: number;
+  thresholds?: HighwallThresholds;
+}
+
+/** Run the highwall deformation analysis across N epoch DEMs. */
+export async function analyzeHighwall(
+  request: HighwallRequest,
+): Promise<HighwallReport | null> {
+  if (!isTauri()) return null;
+  return invoke<HighwallReport>("analyze_highwall_cmd", { request });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 5 — Cross-section profiler (Revenue Feature #8)
+
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+export interface CrossSectionRequest {
+  centerline: Point2D[];
+  spacing_m: number;
+  half_width_m: number;
+  sample_resolution_m: number;
+  surveyPath: string;
+  designPath?: string;
+  designDepth?: number;
+}
+
+export interface CrossSectionPoint {
+  offset_m: number;
+  chainage_m: number;
+  survey_z: number;
+  design_z: number;
+}
+
+export interface CrossSection {
+  index: number;
+  chainage_m: number;
+  center: Point2D;
+  points: CrossSectionPoint[];
+  under_dredge_area: number;
+  over_dredge_area: number;
+  max_under_dredge: number;
+  has_under_dredge: boolean;
+}
+
+export interface CrossSectionSummary {
+  total_under_dredge_area: number;
+  total_over_dredge_area: number;
+  max_under_dredge_depth: number;
+  sections_with_under_dredge: number;
+  compliant_sections: number;
+  compliance_pct: number;
+}
+
+export interface CrossSectionReport {
+  total_length_m: number;
+  n_sections: number;
+  spacing_m: number;
+  half_width_m: number;
+  sections: CrossSection[];
+  summary: CrossSectionSummary;
+}
+
+/** Compute cross-sections perpendicular to a drawn centerline. */
+export async function computeCrossSections(
+  request: CrossSectionRequest,
+): Promise<CrossSectionReport | null> {
+  if (!isTauri()) return null;
+  return invoke<CrossSectionReport>("compute_cross_sections_cmd", { request });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 5 — Survey Deliverable Package (Revenue Feature #7)
+
+export type DeliverableFileType =
+  | "geotiff"
+  | "s57"
+  | "s44_pdf"
+  | "metadata_xml"
+  | "track_plot"
+  | "tide_log"
+  | "screenshot"
+  | "other";
+
+export interface DeliverableMetadata {
+  vessel: string;
+  sonar: string;
+  surveyArea: string;
+  surveyDate: string;
+  epsg: string;
+  clientName: string;
+  surveyorName: string;
+}
+
+export interface DeliverableSource {
+  description: string;
+  path: string;
+  fileType: DeliverableFileType;
+}
+
+export interface DeliverablePackageRequest {
+  outputPath: string;
+  projectName: string;
+  metadata: DeliverableMetadata;
+  sources: DeliverableSource[];
+  mapScreenshotB64?: string;
+}
+
+export interface BundledFile {
+  description: string;
+  file_type: DeliverableFileType;
+  archive_path: string;
+  size_bytes: number;
+  sha256_short: string;
+  bundled: boolean;
+  error?: string;
+}
+
+export interface DeliverablePackageResult {
+  outputPath: string;
+  file_count: number;
+  total_size_bytes: number;
+  zip_size_bytes: number;
+  files: BundledFile[];
+  manifest_html: string;
+  metadata_xml: string;
+  warnings: string[];
+}
+
+/** Generate a survey deliverable package ZIP with manifest + metadata. */
+export async function generateDeliverablePackage(
+  request: DeliverablePackageRequest,
+): Promise<DeliverablePackageResult | null> {
+  if (!isTauri()) return null;
+  return invoke<DeliverablePackageResult>("generate_deliverable_package_cmd", { request });
 }
 
 export interface ReportTable {

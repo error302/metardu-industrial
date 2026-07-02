@@ -43,6 +43,9 @@ import {
   Radio,
   Boxes,
   Bomb,
+  ShieldAlert,
+  Ruler,
+  Package,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -67,6 +70,15 @@ import { CubeDisambiguationDialog } from "@/components/cube-disambiguation-dialo
 import { DredgeAuditWizard } from "@/components/dredge-audit-wizard";
 import { StockpileAuditWizard } from "@/components/stockpile-audit-wizard";
 import { BlastReportWizard } from "@/components/blast-report-wizard";
+import { HighwallMonitoringWizard } from "@/components/highwall-monitoring-wizard";
+import { CrossSectionProfilerWizard } from "@/components/cross-section-profiler-wizard";
+import { DeliverablePackageWizard } from "@/components/deliverable-package-wizard";
+import {
+  LayoutProfiles,
+  getLayoutSettings,
+  loadPersistedLayout,
+  type LayoutProfile,
+} from "@/components/layout-profiles";
 import { CommandPalette, createCommandActions } from "@/components/command-palette";
 import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer";
 import { LiveStreamPanel } from "@/components/live-stream-panel";
@@ -106,6 +118,16 @@ export function WorkspaceShell() {
   const [dredgeAuditOpen, setDredgeAuditOpen] = useState(false);
   const [stockpileAuditOpen, setStockpileAuditOpen] = useState(false);
   const [blastReportOpen, setBlastReportOpen] = useState(false);
+  const [highwallOpen, setHighwallOpen] = useState(false);
+  const [crossSectionOpen, setCrossSectionOpen] = useState(false);
+  const [deliverableOpen, setDeliverableOpen] = useState(false);
+  const [layout, setLayout] = useState<LayoutProfile>(() => {
+    // Initialize from persisted state
+    if (typeof window !== "undefined") {
+      return loadPersistedLayout();
+    }
+    return "default";
+  });
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [profileActive, setProfileActive] = useState(false);
   const [csfResult, setCsfResult] = useState<CsfResult | null>(null);
@@ -136,6 +158,13 @@ export function WorkspaceShell() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // Apply layout profile settings when layout changes
+  useEffect(() => {
+    const settings = getLayoutSettings(layout);
+    setSidebarOpen(settings.sidebarOpen);
+    setRightPanelOpen(settings.rightPanelOpen);
+  }, [layout]);
+
   // Command palette actions
   const commandActions = useMemo(() => createCommandActions({
     onOpenVolumeCalc: () => setVolumeCalcOpen(true),
@@ -158,6 +187,9 @@ export function WorkspaceShell() {
     onOpenDredgeAudit: () => setDredgeAuditOpen(true),
     onOpenStockpileAudit: () => setStockpileAuditOpen(true),
     onOpenBlastReport: () => setBlastReportOpen(true),
+    onOpenHighwall: () => setHighwallOpen(true),
+    onOpenCrossSection: () => setCrossSectionOpen(true),
+    onOpenDeliverable: () => setDeliverableOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -182,7 +214,7 @@ export function WorkspaceShell() {
 
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
-      <TitleBar domain={activeDomain} />
+      <TitleBar domain={activeDomain} layout={layout} onLayoutChange={setLayout} />
       <div className="flex flex-1 overflow-hidden">
         {sidebarOpen && (
           <LeftSidebar
@@ -203,6 +235,9 @@ export function WorkspaceShell() {
             onOpenDredgeAudit={() => setDredgeAuditOpen(true)}
             onOpenStockpileAudit={() => setStockpileAuditOpen(true)}
             onOpenBlastReport={() => setBlastReportOpen(true)}
+            onOpenHighwall={() => setHighwallOpen(true)}
+            onOpenCrossSection={() => setCrossSectionOpen(true)}
+            onOpenDeliverable={() => setDeliverableOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -297,13 +332,24 @@ export function WorkspaceShell() {
       <DredgeAuditWizard open={dredgeAuditOpen} onClose={() => setDredgeAuditOpen(false)} />
       <StockpileAuditWizard open={stockpileAuditOpen} onClose={() => setStockpileAuditOpen(false)} />
       <BlastReportWizard open={blastReportOpen} onClose={() => setBlastReportOpen(false)} />
+      <HighwallMonitoringWizard open={highwallOpen} onClose={() => setHighwallOpen(false)} />
+      <CrossSectionProfilerWizard open={crossSectionOpen} onClose={() => setCrossSectionOpen(false)} />
+      <DeliverablePackageWizard open={deliverableOpen} onClose={() => setDeliverableOpen(false)} />
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────────────────── */
 
-function TitleBar({ domain }: { domain: DomainMode }) {
+function TitleBar({
+  domain,
+  layout,
+  onLayoutChange,
+}: {
+  domain: DomainMode;
+  layout: LayoutProfile;
+  onLayoutChange: (l: LayoutProfile) => void;
+}) {
   const accent = domainAccent[domain].primary;
   return (
     <header className="title-bar flex items-center justify-between border-b border-navy-border bg-navy-panel px-3">
@@ -331,16 +377,19 @@ function TitleBar({ domain }: { domain: DomainMode }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-1">
-        <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-          <Minus className="h-3.5 w-3.5" />
-        </button>
-        <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-          <Square className="h-3 w-3" />
-        </button>
-        <button className="rounded p-1 text-steel-gray hover:bg-fail/20 hover:text-fail">
-          <X className="h-3.5 w-3.5" />
-        </button>
+      <div className="flex items-center gap-3">
+        <LayoutProfiles active={layout} onChange={onLayoutChange} />
+        <div className="flex items-center gap-1">
+          <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
+            <Square className="h-3 w-3" />
+          </button>
+          <button className="rounded p-1 text-steel-gray hover:bg-fail/20 hover:text-fail">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </header>
   );
@@ -366,6 +415,9 @@ function LeftSidebar({
   onOpenDredgeAudit,
   onOpenStockpileAudit,
   onOpenBlastReport,
+  onOpenHighwall,
+  onOpenCrossSection,
+  onOpenDeliverable,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -384,6 +436,9 @@ function LeftSidebar({
   onOpenDredgeAudit: () => void;
   onOpenStockpileAudit: () => void;
   onOpenBlastReport: () => void;
+  onOpenHighwall: () => void;
+  onOpenCrossSection: () => void;
+  onOpenDeliverable: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -450,6 +505,11 @@ function LeftSidebar({
               label="Blast Report"
               onClick={onOpenBlastReport}
             />
+            <SidebarItem
+              icon={<ShieldAlert className="h-3 w-3" />}
+              label="Highwall Monitoring"
+              onClick={onOpenHighwall}
+            />
           </SidebarSection>
         )}
 
@@ -499,6 +559,16 @@ function LeftSidebar({
               icon={<Waves className="h-3 w-3" />}
               label="Dredge Audit"
               onClick={onOpenDredgeAudit}
+            />
+            <SidebarItem
+              icon={<Ruler className="h-3 w-3" />}
+              label="Cross-Section Profiler"
+              onClick={onOpenCrossSection}
+            />
+            <SidebarItem
+              icon={<Package className="h-3 w-3" />}
+              label="Deliverable Package"
+              onClick={onOpenDeliverable}
             />
           </SidebarSection>
         )}

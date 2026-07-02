@@ -35,6 +35,9 @@ pub enum ReportType {
     S44Compliance,
     StockpileAudit,
     BlastReport,
+    HighwallReport,
+    DeliverablePackage,
+    CrossSection,
     Generic,
 }
 
@@ -46,6 +49,9 @@ impl ReportType {
             ReportType::S44Compliance => "#20B2AA",
             ReportType::StockpileAudit => "#FFC107",
             ReportType::BlastReport => "#FF6B35",
+            ReportType::HighwallReport => "#DC2626",
+            ReportType::DeliverablePackage => "#6366F1",
+            ReportType::CrossSection => "#0EA5E9",
             ReportType::Generic => "#FFA500",
         }
     }
@@ -56,6 +62,9 @@ impl ReportType {
             ReportType::S44Compliance => "MetaRDU Industrial — IHO S-44 Compliance Certificate",
             ReportType::StockpileAudit => "MetaRDU Industrial — Stockpile Inventory Audit",
             ReportType::BlastReport => "MetaRDU Industrial — Blast Performance Report",
+            ReportType::HighwallReport => "MetaRDU Industrial — Highwall Deformation Compliance Report",
+            ReportType::DeliverablePackage => "MetaRDU Industrial — Survey Deliverable Package Manifest",
+            ReportType::CrossSection => "MetaRDU Industrial — Cross-Section Profile Report",
             ReportType::Generic => "MetaRDU Industrial — Survey Report",
         }
     }

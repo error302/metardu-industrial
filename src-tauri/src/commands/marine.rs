@@ -5,6 +5,7 @@
 
 use crate::commands::mining::{derive_cell_meters, read_dem_grid};
 use crate::formats::read_geotiff_header;
+use crate::marine::cross_section::{compute_cross_sections, CrossSectionReport, CrossSectionRequest};
 use crate::marine::dredge::{compute_dredge_volumes, DredgeVolumeResult};
 use crate::marine::svp::{parse_svp, SvpProfile};
 use crate::marine::{
@@ -133,4 +134,19 @@ pub async fn compute_dredge_audit_cmd(
         request.tolerance_m,
     )
     .map_err(|e| e.to_string())
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 5 — Cross-section profiler (Revenue Feature #8)
+
+/// Compute cross-sections perpendicular to a centerline.
+///
+/// All coordinates must be in a projected CRS (meters). The frontend is
+/// responsible for converting from geographic (lon/lat) to projected before
+/// invoking this command — use the `transform_coords` IPC.
+#[tauri::command]
+pub async fn compute_cross_sections_cmd(
+    request: CrossSectionRequest,
+) -> Result<CrossSectionReport, String> {
+    compute_cross_sections(&request).map_err(|e| e.to_string())
 }
