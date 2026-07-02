@@ -135,7 +135,8 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
 
     match lower.as_str() {
         "las" => {
-            let header = read_las_header(&path_buf).map_err(|e| e.to_string())?;
+            let header =
+                read_las_header(&path_buf).map_err(|e| ctx!("probing LAS file", path, e))?;
             Ok(FileProbeResult::Las {
                 path,
                 header: Box::new(header),
@@ -144,24 +145,27 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
         "laz" => {
             // LAZ detection happens inside read_las_header (LasZip VLR scan)
             // but we surface a friendlier error here for the .laz extension
-            Err("LAZ (compressed LAS) is not yet supported — coming in Phase 1".into())
+            Err("probe_file: LAZ (compressed LAS) is not yet supported — coming in Phase 1".into())
         }
         "tif" | "tiff" => {
-            let header = read_geotiff_header(&path_buf).map_err(|e| e.to_string())?;
+            let header = read_geotiff_header(&path_buf)
+                .map_err(|e| ctx!("probing GeoTIFF file", path, e))?;
             Ok(FileProbeResult::Geotiff {
                 path,
                 header: Box::new(header),
             })
         }
         "all" => {
-            let header = read_kongsberg_all_header(&path_buf).map_err(|e| e.to_string())?;
+            let header = read_kongsberg_all_header(&path_buf)
+                .map_err(|e| ctx!("probing Kongsberg .all file", path, e))?;
             Ok(FileProbeResult::KongsbergAll {
                 path,
                 header: Box::new(header),
             })
         }
         "s7k" => {
-            let header = read_s7k_header(&path_buf).map_err(|e| e.to_string())?;
+            let header =
+                read_s7k_header(&path_buf).map_err(|e| ctx!("probing Reson .s7k file", path, e))?;
             Ok(FileProbeResult::ResonS7k {
                 path,
                 header: Box::new(header),
@@ -189,7 +193,8 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
 #[tauri::command]
 pub fn read_las_points_binary(path: String, max_points: u64) -> Result<Vec<u8>, String> {
     let path_buf = PathBuf::from(&path);
-    let points = read_las_points(&path_buf, max_points).map_err(|e| e.to_string())?;
+    let points = read_las_points(&path_buf, max_points)
+        .map_err(|e| ctx!("reading LAS points (binary path)", path, e))?;
 
     // Pack into f32 array: [x0, y0, z0, x1, y1, z1, ...]
     let mut buf = Vec::with_capacity(points.len() * 12);
@@ -206,7 +211,8 @@ pub fn read_las_points_binary(path: String, max_points: u64) -> Result<Vec<u8>, 
 #[tauri::command]
 pub fn read_las_points_cmd(path: String, max_points: u64) -> Result<Vec<(f64, f64, f64)>, String> {
     let path_buf = PathBuf::from(&path);
-    read_las_points(&path_buf, max_points).map_err(|e| e.to_string())
+    read_las_points(&path_buf, max_points)
+        .map_err(|e| ctx!("reading LAS points (JSON path)", path, e))
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -330,7 +336,9 @@ pub fn transform_coords_cmd(
     from_crs: String,
     to_crs: String,
 ) -> Result<TransformResult, String> {
-    transform_coords(&coords, &from_crs, &to_crs).map_err(|e| e.to_string())
+    let label = format!("{} -> {}", from_crs, to_crs);
+    transform_coords(&coords, &from_crs, &to_crs)
+        .map_err(|e| ctx!("transforming coordinates", label, e))
 }
 
 // ──────────────────────────────────────────────────────────────────

@@ -88,11 +88,21 @@ pub struct HighwallThresholds {
     pub velocity_critical_mm_per_day: f64,
 }
 
-fn default_advisory() -> f64 { 25.0 }
-fn default_watch() -> f64 { 50.0 }
-fn default_critical() -> f64 { 100.0 }
-fn default_velocity_watch() -> f64 { 1.0 }
-fn default_velocity_critical() -> f64 { 5.0 }
+fn default_advisory() -> f64 {
+    25.0
+}
+fn default_watch() -> f64 {
+    50.0
+}
+fn default_critical() -> f64 {
+    100.0
+}
+fn default_velocity_watch() -> f64 {
+    1.0
+}
+fn default_velocity_critical() -> f64 {
+    5.0
+}
 
 impl Default for HighwallThresholds {
     fn default() -> Self {
@@ -217,11 +227,16 @@ pub fn analyze_highwall(
     }
     if epoch_dates.is_empty() {
         // Use sequential days
-        let dates: Vec<String> = (0..n_epochs).map(|i| format!("2026-01-{:02}", i + 1)).collect();
+        let dates: Vec<String> = (0..n_epochs)
+            .map(|i| format!("2026-01-{:02}", i + 1))
+            .collect();
         return analyze_highwall(epoch_surfaces, &dates, cell_area_m2, thresholds);
     }
     if epoch_dates.len() != n_epochs {
-        return Err(HighwallError::DateCountMismatch(epoch_dates.len(), n_epochs));
+        return Err(HighwallError::DateCountMismatch(
+            epoch_dates.len(),
+            n_epochs,
+        ));
     }
 
     // Validate dimensions
@@ -419,9 +434,18 @@ fn parse_iso_to_days(s: &str) -> Result<f64, String> {
     if parts.len() < 3 {
         return Err(format!("expected YYYY-MM-DD, got '{}'", s));
     }
-    let year: f64 = parts[0].parse::<f64>().map_err(|e: std::num::ParseFloatError| e.to_string())?;
-    let month: f64 = parts[1].parse::<f64>().map_err(|e: std::num::ParseFloatError| e.to_string())?;
-    let day: f64 = parts[2].split('T').next().unwrap_or(parts[2]).parse::<f64>().map_err(|e: std::num::ParseFloatError| e.to_string())?;
+    let year: f64 = parts[0]
+        .parse::<f64>()
+        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
+    let month: f64 = parts[1]
+        .parse::<f64>()
+        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
+    let day: f64 = parts[2]
+        .split('T')
+        .next()
+        .unwrap_or(parts[2])
+        .parse::<f64>()
+        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
     Ok(year * 365.25 + month * 30.4375 + day)
 }
 
@@ -496,8 +520,13 @@ mod tests {
         let s1 = flat(100.0, 100);
         let s2 = flat(100.010, 100);
         let s3 = flat(100.030, 100);
-        let dates = vec!["2026-06-01".into(), "2026-06-08".into(), "2026-06-15".into()];
-        let r = analyze_highwall(&[s1, s2, s3], &dates, 1.0, &HighwallThresholds::default()).unwrap();
+        let dates = vec![
+            "2026-06-01".into(),
+            "2026-06-08".into(),
+            "2026-06-15".into(),
+        ];
+        let r =
+            analyze_highwall(&[s1, s2, s3], &dates, 1.0, &HighwallThresholds::default()).unwrap();
         assert_eq!(r.n_epochs, 3);
         assert_eq!(r.cells.len(), 100);
         // First velocity = 10mm/7days ≈ 1.43mm/day → exceeds watch velocity threshold
@@ -509,7 +538,12 @@ mod tests {
     #[test]
     fn test_too_few_epochs() {
         let s1 = flat(100.0, 100);
-        let r = analyze_highwall(&[s1], &["2026-06-01".into()], 1.0, &HighwallThresholds::default());
+        let r = analyze_highwall(
+            &[s1],
+            &["2026-06-01".into()],
+            1.0,
+            &HighwallThresholds::default(),
+        );
         assert!(r.is_err());
     }
 
@@ -517,7 +551,12 @@ mod tests {
     fn test_dimension_mismatch() {
         let s1 = flat(100.0, 100);
         let s2 = flat(100.0, 200);
-        let r = analyze_highwall(&[s1, s2], &["2026-06-01".into(), "2026-06-08".into()], 1.0, &HighwallThresholds::default());
+        let r = analyze_highwall(
+            &[s1, s2],
+            &["2026-06-01".into(), "2026-06-08".into()],
+            1.0,
+            &HighwallThresholds::default(),
+        );
         assert!(r.is_err());
     }
 
@@ -525,7 +564,12 @@ mod tests {
     fn test_date_count_mismatch() {
         let s1 = flat(100.0, 100);
         let s2 = flat(100.0, 100);
-        let r = analyze_highwall(&[s1, s2], &["2026-06-01".into()], 1.0, &HighwallThresholds::default());
+        let r = analyze_highwall(
+            &[s1, s2],
+            &["2026-06-01".into()],
+            1.0,
+            &HighwallThresholds::default(),
+        );
         assert!(r.is_err());
     }
 

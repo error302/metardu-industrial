@@ -155,72 +155,73 @@ pub fn compute_dredge_volumes(
         }
 
         let removed = post - pre; // positive = dredged deeper
-        let mut cell_category = DredgeCategory::NoChange;
-        let mut cell_pay = 0.0f64;
-        let mut cell_allow = 0.0f64;
-        let mut cell_excess = 0.0f64;
-        let mut cell_shoal = 0.0f64;
 
-        if post >= des {
+        // Compute per-cell bucket volumes + category. Each variable is
+        // assigned exactly once per branch to keep the data flow clear.
+        let (cell_category, cell_pay, cell_allow, cell_excess, cell_shoal) = if post >= des {
             // Case A: dredged to or beyond design
             // pay = max(0, design - pre) × area  (what we contracted to remove)
             let pay_depth = (des - pre).max(0.0);
-            cell_pay = pay_depth * cell_area;
+            let cell_pay = pay_depth * cell_area;
 
             // allowable = max(0, min(post, design + tol) - design) × area
             let allow_depth = (post.min(des + tolerance_m) - des).max(0.0);
-            cell_allow = allow_depth * cell_area;
+            let cell_allow = allow_depth * cell_area;
 
             // excessive = max(0, post - (design + tol)) × area
             let excess_depth = (post - (des + tolerance_m)).max(0.0);
-            cell_excess = excess_depth * cell_area;
+            let cell_excess = excess_depth * cell_area;
 
-            if cell_excess > 0.0 {
-                cell_category = DredgeCategory::ExcessiveOverdredge;
+            let category = if cell_excess > 0.0 {
                 excessive_cells += 1;
                 if excess_depth > max_excessive {
                     max_excessive = excess_depth;
                 }
+                DredgeCategory::ExcessiveOverdredge
             } else if cell_allow > 0.0 {
-                cell_category = DredgeCategory::AllowableOverdredge;
                 allowable_cells += 1;
+                DredgeCategory::AllowableOverdredge
             } else if cell_pay > 0.0 {
-                cell_category = DredgeCategory::Pay;
                 pay_cells += 1;
+                DredgeCategory::Pay
             } else {
-                cell_category = DredgeCategory::NoChange;
-            }
+                DredgeCategory::NoChange
+            };
 
             if removed > 0.0 {
                 sum_dredge_depth += removed;
                 dredge_depth_count += 1;
             }
+
+            (category, cell_pay, cell_allow, cell_excess, 0.0)
         } else {
             // Case B: post < design — didn't reach design depth
             // pay = max(0, post - pre) × area  (whatever was actually removed)
             let pay_depth = (post - pre).max(0.0);
-            cell_pay = pay_depth * cell_area;
+            let cell_pay = pay_depth * cell_area;
 
             // shoaling = (design - post) × area  (material left to remove)
             let shoal_depth = des - post;
-            cell_shoal = shoal_depth * cell_area;
+            let cell_shoal = shoal_depth * cell_area;
 
-            if cell_shoal > 0.0 {
-                cell_category = DredgeCategory::Shoaling;
+            let category = if cell_shoal > 0.0 {
                 shoaling_cells += 1;
+                DredgeCategory::Shoaling
             } else if cell_pay > 0.0 {
                 // Edge case: post == design exactly (boundary with Case A)
-                cell_category = DredgeCategory::Pay;
                 pay_cells += 1;
+                DredgeCategory::Pay
             } else {
-                cell_category = DredgeCategory::NoChange;
-            }
+                DredgeCategory::NoChange
+            };
 
             if removed > 0.0 {
                 sum_dredge_depth += removed;
                 dredge_depth_count += 1;
             }
-        }
+
+            (category, cell_pay, 0.0, 0.0, cell_shoal)
+        };
 
         pay_vol += cell_pay;
         allow_vol += cell_allow;

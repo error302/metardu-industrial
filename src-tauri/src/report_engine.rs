@@ -57,13 +57,19 @@ impl ReportType {
     }
     fn footer(&self) -> &str {
         match self {
-            ReportType::EomReconciliation => "MetaRDU Industrial — Production Reconciliation Report",
+            ReportType::EomReconciliation => {
+                "MetaRDU Industrial — Production Reconciliation Report"
+            }
             ReportType::DredgeAudit => "MetaRDU Industrial — Dredge Volume Audit Report",
             ReportType::S44Compliance => "MetaRDU Industrial — IHO S-44 Compliance Certificate",
             ReportType::StockpileAudit => "MetaRDU Industrial — Stockpile Inventory Audit",
             ReportType::BlastReport => "MetaRDU Industrial — Blast Performance Report",
-            ReportType::HighwallReport => "MetaRDU Industrial — Highwall Deformation Compliance Report",
-            ReportType::DeliverablePackage => "MetaRDU Industrial — Survey Deliverable Package Manifest",
+            ReportType::HighwallReport => {
+                "MetaRDU Industrial — Highwall Deformation Compliance Report"
+            }
+            ReportType::DeliverablePackage => {
+                "MetaRDU Industrial — Survey Deliverable Package Manifest"
+            }
             ReportType::CrossSection => "MetaRDU Industrial — Cross-Section Profile Report",
             ReportType::Generic => "MetaRDU Industrial — Survey Report",
         }
@@ -92,13 +98,18 @@ pub fn generate_report(spec: &ReportSpec) -> Result<(), ReportError> {
 }
 
 fn esc(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
 fn render_html(spec: &ReportSpec) -> String {
     let a = spec.report_type.accent();
-    let now = std::time::{SystemTime, UNIX_EPOCH};
-    let ts = now.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
 
     let mut h = String::with_capacity(8192);
 
@@ -146,7 +157,11 @@ fn render_html(spec: &ReportSpec) -> String {
     if !spec.metadata.is_empty() {
         h.push_str("<div class='meta'>");
         for (k, v) in &spec.metadata {
-            h.push_str(&format!("<div class='mi'><div class='ml'>{}</div><div class='mv'>{}</div></div>", esc(k), esc(v)));
+            h.push_str(&format!(
+                "<div class='mi'><div class='ml'>{}</div><div class='mv'>{}</div></div>",
+                esc(k),
+                esc(v)
+            ));
         }
         h.push_str("</div>");
     }
@@ -168,12 +183,19 @@ fn render_html(spec: &ReportSpec) -> String {
 
     // Tables
     for t in &spec.tables {
-        h.push_str(&format!("<div class='st'>{}</div><table><thead><tr>", esc(&t.title)));
-        for hdr in &t.headers { h.push_str(&format!("<th>{}</th>", esc(hdr))); }
+        h.push_str(&format!(
+            "<div class='st'>{}</div><table><thead><tr>",
+            esc(&t.title)
+        ));
+        for hdr in &t.headers {
+            h.push_str(&format!("<th>{}</th>", esc(hdr)));
+        }
         h.push_str("</tr></thead><tbody>");
         for row in &t.rows {
             h.push_str("<tr>");
-            for cell in row { h.push_str(&format!("<td>{}</td>", esc(cell))); }
+            for cell in row {
+                h.push_str(&format!("<td>{}</td>", esc(cell)));
+            }
             h.push_str("</tr>");
         }
         h.push_str("</tbody></table>");
@@ -181,11 +203,17 @@ fn render_html(spec: &ReportSpec) -> String {
 
     // Map screenshot
     if let Some(ss) = &spec.map_screenshot {
-        h.push_str(&format!("<div class='st'>Map Overview</div><img class='map' src='data:image/png;base64,{}' />", ss));
+        h.push_str(&format!(
+            "<div class='st'>Map Overview</div><img class='map' src='data:image/png;base64,{}' />",
+            ss
+        ));
     }
 
     // Footer
-    h.push_str(&format!("<div class='ftr'><div>{}</div>", spec.report_type.footer()));
+    h.push_str(&format!(
+        "<div class='ftr'><div>{}</div>",
+        spec.report_type.footer()
+    ));
     if let Some(hash) = &spec.provenance_hash {
         h.push_str(&format!("<div class='prov'>Provenance: {}</div>", hash));
     }
@@ -217,7 +245,9 @@ mod tests {
                 rows: vec![vec!["100-105".into(), "1234".into()]],
             }],
             summary: vec![ReportStat {
-                label: "Fill".into(), value: "1234".into(), unit: "m3".into(),
+                label: "Fill".into(),
+                value: "1234".into(),
+                unit: "m3".into(),
                 color: Some("#10B981".into()),
             }],
             map_screenshot: None,

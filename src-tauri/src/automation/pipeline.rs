@@ -96,6 +96,7 @@ pub enum PipelineAction {
 }
 
 impl PipelineAction {
+    #[allow(dead_code)]
     pub fn label(&self) -> &'static str {
         match self {
             PipelineAction::OdmPipeline => "ODM Pipeline",
@@ -124,6 +125,7 @@ pub struct PipelineRunResult {
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum PipelineStatus {
     Running,
     Complete,
@@ -143,6 +145,7 @@ pub struct StepResult {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum PipelineError {
     #[error("YAML parse error: {0}")]
     Yaml(#[from] serde_yaml::Error),

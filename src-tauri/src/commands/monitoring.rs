@@ -9,7 +9,7 @@ use crate::mining::{
     analyze_highwall, compute_epoch_diff, compute_progression, HighwallThresholds,
     Monitoring4DParams,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
@@ -28,13 +28,23 @@ pub async fn compute_epoch_diff_cmd(
     let prev_path = PathBuf::from(&request.previous_path);
     let curr_path = PathBuf::from(&request.current_path);
 
-    let prev_header = read_geotiff_header(&prev_path).map_err(|e| e.to_string())?;
-    let prev_grid = read_dem_grid(&prev_path, &prev_header).map_err(|e| e.to_string())?;
+    let prev_header = read_geotiff_header(&prev_path).map_err(|e| {
+        ctx!(
+            "reading previous-survey DEM header",
+            request.previous_path,
+            e
+        )
+    })?;
+    let prev_grid = read_dem_grid(&prev_path, &prev_header)
+        .map_err(|e| ctx!("reading previous-survey DEM grid", request.previous_path, e))?;
 
-    let curr_header = read_geotiff_header(&curr_path).map_err(|e| e.to_string())?;
-    let curr_grid = read_dem_grid(&curr_path, &curr_header).map_err(|e| e.to_string())?;
+    let curr_header = read_geotiff_header(&curr_path)
+        .map_err(|e| ctx!("reading current-survey DEM header", request.current_path, e))?;
+    let curr_grid = read_dem_grid(&curr_path, &curr_header)
+        .map_err(|e| ctx!("reading current-survey DEM grid", request.current_path, e))?;
 
-    compute_epoch_diff(&prev_grid, &curr_grid, &request.params).map_err(|e| e.to_string())
+    compute_epoch_diff(&prev_grid, &curr_grid, &request.params)
+        .map_err(|e| ctx_no_input!("computing 4D epoch difference", e))
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,18 +58,24 @@ pub async fn compute_progression_cmd(
     request: ProgressionRequest,
 ) -> Result<crate::mining::monitoring_4d::ProgressionReport, String> {
     if request.paths.len() < 2 {
-        return Err("at least 2 surfaces required".into());
+        return Err(format!(
+            "compute_progression_cmd: at least 2 surfaces required, got {}",
+            request.paths.len()
+        ));
     }
 
     let mut surfaces = Vec::with_capacity(request.paths.len());
-    for path in &request.paths {
+    for (i, path) in request.paths.iter().enumerate() {
         let p = PathBuf::from(path);
-        let header = read_geotiff_header(&p).map_err(|e| e.to_string())?;
-        let grid = read_dem_grid(&p, &header).map_err(|e| e.to_string())?;
+        let header = read_geotiff_header(&p)
+            .map_err(|e| ctx!("reading progression DEM header (epoch {}", i, e))?;
+        let grid = read_dem_grid(&p, &header)
+            .map_err(|e| ctx!("reading progression DEM grid (epoch {}", i, e))?;
         surfaces.push(grid);
     }
 
-    compute_progression(&surfaces, &request.params).map_err(|e| e.to_string())
+    compute_progression(&surfaces, &request.params)
+        .map_err(|e| ctx_no_input!("computing N-epoch progression", e))
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -89,17 +105,34 @@ pub async fn analyze_highwall_cmd(
     request: HighwallRequest,
 ) -> Result<crate::mining::highwall::HighwallReport, String> {
     if request.paths.len() < 2 {
-        return Err("at least 2 epochs required for highwall analysis".into());
+        return Err(format!(
+            "analyze_highwall_cmd: at least 2 epochs required, got {}",
+            request.paths.len()
+        ));
+    }
+    if request.epoch_dates.len() != request.paths.len() {
+        return Err(format!(
+            "analyze_highwall_cmd: epoch_dates count ({}) must match paths count ({})",
+            request.epoch_dates.len(),
+            request.paths.len()
+        ));
     }
 
     let mut surfaces = Vec::with_capacity(request.paths.len());
-    for path in &request.paths {
+    for (i, path) in request.paths.iter().enumerate() {
         let p = PathBuf::from(path);
-        let header = read_geotiff_header(&p).map_err(|e| e.to_string())?;
-        let grid = read_dem_grid(&p, &header).map_err(|e| e.to_string())?;
+        let header = read_geotiff_header(&p)
+            .map_err(|e| ctx!("reading highwall epoch DEM header (epoch {}", i, e))?;
+        let grid = read_dem_grid(&p, &header)
+            .map_err(|e| ctx!("reading highwall epoch DEM grid (epoch {}", i, e))?;
         surfaces.push(grid);
     }
 
-    analyze_highwall(&surfaces, &request.epoch_dates, request.cell_area_m2, &request.thresholds)
-        .map_err(|e| e.to_string())
+    analyze_highwall(
+        &surfaces,
+        &request.epoch_dates,
+        request.cell_area_m2,
+        &request.thresholds,
+    )
+    .map_err(|e| ctx_no_input!("analyzing highwall deformation", e))
 }

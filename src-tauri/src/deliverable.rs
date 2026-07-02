@@ -167,16 +167,31 @@ pub fn generate_deliverable_package(
         .unix_permissions(0o644);
 
     // Sanitize project name for use as folder inside ZIP
-    let safe_name = request.project_name
+    let safe_name = request
+        .project_name
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect::<String>();
-    let prefix = if safe_name.is_empty() { "deliverable".to_string() } else { safe_name };
+    let prefix = if safe_name.is_empty() {
+        "deliverable".to_string()
+    } else {
+        safe_name
+    };
 
     // Bundle each source file
     for src in &request.sources {
         let path = Path::new(&src.path);
-        let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("file.bin").to_string();
+        let filename = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("file.bin")
+            .to_string();
         let archive_path = format!("{}/{}", prefix, filename);
 
         let entry: BundledFile = match fs::metadata(path) {
@@ -232,7 +247,9 @@ pub fn generate_deliverable_package(
                         warnings.push(msg);
                         manifest_rows.push_str(&format!(
                             "<tr><td>{}</td><td>{}</td><td>—</td><td>FAILED</td><td>{}</td></tr>",
-                            src.description, src.file_type.label(), filename
+                            src.description,
+                            src.file_type.label(),
+                            filename
                         ));
                         BundledFile {
                             description: src.description.clone(),
@@ -251,7 +268,9 @@ pub fn generate_deliverable_package(
                 warnings.push(msg);
                 manifest_rows.push_str(&format!(
                     "<tr><td>{}</td><td>{}</td><td>—</td><td>MISSING</td><td>{}</td></tr>",
-                    src.description, src.file_type.label(), filename
+                    src.description,
+                    src.file_type.label(),
+                    filename
                 ));
                 BundledFile {
                     description: src.description.clone(),
@@ -494,8 +513,15 @@ fn generate_manifest_html(
     let warning_html = if warnings.is_empty() {
         String::new()
     } else {
-        let w = warnings.iter().map(|w| format!("<li>{}</li>", esc_html(w))).collect::<Vec<_>>().join("");
-        format!("<div class='warn'><strong>Warnings:</strong><ul>{}</ul></div>", w)
+        let w = warnings
+            .iter()
+            .map(|w| format!("<li>{}</li>", esc_html(w)))
+            .collect::<Vec<_>>()
+            .join("");
+        format!(
+            "<div class='warn'><strong>Warnings:</strong><ul>{}</ul></div>",
+            w
+        )
     };
 
     format!(
@@ -571,7 +597,9 @@ fn esc_xml(s: &str) -> String {
 }
 
 fn esc_html(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 fn short_hash(bytes: &[u8]) -> String {
@@ -708,7 +736,10 @@ mod tests {
         fs::write(&f2, b"FAKE S57 DATA").unwrap();
 
         let req = DeliverablePackageRequest {
-            output_path: tmp.join("metardu_test_pkg.zip").to_string_lossy().to_string(),
+            output_path: tmp
+                .join("metardu_test_pkg.zip")
+                .to_string_lossy()
+                .to_string(),
             project_name: "Test Survey 2026".into(),
             metadata: DeliverableMetadata {
                 vessel: "RV Test".into(),

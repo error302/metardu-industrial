@@ -5,7 +5,9 @@
 
 use crate::commands::mining::{derive_cell_meters, read_dem_grid};
 use crate::formats::read_geotiff_header;
-use crate::marine::cross_section::{compute_cross_sections, CrossSectionReport, CrossSectionRequest};
+use crate::marine::cross_section::{
+    compute_cross_sections, CrossSectionReport, CrossSectionRequest,
+};
 use crate::marine::dredge::{compute_dredge_volumes, DredgeVolumeResult};
 use crate::marine::svp::{parse_svp, SvpProfile};
 use crate::marine::{
@@ -21,7 +23,8 @@ pub async fn generate_cube_surface_cmd(
     soundings: Vec<Sounding>,
     params: CubeParams,
 ) -> Result<crate::marine::CubeSurface, String> {
-    generate_cube_surface(&soundings, &params).map_err(|e| e.to_string())
+    generate_cube_surface(&soundings, &params)
+        .map_err(|e| ctx_no_input!("generating CUBE surface", e))
 }
 
 /// Compute TPU for a batch of soundings.
@@ -33,7 +36,7 @@ pub async fn compute_tpu_batch(
         .iter()
         .map(compute_tpu)
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| e.to_string())
+        .map_err(|e| ctx_no_input!("computing TPU batch", e))
 }
 
 /// Check S-44 compliance for a batch of soundings.
@@ -48,21 +51,22 @@ pub struct S44CheckRequest {
 pub async fn check_s44_compliance_cmd(
     request: S44CheckRequest,
 ) -> Result<crate::marine::S44ComplianceResult, String> {
-    check_s44_compliance(&request.soundings, request.target_order).map_err(|e| e.to_string())
+    check_s44_compliance(&request.soundings, request.target_order)
+        .map_err(|e| ctx_no_input!("checking S-44 compliance", e))
 }
 
 /// Export features to an S-57 .000 file.
 #[tauri::command]
 pub fn export_s57(features: Vec<S57Feature>, path: String) -> Result<(), String> {
     let path_buf = std::path::PathBuf::from(&path);
-    write_s57(&path_buf, &features).map_err(|e| e.to_string())
+    write_s57(&path_buf, &features).map_err(|e| ctx!("exporting S-57 .000 file", path, e))
 }
 
 /// Parse an SVP (Sound Velocity Profile) file.
 #[tauri::command]
 pub fn parse_svp_cmd(path: String) -> Result<SvpProfile, String> {
     let path_buf = std::path::PathBuf::from(&path);
-    parse_svp(&path_buf).map_err(|e| e.to_string())
+    parse_svp(&path_buf).map_err(|e| ctx!("parsing SVP file", path, e))
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -101,14 +105,18 @@ pub async fn compute_dredge_audit_cmd(
 ) -> Result<DredgeVolumeResult, String> {
     // Read post-dredge grid (the reference grid)
     let post_path = PathBuf::from(&request.post_path);
-    let post_header = read_geotiff_header(&post_path).map_err(|e| e.to_string())?;
-    let post_grid = read_dem_grid(&post_path, &post_header).map_err(|e| e.to_string())?;
+    let post_header = read_geotiff_header(&post_path)
+        .map_err(|e| ctx!("reading post-dredge DEM header", request.post_path, e))?;
+    let post_grid = read_dem_grid(&post_path, &post_header)
+        .map_err(|e| ctx!("reading post-dredge DEM grid", request.post_path, e))?;
     let (cell_w_m, cell_h_m) = derive_cell_meters(&post_header);
 
     // Read pre-dredge grid
     let pre_path = PathBuf::from(&request.pre_path);
-    let pre_header = read_geotiff_header(&pre_path).map_err(|e| e.to_string())?;
-    let pre_grid = read_dem_grid(&pre_path, &pre_header).map_err(|e| e.to_string())?;
+    let pre_header = read_geotiff_header(&pre_path)
+        .map_err(|e| ctx!("reading pre-dredge DEM header", request.pre_path, e))?;
+    let pre_grid = read_dem_grid(&pre_path, &pre_header)
+        .map_err(|e| ctx!("reading pre-dredge DEM grid", request.pre_path, e))?;
 
     // Design grid: either GeoTIFF or flat:Z
     let (design_grid, _design_header) = if request.design_path.starts_with("flat:") {
@@ -116,12 +124,14 @@ pub async fn compute_dredge_audit_cmd(
             .design_path
             .strip_prefix("flat:")
             .and_then(|s| s.parse().ok())
-            .ok_or("flat:Z design must be flat:<number>")?;
+            .ok_or_else(|| format!("invalid flat:Z design: '{}'", request.design_path))?;
         (vec![z; post_grid.len()], post_header.clone())
     } else {
         let d_path = PathBuf::from(&request.design_path);
-        let header = read_geotiff_header(&d_path).map_err(|e| e.to_string())?;
-        let grid = read_dem_grid(&d_path, &header).map_err(|e| e.to_string())?;
+        let header = read_geotiff_header(&d_path)
+            .map_err(|e| ctx!("reading design DEM header", request.design_path, e))?;
+        let grid = read_dem_grid(&d_path, &header)
+            .map_err(|e| ctx!("reading design DEM grid", request.design_path, e))?;
         (grid, header)
     };
 
@@ -133,7 +143,7 @@ pub async fn compute_dredge_audit_cmd(
         cell_h_m,
         request.tolerance_m,
     )
-    .map_err(|e| e.to_string())
+    .map_err(|e| ctx_no_input!("computing dredge pay-volume breakdown", e))
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -148,5 +158,5 @@ pub async fn compute_dredge_audit_cmd(
 pub async fn compute_cross_sections_cmd(
     request: CrossSectionRequest,
 ) -> Result<CrossSectionReport, String> {
-    compute_cross_sections(&request).map_err(|e| e.to_string())
+    compute_cross_sections(&request).map_err(|e| ctx_no_input!("computing cross-sections", e))
 }

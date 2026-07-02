@@ -14,11 +14,13 @@ use crate::deliverable::{
 pub async fn generate_deliverable_package_cmd(
     request: DeliverablePackageRequest,
 ) -> Result<DeliverablePackageResult, String> {
+    let output_path = request.output_path.clone();
     // Run the (potentially slow) packaging in a blocking task so we
     // don't stall the async runtime.
     tokio::task::spawn_blocking(move || {
-        generate_deliverable_package(&request).map_err(|e| e.to_string())
+        generate_deliverable_package(&request)
+            .map_err(|e| ctx!("generating deliverable package", output_path, e))
     })
     .await
-    .map_err(|e| format!("task join error: {e}"))?
+    .map_err(|e| format!("generate_deliverable_package_cmd: task join error: {e}"))?
 }

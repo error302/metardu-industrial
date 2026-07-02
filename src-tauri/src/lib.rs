@@ -10,6 +10,7 @@
 #![allow(unknown_lints)]
 #![allow(never_type_fallback)]
 
+#[allow(dead_code)]
 mod ar_companion;
 mod automation;
 mod commands;
@@ -17,6 +18,8 @@ mod commands;
 mod deliverable;
 #[allow(dead_code)]
 mod distributed;
+#[macro_use]
+mod error_context;
 mod formats;
 mod geodesy;
 mod marine;
@@ -26,6 +29,7 @@ mod modules;
 #[allow(dead_code)]
 mod performance;
 mod pipelines;
+#[allow(dead_code)]
 mod plugins;
 mod report_engine;
 #[allow(dead_code)]
@@ -40,7 +44,7 @@ use commands::{
     automation::parse_pipeline_cmd, automation::remove_scheduled_job,
     automation::remove_watch_folder, automation::run_pipeline_cmd, automation::scan_watch_folders,
     automation::serialize_pipeline_cmd, deliverable::generate_deliverable_package_cmd,
-    get_settings, init_module, is_proj_available, list_modules,
+    generate_report_cmd, get_settings, init_module, is_proj_available, list_modules,
     marine::check_s44_compliance_cmd, marine::compute_cross_sections_cmd,
     marine::compute_dredge_audit_cmd, marine::compute_tpu_batch, marine::export_s57,
     marine::generate_cube_surface_cmd, marine::parse_svp_cmd, mining::classify_ground,
@@ -48,11 +52,11 @@ use commands::{
     ml::classify_habitat_cmd, monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
     pipelines::get_odm_status, pipelines::run_odm_pipeline, probe_file, read_las_points_binary,
-    read_las_points_cmd, sample_profile, save_settings, generate_report_cmd,
-    streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
-    streaming::get_stream_status_cmd, streaming::merge_distributed_cube_results,
-    streaming::start_coordinator_cmd, streaming::start_stream_cmd, streaming::stop_coordinator_cmd,
-    streaming::stop_stream_cmd, transform_coords_cmd,
+    read_las_points_cmd, sample_profile, save_settings, streaming::enqueue_distributed_cube,
+    streaming::get_coordinator_status_cmd, streaming::get_stream_status_cmd,
+    streaming::merge_distributed_cube_results, streaming::start_coordinator_cmd,
+    streaming::start_stream_cmd, streaming::stop_coordinator_cmd, streaming::stop_stream_cmd,
+    transform_coords_cmd,
 };
 use modules::ModuleRegistry;
 use plugins::get_supported_extensions;

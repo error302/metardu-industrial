@@ -16,15 +16,19 @@ pub use metardu_core::marine::*;
 
 // Keep the module declarations for backward compatibility with
 // any code that references `crate::marine::cube` etc.
+#[allow(unused_imports)]
 pub mod cube {
     pub use metardu_core::marine::cube::*;
 }
+#[allow(unused_imports)]
 pub mod s44 {
     pub use metardu_core::marine::s44::*;
 }
+#[allow(unused_imports)]
 pub mod s57 {
     pub use metardu_core::marine::s57::*;
 }
+#[allow(unused_imports)]
 pub mod tpu {
     pub use metardu_core::marine::tpu::*;
 }

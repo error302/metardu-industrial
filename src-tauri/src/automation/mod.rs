@@ -9,8 +9,8 @@ pub mod scheduler;
 pub mod watcher;
 
 pub use pipeline::{
-    parse_pipeline, resolve_params, resolve_template, serialize_pipeline, Pipeline, PipelineAction,
-    PipelineError, PipelineRunResult, PipelineStatus, PipelineStep, StepResult,
+    parse_pipeline, resolve_params, serialize_pipeline, Pipeline, PipelineAction,
+    PipelineRunResult, PipelineStatus, StepResult,
 };
-pub use scheduler::{global_scheduler_state, ScheduledJob, ScheduledJobStatus, SchedulerState};
-pub use watcher::{global_watch_state, WatchFolder, WatchFolderStatus, WatchState};
+pub use scheduler::{global_scheduler_state, ScheduledJob, ScheduledJobStatus};
+pub use watcher::{global_watch_state, WatchFolder, WatchFolderStatus};

@@ -15,7 +15,7 @@
 // A crashing plugin takes down the app. Phase 5+ should consider
 // sandboxing via WASM or separate processes.
 
-use crate::plugins::{FileReaderPlugin, PluginInfo, PluginRegistry};
+use crate::plugins::{FileReaderPlugin, PluginInfo};
 use libloading::{Library, Symbol};
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};

@@ -3,11 +3,10 @@
 use crate::distributed::server::{
     get_server_status, start_coordinator_server, stop_coordinator_server,
 };
-use crate::distributed::{global_coordinator, WorkChunk, WorkChunkType};
-use crate::marine::{generate_cube_surface, CubeParams, Sounding};
+use crate::distributed::{global_coordinator, WorkChunkType};
+use crate::marine::{CubeParams, Sounding};
 use crate::streaming::{
-    get_stream_status, global_stream_state, start_stream_listener, stop_stream_listener,
-    StreamConfig,
+    get_stream_status, start_stream_listener, stop_stream_listener, StreamConfig,
 };
 use serde::Deserialize;
 use tauri::AppHandle;

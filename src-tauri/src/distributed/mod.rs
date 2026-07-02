@@ -16,7 +16,6 @@ pub mod server;
 // Phase 4 scaffold: defines the coordinator trait, work chunk model,
 // and TCP protocol. Actual worker binary is a separate Phase 4 task.
 
-use serde::Deserialize as _;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::net::SocketAddr;

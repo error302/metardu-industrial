@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduledJob {

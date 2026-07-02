@@ -13,7 +13,7 @@ use std::path::PathBuf;
 #[tauri::command]
 pub fn parse_drone_manifest(path: String) -> Result<DroneManifest, String> {
     let path_buf = PathBuf::from(&path);
-    parse_manifest(&path_buf).map_err(|e| e.to_string())
+    parse_manifest(&path_buf).map_err(|e| ctx!("parsing drone manifest", path, e))
 }
 
 /// Run CSF (Cloth Simulation Filter) ground extraction on a LAS point cloud.
@@ -29,8 +29,8 @@ pub async fn classify_ground(
 ) -> Result<CsfResult, String> {
     let path_buf = PathBuf::from(&path);
     let points = crate::formats::read_las_points(&path_buf, max_points.unwrap_or(0))
-        .map_err(|e| e.to_string())?;
-    csf_classify(&points, &params).map_err(|e| e.to_string())
+        .map_err(|e| ctx!("reading LAS points for ground classification", path, e))?;
+    csf_classify(&points, &params).map_err(|e| ctx!("running CSF ground classification", path, e))
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,20 +53,24 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
     use crate::formats::read_geotiff_header;
 
     let current_path = PathBuf::from(&request.current_path);
-    let current_header = read_geotiff_header(&current_path).map_err(|e| e.to_string())?;
-    let current_grid = read_dem_grid(&current_path, &current_header).map_err(|e| e.to_string())?;
+    let current_header = read_geotiff_header(&current_path)
+        .map_err(|e| ctx!("reading current-survey DEM header", request.current_path, e))?;
+    let current_grid = read_dem_grid(&current_path, &current_header)
+        .map_err(|e| ctx!("reading current-survey DEM grid", request.current_path, e))?;
 
     let (reference_grid, _ref_header) = if request.reference_path.starts_with("flat:") {
         let z: f64 = request
             .reference_path
             .strip_prefix("flat:")
             .and_then(|s| s.parse().ok())
-            .ok_or("flat:Z reference must be flat:<number>")?;
+            .ok_or_else(|| format!("invalid flat:Z reference: '{}'", request.reference_path))?;
         (vec![z; current_grid.len()], current_header.clone())
     } else {
         let ref_path = PathBuf::from(&request.reference_path);
-        let header = read_geotiff_header(&ref_path).map_err(|e| e.to_string())?;
-        let grid = read_dem_grid(&ref_path, &header).map_err(|e| e.to_string())?;
+        let header = read_geotiff_header(&ref_path)
+            .map_err(|e| ctx!("reading reference DEM header", request.reference_path, e))?;
+        let grid = read_dem_grid(&ref_path, &header)
+            .map_err(|e| ctx!("reading reference DEM grid", request.reference_path, e))?;
         (grid, header)
     };
 
@@ -79,7 +83,7 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
         cell_h_m,
         request.bench_interval,
     )
-    .map_err(|e| e.to_string())
+    .map_err(|e| ctx_no_input!("computing fill/cut volumes", e))
 }
 
 /// Read a GeoTIFF DEM into a flat Vec<f64> elevation grid.

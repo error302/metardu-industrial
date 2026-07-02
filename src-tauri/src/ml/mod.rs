@@ -24,6 +24,7 @@ pub enum HabitatClass {
 }
 
 impl HabitatClass {
+    #[allow(dead_code)]
     pub fn label(&self) -> &'static str {
         match self {
             HabitatClass::Rock => "Rock / Hard substrate",
@@ -34,6 +35,7 @@ impl HabitatClass {
         }
     }
 
+    #[allow(dead_code)]
     pub fn color(&self) -> [u8; 3] {
         match self {
             HabitatClass::Rock => [120, 80, 40],

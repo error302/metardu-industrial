@@ -176,9 +176,11 @@ pub fn compute_cross_sections(
     };
 
     // Load DEMs
-    let survey_dem = DemSampler::open(&request.survey_path)
-        .map_err(CrossSectionError::SurveyRead)?;
-    let design_dem = request.design_path.as_ref()
+    let survey_dem =
+        DemSampler::open(&request.survey_path).map_err(CrossSectionError::SurveyRead)?;
+    let design_dem = request
+        .design_path
+        .as_ref()
         .map(|p| DemSampler::open(p).map_err(CrossSectionError::DesignRead))
         .transpose()?;
     let flat_design_depth = request.design_depth;
@@ -193,7 +195,10 @@ pub fn compute_cross_sections(
         let center = point_at_chainage(&request.centerline, chainage);
         let tangent = tangent_at_chainage(&request.centerline, chainage);
         // Perpendicular direction (rotate tangent 90°)
-        let perp = Point2D { x: -tangent.y, y: tangent.x };
+        let perp = Point2D {
+            x: -tangent.y,
+            y: tangent.x,
+        };
 
         let mut points = Vec::new();
         let mut under_dredge_area = 0.0f64;
@@ -271,7 +276,8 @@ pub fn compute_cross_sections(
         }
     }
     if !sections.is_empty() {
-        summary.compliance_pct = (summary.compliant_sections as f64 / sections.len() as f64) * 100.0;
+        summary.compliance_pct =
+            (summary.compliant_sections as f64 / sections.len() as f64) * 100.0;
     }
 
     Ok(CrossSectionReport {
@@ -320,7 +326,10 @@ fn tangent_at_chainage(line: &[Point2D], mut chainage: f64) -> Point2D {
         let dx = line[1].x - line[0].x;
         let dy = line[1].y - line[0].y;
         let len = (dx * dx + dy * dy).sqrt().max(1e-9);
-        return Point2D { x: dx / len, y: dy / len };
+        return Point2D {
+            x: dx / len,
+            y: dy / len,
+        };
     }
     for i in 1..line.len() {
         let seg_len = line[i - 1].distance_to(&line[i]);
@@ -328,7 +337,10 @@ fn tangent_at_chainage(line: &[Point2D], mut chainage: f64) -> Point2D {
             let dx = line[i].x - line[i - 1].x;
             let dy = line[i].y - line[i - 1].y;
             let len = (dx * dx + dy * dy).sqrt().max(1e-9);
-            return Point2D { x: dx / len, y: dy / len };
+            return Point2D {
+                x: dx / len,
+                y: dy / len,
+            };
         }
         chainage -= seg_len;
     }
@@ -336,7 +348,10 @@ fn tangent_at_chainage(line: &[Point2D], mut chainage: f64) -> Point2D {
     let dx = line[n - 1].x - line[n - 2].x;
     let dy = line[n - 1].y - line[n - 2].y;
     let len = (dx * dx + dy * dy).sqrt().max(1e-9);
-    Point2D { x: dx / len, y: dy / len }
+    Point2D {
+        x: dx / len,
+        y: dy / len,
+    }
 }
 
 // ──────────────────────────────────────────────────────────────────

@@ -89,7 +89,7 @@ pub async fn start_coordinator_server(app: AppHandle, port: u16) -> Result<(), S
 
             if let Ok(Ok((stream, addr))) = accept_result {
                 {
-                    let mut state = global_server_state().lock();
+                    let state = global_server_state().lock();
                     if let Ok(mut state) = state {
                         state.workers_connected += 1;
                     }
@@ -134,7 +134,7 @@ async fn handle_worker_connection(stream: TcpStream, addr: std::net::SocketAddr,
                         }
                         WorkerMessage::Result { result } => {
                             {
-                                let mut coord = global_coordinator().lock();
+                                let coord = global_coordinator().lock();
                                 if let Ok(mut coord) = coord {
                                     coord.complete(result.clone());
                                 }
@@ -153,7 +153,7 @@ async fn handle_worker_connection(stream: TcpStream, addr: std::net::SocketAddr,
                 }
 
                 let next_chunk = {
-                    let mut coord = global_coordinator().lock();
+                    let coord = global_coordinator().lock();
                     match coord {
                         Ok(mut coord) => coord.dispatch(&worker_id),
                         Err(_) => None,
@@ -184,7 +184,7 @@ async fn handle_worker_connection(stream: TcpStream, addr: std::net::SocketAddr,
     }
 
     {
-        let mut state = global_server_state().lock();
+        let state = global_server_state().lock();
         if let Ok(mut state) = state {
             state.workers_connected = state.workers_connected.saturating_sub(1);
         }

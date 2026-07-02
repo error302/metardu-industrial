@@ -176,7 +176,7 @@ pub async fn start_stream_listener(
             if let Ok(Ok((len, _addr))) = recv_result {
                 // Update byte count
                 {
-                    let mut state = global_stream_state().lock();
+                    let state = global_stream_state().lock();
                     if let Ok(mut state) = state {
                         state.bytes_received += len as u64;
                     }
@@ -187,7 +187,7 @@ pub async fn start_stream_listener(
                 if let Some(ping) = parse_json_ping(data, start) {
                     ping_buffer.push(ping);
                     {
-                        let mut state = global_stream_state().lock();
+                        let state = global_stream_state().lock();
                         if let Ok(mut state) = state {
                             state.pings_received += 1;
                             state.pings_buffered = ping_buffer.len();
@@ -204,7 +204,7 @@ pub async fn start_stream_listener(
                 ping_buffer.clear();
                 last_flush = Instant::now();
 
-                let mut state = global_stream_state().lock();
+                let state = global_stream_state().lock();
                 if let Ok(mut state) = state {
                     state.pings_buffered = 0;
                 }
