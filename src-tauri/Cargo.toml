@@ -1,0 +1,38 @@
+[package]
+name = "metardu-industrial"
+version = "0.1.0"
+description = "Specialised desktop app for mining and marine survey workflows"
+authors = ["error302"]
+edition = "2021"
+rust-version = "1.77"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "metardu_industrial_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Geospatial core — Phase 0 placeholder deps. Uncomment as we implement modules.
+# gdal = { version = "0.17", features = ["bindgen"] }
+# proj = "0.27"
+# pdal-sys = "0.1"
+# polars = { version = "0.42", features = ["lazy", "csv", "parquet"] }
+# rusqlite = { version = "0.32", features = ["bundled", "spatialite"] }
+# tokio = { version = "1", features = ["full"] }
+# tracing = "0.1"
+# tracing-subscriber = "0.3"
+# arrow = "52"
+# parquet = "52"
+
+[features]
+# This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]

@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   MetaRDU Industrial — Design System
+   Tokens extracted directly from the MetaRDU Industrial logo.
+   Navy base (#0A192F), industrial orange (#FFA500) primary accent,
+   mining yellow (#FFC107) and marine turquoise (#20B2AA) domain accents.
+   ========================================================================= */
+
+@theme {
+  /* Brand core */
+  --color-navy-base: #0a192f;
+  --color-navy-panel: #0f1f3a;
+  --color-navy-elevated: #142a4a;
+  --color-navy-border: #1e2a3f;
+  --color-industrial-orange: #ffa500;
+  --color-industrial-orange-dim: #b8771a;
+  --color-white: #ffffff;
+  --color-steel-gray: #6b7280;
+  --color-steel-light: #9ca3af;
+
+  /* Mining mode */
+  --color-mining-yellow: #ffc107;
+  --color-mining-burnt: #ffb347;
+  --color-mining-terrain: #8b4513;
+
+  /* Marine mode */
+  --color-marine-deep: #1e3a8a;
+  --color-marine-turquoise: #20b2aa;
+  --color-marine-cyan: #06b6d4;
+
+  /* Semantic states */
+  --color-pass: #10b981;
+  --color-investigate: #f59e0b;
+  --color-fail: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Typography */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Spacing — 8px base grid */
+  --spacing: 8px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+/* =========================================================================
+   Base styles
+   ========================================================================= */
+
+:root {
+  color-scheme: dark;
+  --background: var(--color-navy-base);
+  --foreground: var(--color-white);
+  --accent: var(--color-industrial-orange);
+}
+
+* {
+  border-color: var(--color-navy-border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--color-navy-base);
+  color: var(--color-white);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+/* Monospaced coordinate readouts */
+.font-mono,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle survey grid background pattern */
+.bg-survey-grid {
+  background-image:
+    linear-gradient(to right, rgba(30, 42, 63, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 42, 63, 0.4) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Marine sonar pattern — denser, smaller cells */
+.bg-sonar-grid {
+  background-image:
+    linear-gradient(to right, rgba(32, 178, 170, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(32, 178, 170, 0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Scrollbar — slim, themed */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-navy-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-navy-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-steel-gray);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-industrial-orange);
+  color: var(--color-navy-base);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-industrial-orange);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   Animations
+   ========================================================================= */
+
+@keyframes lens-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lens-fill-mining {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes lens-fill-marine {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-orange {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes signal-arc {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-lens-rotate {
+  animation: lens-rotate 4s linear infinite;
+}
+.animate-lens-fill-mining {
+  animation: lens-fill-mining 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.animate-lens-fill-marine {
+  animation: lens-fill-marine 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.animate-pulse-orange {
+  animation: pulse-orange 1.6s ease-in-out infinite;
+}
+.animate-signal-arc {
+  animation: signal-arc 2s ease-out infinite;
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+/* Shimmer for loading states */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 165, 0, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Status dot — for module load indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot--pending {
+  background: var(--color-steel-gray);
+}
+.status-dot--loading {
+  background: var(--color-industrial-orange);
+  animation: pulse-orange 1s ease-in-out infinite;
+}
+.status-dot--ok {
+  background: var(--color-pass);
+}
+.status-dot--fail {
+  background: var(--color-fail);
+}

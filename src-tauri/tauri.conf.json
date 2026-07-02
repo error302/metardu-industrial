@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MetaRDU Industrial",
+  "version": "0.1.0",
+  "identifier": "com.metardu.industrial",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MetaRDU Industrial",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "decorations": true,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "backgroundColor": "#0A192F"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "copyright": "© 2026 MetaRDU Industrial",
+    "category": "DeveloperTool",
+    "shortDescription": "Mining & marine survey automation desktop app",
+    "longDescription": "MetaRDU Industrial is a specialised desktop application for mining and marine survey workflows, automating the repetitive 60-70% of project time spent on data wrangling, format translation, and manual QA/QC."
+  }
+}

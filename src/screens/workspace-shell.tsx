@@ -1,0 +1,383 @@
+/**
+ * Workspace Shell — main application frame.
+ *
+ * Layout per ARCHITECTURE.md §6:
+ *   - Title bar with brand mark + workspace name + window controls
+ *   - Left sidebar: project tree / data tree
+ *   - Center: OpenLayers map canvas (primary)
+ *   - Right sidebar: contextual panel (volume calc / S-44 status / etc.)
+ *   - Bottom: status bar (CRS, domain, GNSS fix, module status)
+ *
+ * Color mode shifts based on activeDomain (mining/marine/both).
+ */
+
+import { useState } from "react";
+import {
+  Folder,
+  FileBox,
+  Layers,
+  Database,
+  Settings,
+  HelpCircle,
+  Minus,
+  Square,
+  X,
+  Activity,
+  MapPin,
+  Crosshair,
+  Clock,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
+import { MapCanvas } from "@/components/map-canvas";
+import {
+  colors,
+  domainAccent,
+  APP_NAME,
+  APP_VERSION,
+  type DomainMode,
+} from "@/lib/tokens";
+import { useAppStore } from "@/stores/app-store";
+
+export function WorkspaceShell() {
+  const { activeDomain, settings } = useAppStore();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+
+  return (
+    <div className="flex h-full w-full flex-col bg-navy-base">
+      <TitleBar domain={activeDomain} />
+      <div className="flex flex-1 overflow-hidden">
+        {sidebarOpen && <LeftSidebar domain={activeDomain} />}
+        <main className="relative flex-1 overflow-hidden">
+          <MapCanvas domain={activeDomain} epsg={settings.defaultEpsg} />
+          <FloatingActions
+            onToggleSidebar={() => setSidebarOpen((v) => !v)}
+            onToggleRight={() => setRightPanelOpen((v) => !v)}
+          />
+        </main>
+        {rightPanelOpen && <RightPanel domain={activeDomain} />}
+      </div>
+      <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} />
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
+
+function TitleBar({ domain }: { domain: DomainMode }) {
+  const accent = domainAccent[domain].primary;
+  return (
+    <header className="flex h-10 items-center justify-between border-b border-navy-border bg-navy-panel px-3">
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold"
+          style={{ background: colors.industrialOrange, color: colors.navyBase }}
+        >
+          M
+        </div>
+        <span className="text-xs font-semibold tracking-wide text-white">
+          {APP_NAME}
+        </span>
+        <span className="text-steel-gray">/</span>
+        <span className="text-xs text-steel-light">Untitled Project</span>
+        <span
+          className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
+          style={{
+            background: `${accent}20`,
+            color: accent,
+            border: `1px solid ${accent}40`,
+          }}
+        >
+          {domainAccent[domain].label}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
+          <Minus className="h-3.5 w-3.5" />
+        </button>
+        <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
+          <Square className="h-3 w-3" />
+        </button>
+        <button className="rounded p-1 text-steel-gray hover:bg-fail/20 hover:text-fail">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </header>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
+
+function LeftSidebar({ domain }: { domain: DomainMode }) {
+  const accent = domainAccent[domain].primary;
+
+  return (
+    <aside className="flex w-60 flex-col border-r border-navy-border bg-navy-panel">
+      <div className="border-b border-navy-border p-3">
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-md py-2 text-xs font-medium transition-colors"
+          style={{ background: accent, color: colors.navyBase }}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          New Survey
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2">
+        <SidebarSection title="Project" icon={<Folder className="h-3 w-3" />}>
+          <SidebarItem icon={<FileBox className="h-3 w-3" />} label="Untitled Project" active />
+          <SidebarItem icon={<Layers className="h-3 w-3" />} label="Layers" indent />
+          <SidebarItem icon={<Database className="h-3 w-3" />} label="Data sources" indent />
+        </SidebarSection>
+
+        {domain !== "marine" && (
+          <SidebarSection title="Mining" icon={<Activity className="h-3 w-3" />}>
+            <SidebarItem label="UAV Surveys" indent />
+            <SidebarItem label="TLS Stations" indent />
+            <SidebarItem label="Stockpiles" indent />
+            <SidebarItem label="Blast Designs" indent />
+            <SidebarItem label="4D Monitoring" indent />
+          </SidebarSection>
+        )}
+
+        {domain !== "mining" && (
+          <SidebarSection title="Marine" icon={<Activity className="h-3 w-3" />}>
+            <SidebarItem label="Survey Lines" indent />
+            <SidebarItem label="SVP Casts" indent />
+            <SidebarItem label="Tide Gauges" indent />
+            <SidebarItem label="CUBE Surfaces" indent />
+            <SidebarItem label="S-44 Reports" indent />
+          </SidebarSection>
+        )}
+      </div>
+
+      <div className="border-t border-navy-border p-2">
+        <SidebarItem icon={<Settings className="h-3 w-3" />} label="Settings" />
+        <SidebarItem icon={<HelpCircle className="h-3 w-3" />} label="Help & Docs" />
+      </div>
+    </aside>
+  );
+}
+
+function SidebarSection({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3">
+      <div className="flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+        {icon}
+        {title}
+      </div>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
+function SidebarItem({
+  icon,
+  label,
+  active = false,
+  indent = false,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  active?: boolean;
+  indent?: boolean;
+}) {
+  return (
+    <button
+      className={`flex w-full items-center gap-2 rounded-md py-1.5 text-xs transition-colors ${
+        active
+          ? "bg-navy-elevated text-white"
+          : "text-steel-light hover:bg-navy-elevated/50 hover:text-white"
+      } ${indent ? "pl-6" : "pl-2"} pr-2`}
+    >
+      {icon && <span className="text-steel-gray">{icon}</span>}
+      <span className="flex-1 text-left">{label}</span>
+      {active && (
+        <ChevronRight className="h-3 w-3" style={{ color: colors.industrialOrange }} />
+      )}
+    </button>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
+
+function RightPanel({ domain }: { domain: DomainMode }) {
+  const accent = domainAccent[domain].primary;
+
+  return (
+    <aside className="flex w-80 flex-col border-l border-navy-border bg-navy-panel">
+      <div className="border-b border-navy-border px-4 py-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-steel-light">
+          {domain === "marine" ? "S-44 Status" : "Survey Status"}
+        </h3>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {/* Status block */}
+        <div className="rounded-lg border border-navy-border bg-navy-base p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-steel-gray">Survey ready</span>
+            <span
+              className="rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+              style={{ background: `${colors.investigate}20`, color: colors.investigate }}
+            >
+              No Data
+            </span>
+          </div>
+          <div className="mt-3 text-2xl font-bold text-white">—</div>
+          <div className="text-xs text-steel-gray">
+            {domain === "marine"
+              ? "Soundings ingested"
+              : "Points classified"}
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <StatTile label="CRS" value="EPSG:4326" mono />
+          <StatTile label="Domain" value={domainAccent[domain].label} />
+          <StatTile
+            label={domain === "marine" ? "S-44 Order" : "Bench Level"}
+            value="—"
+          />
+          <StatTile label="Last sync" value="—" />
+        </div>
+
+        {/* Recent activity */}
+        <div className="mt-6">
+          <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+            Recent Activity
+          </h4>
+          <div className="space-y-1.5 text-xs text-steel-light">
+            <ActivityRow time="—" text="No activity yet" />
+          </div>
+        </div>
+
+        {/* Hint card */}
+        <div
+          className="mt-6 rounded-md border p-3 text-xs"
+          style={{
+            borderColor: `${accent}40`,
+            background: `${accent}10`,
+          }}
+        >
+          <div className="mb-1 font-semibold" style={{ color: accent }}>
+            Tip
+          </div>
+          <p className="leading-relaxed text-steel-light">
+            {domain === "marine"
+              ? "Drop a Kongsberg .all or Reson .s7k file anywhere to start the ingest pipeline."
+              : "Drop a LAS/LAZ point cloud or drone photogrammetry export to begin."}
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-navy-border bg-navy-base p-2.5">
+      <div className="text-[9px] uppercase tracking-wider text-steel-gray">
+        {label}
+      </div>
+      <div
+        className={`mt-0.5 truncate text-sm font-medium text-white ${
+          mono ? "font-mono" : ""
+        }`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function ActivityRow({ time, text }: { time: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="font-mono text-[10px] text-steel-gray">{time}</span>
+      <span className="flex-1">{text}</span>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
+
+function FloatingActions({
+  onToggleSidebar,
+  onToggleRight,
+}: {
+  onToggleSidebar: () => void;
+  onToggleRight: () => void;
+}) {
+  return (
+    <div className="absolute right-3 top-3 flex flex-col gap-1">
+      <button
+        onClick={onToggleRight}
+        title="Toggle right panel"
+        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+      >
+        <Square className="h-3 w-3" />
+      </button>
+      <button
+        onClick={onToggleSidebar}
+        title="Toggle sidebar"
+        className="rounded border border-navy-border bg-navy-base/85 p-1.5 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+      >
+        <Layers className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────── */
+
+function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
+  const accent = domainAccent[domain].primary;
+  return (
+    <footer className="flex h-6 items-center justify-between border-t border-navy-border bg-navy-panel px-3 text-[10px]">
+      <div className="flex items-center gap-4">
+        <span className="flex items-center gap-1.5 text-steel-light">
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: colors.pass }}
+          />
+          Ready
+        </span>
+        <span className="flex items-center gap-1 text-steel-gray">
+          <MapPin className="h-3 w-3" style={{ color: accent }} />
+          <span className="font-mono text-steel-light">{epsg}</span>
+        </span>
+        <span className="flex items-center gap-1 text-steel-gray">
+          <Crosshair className="h-3 w-3" />
+          <span style={{ color: accent }}>{domainAccent[domain].label}</span>
+        </span>
+      </div>
+      <div className="flex items-center gap-4 text-steel-gray">
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          <span className="font-mono">{new Date().toISOString().slice(11, 19)}Z</span>
+        </span>
+        <span className="font-mono">v{APP_VERSION}</span>
+      </div>
+    </footer>
+  );
+}
