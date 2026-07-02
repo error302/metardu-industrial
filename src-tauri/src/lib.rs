@@ -42,14 +42,15 @@ use commands::{
     mining::parse_drone_manifest, ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
     monitoring::compute_epoch_diff_cmd, monitoring::compute_progression_cmd, ping,
     pipelines::check_odm_availability, pipelines::get_odm_status, pipelines::run_odm_pipeline,
-    plugins::get_supported_extensions as get_plugin_exts,
-    plugins::list_plugins as list_all_plugins, probe_file, read_las_points_cmd, sample_profile,
-    save_settings, streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
+    probe_file, read_las_points_cmd, sample_profile, save_settings,
+    streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
     streaming::get_stream_status_cmd, streaming::merge_distributed_cube_results,
     streaming::start_coordinator_cmd, streaming::start_stream_cmd, streaming::stop_coordinator_cmd,
     streaming::stop_stream_cmd, transform_coords_cmd,
 };
 use modules::ModuleRegistry;
+use plugins::get_supported_extensions;
+use plugins::list_plugins;
 use std::sync::Mutex;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -90,8 +91,8 @@ pub fn run() {
             compute_progression_cmd,
             classify_habitat_cmd,
             analyze_fragmentation_cmd,
-            list_all_plugins,
-            get_plugin_exts,
+            list_plugins,
+            get_supported_extensions,
             parse_pipeline_cmd,
             serialize_pipeline_cmd,
             run_pipeline_cmd,
