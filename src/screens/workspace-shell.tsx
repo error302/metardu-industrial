@@ -85,6 +85,9 @@ import { TelemetryDialog } from "@/components/telemetry-dialog";
 import { ProjectManagerDialog } from "@/components/project-manager-dialog";
 import { UpdateCheckerDialog } from "@/components/update-checker-dialog";
 import { PluginMarketplaceDialog } from "@/components/plugin-marketplace-dialog";
+import { DensityGatesTool } from "@/components/density-gates-tool";
+import { TidalSplineTool } from "@/components/tidal-spline-tool";
+import { MachineControlTool } from "@/components/machine-control-tool";
 import {
   LayoutProfiles,
   getLayoutSettings,
@@ -141,6 +144,9 @@ export function WorkspaceShell() {
   const [projectOpen, setProjectOpen] = useState(false);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [marketplaceOpen, setMarketplaceOpen] = useState(false);
+  const [densityGatesOpen, setDensityGatesOpen] = useState(false);
+  const [tidalSplineOpen, setTidalSplineOpen] = useState(false);
+  const [machineControlOpen, setMachineControlOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -218,6 +224,9 @@ export function WorkspaceShell() {
     onOpenProject: () => setProjectOpen(true),
     onOpenUpdate: () => setUpdateOpen(true),
     onOpenMarketplace: () => setMarketplaceOpen(true),
+    onOpenDensityGates: () => setDensityGatesOpen(true),
+    onOpenTidalSpline: () => setTidalSplineOpen(true),
+    onOpenMachineControl: () => setMachineControlOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -274,6 +283,9 @@ export function WorkspaceShell() {
             onOpenProject={() => setProjectOpen(true)}
             onOpenUpdate={() => setUpdateOpen(true)}
             onOpenMarketplace={() => setMarketplaceOpen(true)}
+            onOpenDensityGates={() => setDensityGatesOpen(true)}
+            onOpenTidalSpline={() => setTidalSplineOpen(true)}
+            onOpenMachineControl={() => setMachineControlOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -379,6 +391,9 @@ export function WorkspaceShell() {
       <ProjectManagerDialog open={projectOpen} onClose={() => setProjectOpen(false)} currentProject={null} onProjectLoaded={() => {}} />
       <UpdateCheckerDialog open={updateOpen} onClose={() => setUpdateOpen(false)} />
       <PluginMarketplaceDialog open={marketplaceOpen} onClose={() => setMarketplaceOpen(false)} />
+      <DensityGatesTool open={densityGatesOpen} onClose={() => setDensityGatesOpen(false)} />
+      <TidalSplineTool open={tidalSplineOpen} onClose={() => setTidalSplineOpen(false)} />
+      <MachineControlTool open={machineControlOpen} onClose={() => setMachineControlOpen(false)} />
     </div>
   );
 }
@@ -465,6 +480,9 @@ function LeftSidebar({
   onOpenProject,
   onOpenUpdate,
   onOpenMarketplace,
+  onOpenDensityGates,
+  onOpenTidalSpline,
+  onOpenMachineControl,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -494,6 +512,9 @@ function LeftSidebar({
   onOpenProject: () => void;
   onOpenUpdate: () => void;
   onOpenMarketplace: () => void;
+  onOpenDensityGates: () => void;
+  onOpenTidalSpline: () => void;
+  onOpenMachineControl: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -569,6 +590,12 @@ function LeftSidebar({
               label="Highwall Monitoring"
               onClick={onOpenHighwall}
             />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Cpu className="h-3 w-3" />}
+              label="Machine Control Compiler"
+              onClick={onOpenMachineControl}
+            />
           </SidebarSection>
         )}
 
@@ -633,6 +660,17 @@ function LeftSidebar({
               icon={<Waves className="h-3 w-3" />}
               label="SSS Waterfall"
               onClick={onOpenSss}
+            />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Activity className="h-3 w-3" />}
+              label="Density Gates"
+              onClick={onOpenDensityGates}
+            />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="Tidal Spline Corrector"
+              onClick={onOpenTidalSpline}
             />
           </SidebarSection>
         )}

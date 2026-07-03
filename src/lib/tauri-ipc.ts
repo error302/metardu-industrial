@@ -1950,3 +1950,108 @@ export async function searchRegistry(registry: PluginRegistry, query: string): P
   if (!isTauri()) return [];
   return invoke<RegistryPlugin[]>("search_registry_cmd", { registry, query });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Bottleneck Tools — high-value surveyor tools
+
+// Density Gates
+export type CoverageStatus = "good" | "marginal" | "gap" | "empty";
+
+export interface CoverageCell {
+  row: number;
+  col: number;
+  center_lon: number;
+  center_lat: number;
+  count: number;
+  status: CoverageStatus;
+}
+
+export interface FileSummary {
+  filename: string;
+  pings: number;
+  est_soundings: number;
+  file_size_bytes: number;
+}
+
+export interface CoverageReport {
+  files_scanned: number;
+  total_pings: number;
+  total_soundings: number;
+  cells: CoverageCell[];
+  bounds: [number, number, number, number];
+  grid_rows: number;
+  grid_cols: number;
+  cell_size_deg: number;
+  target_density: number;
+  good_cells: number;
+  marginal_cells: number;
+  gap_cells: number;
+  empty_cells: number;
+  coverage_pct: number;
+  file_summaries: FileSummary[];
+  warnings: string[];
+}
+
+export interface DensityGatesRequest {
+  folder_path: string;
+  target_order: string;
+  cell_size_deg?: number;
+}
+
+export async function runDensityGates(
+  request: DensityGatesRequest,
+): Promise<CoverageReport | null> {
+  if (!isTauri()) return null;
+  return invoke<CoverageReport>("run_density_gates_cmd", { request });
+}
+
+// Tidal Spline Interpolator
+export interface TidalCorrectionRequest {
+  sonar_csv_path: string;
+  tide_csv_path: string;
+  output_csv_path: string;
+}
+
+export interface TidalCorrectionResult {
+  pings_corrected: number;
+  tide_readings: number;
+  min_tide_m: number;
+  max_tide_m: number;
+  mean_tide_m: number;
+  min_corrected_depth_m: number;
+  max_corrected_depth_m: number;
+  output_path: string;
+  warnings: string[];
+}
+
+export async function runTidalCorrection(
+  request: TidalCorrectionRequest,
+): Promise<TidalCorrectionResult | null> {
+  if (!isTauri()) return null;
+  return invoke<TidalCorrectionResult>("run_tidal_correction_cmd", { request });
+}
+
+// Machine Control Compiler
+export type MachineControlVendor = "leica" | "trimble" | "topcon";
+
+export interface MachineControlRequest {
+  input_path: string;
+  vendor: MachineControlVendor;
+  output_path: string;
+}
+
+export interface MachineControlResult {
+  vendor: MachineControlVendor;
+  output_path: string;
+  point_count: number;
+  line_count: number;
+  file_size_bytes: number;
+  warnings: string[];
+}
+
+export async function compileMachineControl(
+  request: MachineControlRequest,
+): Promise<MachineControlResult | null> {
+  if (!isTauri()) return null;
+  return invoke<MachineControlResult>("compile_machine_control_cmd", { request });
+}

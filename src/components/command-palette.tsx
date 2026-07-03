@@ -13,7 +13,7 @@ import {
   Search, ArrowRight, Calculator, Layers3, Terminal, Shield,
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, Ruler, Package, Scissors,
-  Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon,
+  Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -182,9 +182,9 @@ export function createCommandActions(callbacks: {
   onOpenLicense: () => void;
   onOpenBenchmark: () => void;
   onOpenTelemetry: () => void;
-  onOpenProject: () => void;
-  onOpenUpdate: () => void;
-  onOpenMarketplace: () => void;
+  onOpenDensityGates: () => void;
+  onOpenTidalSpline: () => void;
+  onOpenMachineControl: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -203,6 +203,9 @@ export function createCommandActions(callbacks: {
     { id: "project", label: "Project Manager", category: "File · Project", keywords: ["project", "save", "load", "open", "new", "metardu"], icon: <FolderOpen className={icon} />, action: callbacks.onOpenProject },
     { id: "update", label: "Check for Updates", category: "App · Updates", keywords: ["update", "version", "upgrade", "download", "release"], icon: <RefreshCw className={icon} />, action: callbacks.onOpenUpdate },
     { id: "marketplace", label: "Plugin Marketplace", category: "Enterprise · Plugins", keywords: ["plugin", "marketplace", "install", "browse", "registry", "extension"], icon: <PackageIcon className={icon} />, action: callbacks.onOpenMarketplace },
+    { id: "density_gates", label: "Density Gates (Coverage Validator)", category: "Marine · Bottleneck", keywords: ["density", "coverage", "gap", "survey", "s44", "iho", "quality", "qc"], icon: <Activity className={icon} />, action: callbacks.onOpenDensityGates },
+    { id: "tidal_spline", label: "Tidal Spline Corrector", category: "Marine · Bottleneck", keywords: ["tide", "tidal", "spline", "correction", "depth", "sonar", "gauge", "interpolate"], icon: <Waves className={icon} />, action: callbacks.onOpenTidalSpline },
+    { id: "machine_control", label: "Machine Control Compiler", category: "Mining · Bottleneck", keywords: ["machine", "control", "dxf", "leica", "trimble", "topcon", "svd", "tp3", "guidance", "dozer"], icon: <Cpu className={icon} />, action: callbacks.onOpenMachineControl },
     { id: "volume", label: "Volume Calculator", category: "Mining", keywords: ["volume", "fill", "cut", "bench", "stockpile"], icon: <Calculator className={icon} />, action: callbacks.onOpenVolumeCalc },
     { id: "odm", label: "ODM Pipeline (Drone → Point Cloud)", category: "Mining", keywords: ["odm", "drone", "photogrammetry", "docker"], icon: <Terminal className={icon} />, action: callbacks.onOpenOdm },
     { id: "csf", label: "Classify Ground (CSF)", category: "Mining", keywords: ["classify", "ground", "csf", "cloth", "point cloud"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCsf },

@@ -3,6 +3,7 @@
 // Naming convention: snake_case in Rust, camelCase on the TS side via serde.
 
 pub mod automation;
+pub mod bottleneck_tools;
 pub mod deliverable;
 pub mod marine;
 pub mod mining;
