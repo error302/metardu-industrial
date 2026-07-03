@@ -9,6 +9,7 @@ pub mod mining;
 pub mod ml;
 pub mod monitoring;
 pub mod pipelines;
+pub mod sprint6;
 pub mod streaming;
 
 use crate::formats::{

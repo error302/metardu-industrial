@@ -1359,3 +1359,152 @@ const BROWSER_LOAD_MS: Record<string, number> = {
   mining: 650,
   reporting: 400,
 };
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 6 — SSS Waterfall Viewer + 3D Slice Editor
+
+// SSS (Side-Scan Sonar) — XTF parser
+export interface XtfHeader {
+  magic: string;
+  file_format_version: number;
+  system_type: number;
+  sonar_name: string;
+  n_channels: number;
+  total_ping_count_hint: number;
+}
+
+export interface SssPing {
+  ping_number: number;
+  timestamp_secs: number;
+  latitude: number;
+  longitude: number;
+  heading_deg: number;
+  altitude_m: number;
+  sound_speed_mps: number;
+  port_samples: number[];      // u8 backscatter values
+  starboard_samples: number[];
+  sample_interval_secs: number;
+}
+
+export interface SssData {
+  header: XtfHeader;
+  pings: SssPing[];
+  max_samples_per_channel: number;
+  total_pings: number;
+}
+
+export interface ReadSssRequest {
+  path: string;
+  maxPings?: number;
+}
+
+/** Read SSS XTF pings for the waterfall viewer. */
+export async function readSssPings(
+  request: ReadSssRequest,
+): Promise<SssData | null> {
+  if (!isTauri()) return null;
+  return invoke<SssData>("read_sss_pings_cmd", { request });
+}
+
+export interface TargetHeightRequest {
+  fishAltitudeM: number;
+  slantRangeToTargetM: number;
+  shadowLengthM: number;
+}
+
+/** Compute target height from shadow length (similar-triangles method). */
+export async function computeTargetHeight(
+  request: TargetHeightRequest,
+): Promise<number> {
+  if (!isTauri()) return 0;
+  return invoke<number>("compute_target_height_cmd", { request });
+}
+
+// 3D Slice Editor
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+export interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface SliceRequest {
+  path: string;
+  polygon: Point2D[];
+  maxPoints?: number;
+}
+
+export interface SliceResult {
+  indices: number[];
+  points: Point3D[];
+  total_points: number;
+  slice_points: number;
+  polygon_area_m2: number;
+}
+
+export interface RejectMask {
+  rejected: number[];      // HashSet<u32> serializes as Vec<u32>
+  undo_stack: number[][];
+}
+
+export interface BrushRejectRequest {
+  points: Point3D[];
+  center_x: number;
+  center_y: number;
+  center_z: number;
+  radius_m: number;
+  mask: RejectMask;
+  restore: boolean;
+}
+
+export interface BrushResult {
+  mask: RejectMask;
+  toggled_count: number;
+  total_rejected: number;
+}
+
+/** Slice a LAS point cloud by a 2D polygon. */
+export async function sliceByPolygon(
+  request: SliceRequest,
+): Promise<SliceResult | null> {
+  if (!isTauri()) return null;
+  return invoke<SliceResult>("slice_by_polygon_cmd", { request });
+}
+
+/** Apply a brush stroke (reject or restore) to the slice. */
+export async function brushReject(
+  request: BrushRejectRequest,
+): Promise<BrushResult | null> {
+  if (!isTauri()) return null;
+  return invoke<BrushResult>("brush_reject_cmd", { request });
+}
+
+/** Undo the most recent brush operation. */
+export async function undoBrush(
+  mask: RejectMask,
+): Promise<BrushResult | null> {
+  if (!isTauri()) return null;
+  return invoke<BrushResult>("undo_brush_cmd", { mask });
+}
+
+/** Get accepted (non-rejected) point indices from a mask. */
+export async function acceptedIndices(
+  mask: RejectMask,
+  total: number,
+): Promise<number[]> {
+  if (!isTauri()) return [];
+  return invoke<number[]>("accepted_indices_cmd", { mask, total });
+}
+
+/** Test if a point is inside a polygon (geometry helper). */
+export async function pointInPolygon(
+  point: Point2D,
+  polygon: Point2D[],
+): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>("point_in_polygon_cmd", { point, polygon });
+}

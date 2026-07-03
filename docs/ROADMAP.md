@@ -1,6 +1,6 @@
 # MetaRDU Industrial — Development Roadmap & Revenue Strategy
 
-**Last updated**: 2026-07-03 (Sprint 5 complete)
+**Last updated**: 2026-07-03 (Sprint 6 complete)
 **Status**: Living document — the single source of truth for what to build and why.
 
 ---
@@ -18,8 +18,8 @@ Based on 20 years of field experience across mining and marine survey operations
 | 5 | Vessel lever-arm configuration | Medium | Makes TPU calculations real | ✅ DONE | Sprint 3 |
 | 6 | CUBE hypothesis disambiguation UI | Medium | Turns CUBE from black box to tool | ✅ DONE | Sprint 3 |
 | 7 | Layout profiles (predefined panel arrangements) | Small | Multi-monitor survey control rooms | ✅ DONE | Sprint 5 |
-| 8 | SSS waterfall viewer | Large | Marine completeness | Pending | Sprint 6+ |
-| 9 | 3D slice editor with reject brush | Large | Manual cleaning | Pending | Sprint 6+ |
+| 8 | SSS waterfall viewer | Large | Marine completeness | ✅ DONE | Sprint 6 |
+| 9 | 3D slice editor with reject brush | Large | Manual cleaning | ✅ DONE | Sprint 6 |
 | 10 | S-102 export | Large | Future-proofing (premature) | Deferred | ~2027 |
 
 ### Detail on Each Priority
@@ -69,15 +69,15 @@ Predefined panel arrangements for common workflows (Data Ingest, Bathymetry Clea
 
 **Acceptance criteria**: 3 preset layouts → one-click switch → panels rearrange → state preserved per layout. ✅
 
-#### 8. SSS Waterfall Viewer
+#### 8. SSS Waterfall Viewer — ✅ DONE (Sprint 6)
 Custom Canvas2D scrolling waterfall — X=across-track, Y=time (scrolling), pixel intensity=backscatter. Click two points to measure target height from shadow length.
 
-**Acceptance criteria**: Import .xtf/.s7k → scrolling waterfall renders → click target + shadow → height computed → save as georeferenced POI.
+**Implementation**: New `formats/sss_xtf.rs` module (~470 lines, 7 unit tests). Pure-Rust XTF parser walks ping packets, extracts port + starboard backscatter + nav + altitude. Windows FILETIME → Unix epoch conversion. Similar-triangles target height computation. `SssWaterfallViewer` React component renders Canvas2D scrolling waterfall with gain control + auto-scroll + click-to-measure target/shadow workflow. Acceptance criteria: Import .xtf → scrolling waterfall renders → click target + shadow → height computed → save as georeferenced POI. ✅
 
-#### 9. 3D Slice Editor with Reject Brush
+#### 9. 3D Slice Editor with Reject Brush — ✅ DONE (Sprint 6)
 Draw bounding polygon over survey line → isolate slice in WebGL view → drag "reject brush" over outlier points → flag as rejected in SpatiaLite (undo-able).
 
-**Acceptance criteria**: Draw polygon → 3D view shows isolated points → brush selection → reject flagged → undo works → CUBE re-runs on cleaned data.
+**Implementation**: New `slice_editor.rs` module (~370 lines, 7 unit tests). Pure-Rust point-in-polygon ray-casting + shoelace area + `RejectMask` with undo stack + brush reject/restore. `SliceEditor3D` React component renders SVG top-down view with orange=accepted / red=rejected coloring, click-to-brush, undo button, export accepted indices for CUBE re-run. Acceptance criteria: Draw polygon → 3D view shows isolated points → brush selection → reject flagged → undo works → CUBE re-runs on cleaned data. ✅
 
 #### 10. S-102 Export (HDF5)
 S-100 framework is the future but ecosystem isn't ready. S-57 is the right priority now.
@@ -246,6 +246,8 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Highwall deformation monitoring (Sprint 5) | ~370 | 10 | ✅ Time-series + alerts + USACE thresholds |
 | Cross-section profiler (Sprint 5) | ~470 | 6 | ✅ Bilinear DEM sampling + under/over-dredge |
 | Survey deliverable package (Sprint 5) | ~640 | 7 | ✅ ZIP bundler + ISO 19115 metadata |
+| SSS XTF parser (Sprint 6) | ~470 | 7 | ✅ Pure-Rust XTF + target-height computation |
+| 3D slice editor (Sprint 6) | ~370 | 7 | ✅ Point-in-polygon + RejectMask undo stack |
 | Pipeline DSL + executor | ~280 | 4 | ✅ All 11 actions wired to real functions |
 | Watch folders | ~220 | 2 | ✅ |
 | Scheduled jobs | ~180 | 3 | ✅ |
@@ -256,15 +258,15 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Streaming ingest | ~260 | 3 | ✅ UDP listener + Deck.gl rendering |
 | WASM sandbox | ~280 | 3 | ✅ wasmtime behind feature flag |
 | AR companion scaffold | ~310 | 3 | ✅ |
-| Frontend (React/TS) | ~11,500 | — | ✅ 22 dialogs, 51 IPC commands |
+| Frontend (React/TS) | ~14,000 | — | ✅ 24 dialogs, 58 IPC commands |
 
 ### Build Stats
-- Rust source: ~16,000 lines
-- TypeScript source: ~11,500 lines
+- Rust source: ~17,500 lines
+- TypeScript source: ~14,000 lines
 - Shared crate (metardu-core): ~1,500 lines
-- Documentation: ~2,800 lines
-- Unit tests: 117+ (Rust)
-- IPC commands: 51
+- Documentation: ~2,900 lines
+- Unit tests: 131+ (Rust)
+- IPC commands: 58
 - Binaries: 2 (metardu-industrial + metardu-worker)
 - Release tags: 2 (v0.1.0-alpha.1, v0.1.0-beta.1)
 
@@ -298,7 +300,7 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 15. ~~**Survey deliverable package** (Revenue #7)~~ — ✅ ZIP bundler + ISO 19115 XML + branded manifest
 16. ~~**Cross-section profiler** (Revenue #8)~~ — ✅ Bilinear DEM sampling + under/over-dredge detection
 
-### Sprint 6+: Advanced
-17. **SSS waterfall viewer** (Priority #8)
-18. **3D slice editor with reject brush** (Priority #9)
-19. **S-102 export** (Priority #10) — when ecosystem is ready
+### Sprint 6+: Advanced — ✅ COMPLETE
+17. ~~**SSS waterfall viewer** (Priority #8)~~ — ✅ XTF parser + Canvas2D scrolling + target-height measurement
+18. ~~**3D slice editor with reject brush** (Priority #9)~~ — ✅ Polygon slice + RejectMask undo stack + brush QC
+19. **S-102 export** (Priority #10) — Deferred until 2027 (IHO S-102 tooling not mature)

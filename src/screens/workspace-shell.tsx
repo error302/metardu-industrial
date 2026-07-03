@@ -73,6 +73,8 @@ import { BlastReportWizard } from "@/components/blast-report-wizard";
 import { HighwallMonitoringWizard } from "@/components/highwall-monitoring-wizard";
 import { CrossSectionProfilerWizard } from "@/components/cross-section-profiler-wizard";
 import { DeliverablePackageWizard } from "@/components/deliverable-package-wizard";
+import { SssWaterfallViewer } from "@/components/sss-waterfall-viewer";
+import { SliceEditor3D } from "@/components/slice-editor-3d";
 import {
   LayoutProfiles,
   getLayoutSettings,
@@ -121,6 +123,8 @@ export function WorkspaceShell() {
   const [highwallOpen, setHighwallOpen] = useState(false);
   const [crossSectionOpen, setCrossSectionOpen] = useState(false);
   const [deliverableOpen, setDeliverableOpen] = useState(false);
+  const [sssOpen, setSssOpen] = useState(false);
+  const [sliceEditorOpen, setSliceEditorOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -190,6 +194,8 @@ export function WorkspaceShell() {
     onOpenHighwall: () => setHighwallOpen(true),
     onOpenCrossSection: () => setCrossSectionOpen(true),
     onOpenDeliverable: () => setDeliverableOpen(true),
+    onOpenSss: () => setSssOpen(true),
+    onOpenSliceEditor: () => setSliceEditorOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -238,6 +244,8 @@ export function WorkspaceShell() {
             onOpenHighwall={() => setHighwallOpen(true)}
             onOpenCrossSection={() => setCrossSectionOpen(true)}
             onOpenDeliverable={() => setDeliverableOpen(true)}
+            onOpenSss={() => setSssOpen(true)}
+            onOpenSliceEditor={() => setSliceEditorOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -335,6 +343,8 @@ export function WorkspaceShell() {
       <HighwallMonitoringWizard open={highwallOpen} onClose={() => setHighwallOpen(false)} />
       <CrossSectionProfilerWizard open={crossSectionOpen} onClose={() => setCrossSectionOpen(false)} />
       <DeliverablePackageWizard open={deliverableOpen} onClose={() => setDeliverableOpen(false)} />
+      <SssWaterfallViewer open={sssOpen} onClose={() => setSssOpen(false)} />
+      <SliceEditor3D open={sliceEditorOpen} onClose={() => setSliceEditorOpen(false)} />
     </div>
   );
 }
@@ -418,6 +428,8 @@ function LeftSidebar({
   onOpenHighwall,
   onOpenCrossSection,
   onOpenDeliverable,
+  onOpenSss,
+  onOpenSliceEditor,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -439,6 +451,8 @@ function LeftSidebar({
   onOpenHighwall: () => void;
   onOpenCrossSection: () => void;
   onOpenDeliverable: () => void;
+  onOpenSss: () => void;
+  onOpenSliceEditor: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -570,8 +584,22 @@ function LeftSidebar({
               label="Deliverable Package"
               onClick={onOpenDeliverable}
             />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="SSS Waterfall"
+              onClick={onOpenSss}
+            />
           </SidebarSection>
         )}
+
+        {/* QC Tools — cross-cutting */}
+        <SidebarSection title="QC Tools" icon={<Layers3 className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<Scissors className="h-3 w-3" />}
+            label="3D Slice Editor"
+            onClick={onOpenSliceEditor}
+          />
+        </SidebarSection>
 
         {/* Automation — cross-cutting */}
         <SidebarSection title="Automation" icon={<GitBranch className="h-3 w-3" />}>

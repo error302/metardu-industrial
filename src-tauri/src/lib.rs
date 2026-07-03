@@ -38,6 +38,7 @@ mod pipelines;
 #[allow(dead_code)]
 mod plugins;
 mod report_engine;
+mod slice_editor;
 #[allow(dead_code)]
 mod streaming;
 #[allow(dead_code)]
@@ -58,11 +59,13 @@ use commands::{
     ml::classify_habitat_cmd, monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
     pipelines::get_odm_status, pipelines::run_odm_pipeline, probe_file, read_las_points_binary,
-    read_las_points_cmd, sample_profile, save_settings, streaming::enqueue_distributed_cube,
-    streaming::get_coordinator_status_cmd, streaming::get_stream_status_cmd,
-    streaming::merge_distributed_cube_results, streaming::start_coordinator_cmd,
-    streaming::start_stream_cmd, streaming::stop_coordinator_cmd, streaming::stop_stream_cmd,
-    transform_coords_cmd,
+    read_las_points_cmd, sample_profile, save_settings, sprint6::accepted_indices_cmd,
+    sprint6::brush_reject_cmd, sprint6::compute_target_height_cmd, sprint6::point_in_polygon_cmd,
+    sprint6::read_sss_pings_cmd, sprint6::slice_by_polygon_cmd, sprint6::undo_brush_cmd,
+    streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
+    streaming::get_stream_status_cmd, streaming::merge_distributed_cube_results,
+    streaming::start_coordinator_cmd, streaming::start_stream_cmd, streaming::stop_coordinator_cmd,
+    streaming::stop_stream_cmd, transform_coords_cmd,
 };
 use modules::ModuleRegistry;
 use plugins::get_supported_extensions;
@@ -135,6 +138,14 @@ pub fn run() {
             enqueue_distributed_cube,
             merge_distributed_cube_results,
             generate_deliverable_package_cmd,
+            // Sprint 6 — SSS + 3D slice editor
+            read_sss_pings_cmd,
+            compute_target_height_cmd,
+            slice_by_polygon_cmd,
+            brush_reject_cmd,
+            undo_brush_cmd,
+            accepted_indices_cmd,
+            point_in_polygon_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

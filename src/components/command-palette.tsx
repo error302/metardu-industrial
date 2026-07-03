@@ -12,7 +12,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Search, ArrowRight, Calculator, Layers3, Terminal, Shield,
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
-  TrendingUp, FileText, Boxes, Bomb, ShieldAlert, Ruler, Package,
+  TrendingUp, FileText, Boxes, Bomb, ShieldAlert, Ruler, Package, Scissors,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -176,6 +176,8 @@ export function createCommandActions(callbacks: {
   onOpenHighwall: () => void;
   onOpenCrossSection: () => void;
   onOpenDeliverable: () => void;
+  onOpenSss: () => void;
+  onOpenSliceEditor: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -186,6 +188,8 @@ export function createCommandActions(callbacks: {
     { id: "dredge", label: "Dredge Pay-Volume Audit", category: "Marine · Revenue", keywords: ["dredge", "pay", "overdredge", "shoaling", "channel", "port"], icon: <Waves className={icon} />, action: callbacks.onOpenDredgeAudit },
     { id: "xsec", label: "Cross-Section Profiler", category: "Marine · Revenue", keywords: ["cross", "section", "profile", "channel", "design", "dredge", "verify"], icon: <Ruler className={icon} />, action: callbacks.onOpenCrossSection },
     { id: "deliverable", label: "Survey Deliverable Package", category: "Marine · Revenue", keywords: ["deliverable", "package", "zip", "manifest", "metadata", "iso", "19115", "bundle"], icon: <Package className={icon} />, action: callbacks.onOpenDeliverable },
+    { id: "sss", label: "SSS Waterfall Viewer", category: "Marine · Advanced", keywords: ["sss", "side", "scan", "sonar", "waterfall", "xtf", "backscatter", "shadow"], icon: <Waves className={icon} />, action: callbacks.onOpenSss },
+    { id: "slice", label: "3D Slice Editor (Reject Brush)", category: "Cross-cutting · Advanced", keywords: ["slice", "3d", "polygon", "reject", "brush", "cube", "clean", "qc"], icon: <Scissors className={icon} />, action: callbacks.onOpenSliceEditor },
     { id: "volume", label: "Volume Calculator", category: "Mining", keywords: ["volume", "fill", "cut", "bench", "stockpile"], icon: <Calculator className={icon} />, action: callbacks.onOpenVolumeCalc },
     { id: "odm", label: "ODM Pipeline (Drone → Point Cloud)", category: "Mining", keywords: ["odm", "drone", "photogrammetry", "docker"], icon: <Terminal className={icon} />, action: callbacks.onOpenOdm },
     { id: "csf", label: "Classify Ground (CSF)", category: "Mining", keywords: ["classify", "ground", "csf", "cloth", "point cloud"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCsf },
