@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { Check, AlertCircle, Loader2, FileText } from "lucide-react";
 import { colors, APP_NAME } from "@/lib/tokens";
+import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore } from "@/stores/app-store";
 import {
   listModules,
@@ -84,12 +85,7 @@ export function ModuleLoadingScreen() {
     <div className="flex h-full w-full flex-col bg-navy-base">
       <header className="flex h-12 items-center justify-between border-b border-navy-border px-6">
         <div className="flex items-center gap-3">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded font-bold"
-            style={{ background: colors.industrialOrange, color: colors.navyBase }}
-          >
-            M
-          </div>
+          <BrandLogoMark size={24} />
           <span className="text-sm font-medium tracking-wide text-white">
             {APP_NAME}
           </span>

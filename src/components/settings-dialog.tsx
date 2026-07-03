@@ -23,8 +23,10 @@ import {
   domainAccent,
   APP_VERSION,
   APP_BUILD,
+  APP_NAME,
   type DomainMode,
 } from "@/lib/tokens";
+import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore, type AppSettings } from "@/stores/app-store";
 import { saveSettings } from "@/lib/tauri-ipc";
 
@@ -338,6 +340,18 @@ export function SettingsDialog({ open, onClose }: Props) {
           {/* ── About ── */}
           <SectionHeader title="About" icon={<Info className="h-3.5 w-3.5" />} />
           <section>
+            {/* Brand logo + name */}
+            <div className="mb-3 flex items-center gap-3 rounded-md border border-navy-border bg-navy-base p-3">
+              <BrandLogoMark size={48} />
+              <div>
+                <div className="text-sm font-bold text-white">
+                  Meta<span style={{ color: colors.industrialOrange }}>RDU</span> Industrial
+                </div>
+                <div className="text-[10px] tracking-[0.2em] font-semibold" style={{ color: colors.industrialOrange }}>
+                  MINING & MARINE SURVEYS
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <AboutTile label="Version" value={`v${APP_VERSION}`} mono />
               <AboutTile label="Build Date" value={APP_BUILD} mono />

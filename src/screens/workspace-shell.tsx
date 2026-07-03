@@ -53,6 +53,7 @@ import {
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
 import { CrsSwitchBanner } from "@/components/crs-switch-banner";
+import { BrandLogoMark } from "@/components/brand-logo";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { ProfilePanel } from "@/components/profile-panel";
 import { VolumeCalcDialog } from "@/components/volume-calc-dialog";
@@ -397,14 +398,9 @@ function TitleBar({
   return (
     <header className="title-bar flex items-center justify-between border-b border-navy-border bg-navy-panel px-3">
       <div className="flex items-center gap-3">
-        <div
-          className="flex h-8 w-8 items-center justify-center rounded text-sm font-black"
-          style={{ background: colors.industrialOrange, color: colors.navyBase }}
-        >
-          M
-        </div>
+        <BrandLogoMark size={28} />
         <span className="text-[13px] font-semibold tracking-wide text-white">
-          {APP_NAME}
+          Meta<span style={{ color: colors.industrialOrange }}>RDU</span> Industrial
         </span>
         <span className="text-steel-gray">/</span>
         <span className="text-[13px] text-steel-light">Untitled Project</span>
