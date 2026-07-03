@@ -14,6 +14,7 @@ import { SplashScreen } from "@/screens/splash-screen";
 import { ModuleLoadingScreen } from "@/screens/module-loading-screen";
 import { OnboardingScreen } from "@/screens/onboarding-screen";
 import { WorkspaceShell } from "@/screens/workspace-shell";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 function App() {
   const phase = useAppStore((s) => s.phase);
@@ -25,12 +26,14 @@ function App() {
   }, [theme]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-navy-base">
-      {phase === "splash" && <SplashScreen />}
-      {phase === "modules" && <ModuleLoadingScreen />}
-      {phase === "onboarding" && <OnboardingScreen />}
-      {phase === "workspace" && <WorkspaceShell />}
-    </div>
+    <ErrorBoundary>
+      <div className="h-screen w-screen overflow-hidden bg-navy-base">
+        {phase === "splash" && <SplashScreen />}
+        {phase === "modules" && <ModuleLoadingScreen />}
+        {phase === "onboarding" && <OnboardingScreen />}
+        {phase === "workspace" && <WorkspaceShell />}
+      </div>
+    </ErrorBoundary>
   );
 }
 
