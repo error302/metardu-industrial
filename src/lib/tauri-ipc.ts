@@ -2055,3 +2055,31 @@ export async function compileMachineControl(
   if (!isTauri()) return null;
   return invoke<MachineControlResult>("compile_machine_control_cmd", { request });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// DEM Rendering — hillshaded color-ramp GeoTIFF visualization
+
+export interface DemRenderRequest {
+  path: string;
+  azimuth?: number;
+  altitude?: number;
+  color_ramp?: string;
+  z_scale?: number;
+}
+
+export interface DemRenderResult {
+  width: number;
+  height: number;
+  bounds: [number, number, number, number];
+  rgba: number[];
+  min_z: number;
+  max_z: number;
+  epsg: number | null;
+}
+
+export async function renderDem(
+  request: DemRenderRequest,
+): Promise<DemRenderResult | null> {
+  if (!isTauri()) return null;
+  return invoke<DemRenderResult>("render_dem_cmd", { request });
+}

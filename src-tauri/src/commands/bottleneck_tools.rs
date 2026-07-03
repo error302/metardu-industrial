@@ -6,6 +6,7 @@
 use crate::marine::density_gates::{self, CoverageReport, DensityGatesRequest};
 use crate::marine::tidal_spline::{self, TidalCorrectionRequest, TidalCorrectionResult};
 use crate::mining::machine_control::{self, MachineControlRequest, MachineControlResult};
+use crate::dem_render::{self, DemRenderRequest, DemRenderResult};
 
 /// Run density gates analysis on a folder of sonar files.
 #[tauri::command]
@@ -47,4 +48,20 @@ pub async fn compile_machine_control_cmd(
     })
     .await
     .map_err(|e| format!("compile_machine_control_cmd: task join error: {e}"))?
+}
+
+/// Render a GeoTIFF DEM as a hillshaded color-ramp RGBA image.
+///
+/// Returns packed RGBA bytes + geographic bounds for OpenLayers overlay.
+#[tauri::command]
+pub async fn render_dem_cmd(
+    request: DemRenderRequest,
+) -> Result<DemRenderResult, String> {
+    let path_label = request.path.clone();
+    tokio::task::spawn_blocking(move || {
+        dem_render::render_dem(&request)
+            .map_err(|e| ctx!("rendering DEM", path_label, e))
+    })
+    .await
+    .map_err(|e| format!("render_dem_cmd: task join error: {e}"))?
 }

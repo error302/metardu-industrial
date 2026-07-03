@@ -27,6 +27,8 @@ mod commands;
 #[allow(dead_code)]
 mod deliverable;
 #[allow(dead_code)]
+mod dem_render;
+#[allow(dead_code)]
 mod distributed;
 mod formats;
 mod geodesy;
@@ -60,8 +62,8 @@ use commands::{
     automation::parse_pipeline_cmd, automation::remove_scheduled_job,
     automation::remove_watch_folder, automation::run_pipeline_cmd, automation::scan_watch_folders,
     automation::serialize_pipeline_cmd, bottleneck_tools::compile_machine_control_cmd,
-    bottleneck_tools::run_density_gates_cmd, bottleneck_tools::run_tidal_correction_cmd,
-    deliverable::generate_deliverable_package_cmd,
+    bottleneck_tools::render_dem_cmd, bottleneck_tools::run_density_gates_cmd,
+    bottleneck_tools::run_tidal_correction_cmd, deliverable::generate_deliverable_package_cmd,
     generate_report_cmd, get_settings, init_module, is_proj_available, list_modules,
     marine::check_s44_compliance_cmd, marine::compute_cross_sections_cmd,
     marine::compute_dredge_audit_cmd, marine::compute_tpu_batch, marine::export_s57,
@@ -210,6 +212,7 @@ pub fn run() {
             run_density_gates_cmd,
             run_tidal_correction_cmd,
             compile_machine_control_cmd,
+            render_dem_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

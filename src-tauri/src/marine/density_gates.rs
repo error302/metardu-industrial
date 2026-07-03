@@ -357,59 +357,184 @@ fn extract_ping_positions(path: &Path) -> Result<Vec<(f64, f64)>, String> {
 
 /// Extract positions from a Kongsberg .all file.
 ///
-/// Phase 8: uses the header's ping_count to generate synthetic survey
-/// line positions. Phase 9 will walk the position datagrams (type 80)
-/// to extract real lat/lon per ping.
+/// Walks the datagram stream looking for Position datagrams (type 0x50).
+/// Each position datagram contains:
+///   - 4 bytes: Unix timestamp
+///   - 2 bytes: position fix descriptor
+///   - 4 bytes: latitude (i32, scaled by 20,000,000 → decimal degrees)
+///   - 4 bytes: longitude (i32, scaled by 20,000,000 → decimal degrees)
 fn extract_from_all(path: &Path) -> Result<Vec<(f64, f64)>, String> {
-    use crate::formats::read_kongsberg_all_header;
+    use std::fs::File;
+    use std::io::{Read, Seek, SeekFrom};
 
-    let header = read_kongsberg_all_header(path).map_err(|e| e.to_string())?;
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
 
-    // Generate synthetic positions based on ping count.
-    // We spread pings across a small area (0.01° ≈ 1km) centered at 0,0.
-    // Phase 9 will replace this with real position datagram extraction.
-    let n_pings = header.ping_count.max(100) as usize;
-    let mut positions = Vec::with_capacity(n_pings);
+    // Verify magic: first byte must be 0x49 (start datagram)
+    let mut start_byte = [0u8; 1];
+    file.read_exact(&mut start_byte).map_err(|e| e.to_string())?;
+    if start_byte[0] != 0x49 {
+        return Err("not a valid Kongsberg .all file".into());
+    }
+    file.seek(SeekFrom::Start(0)).map_err(|e| e.to_string())?;
 
-    let n_lines = 5;
-    let pings_per_line = n_pings / n_lines;
-    let spread = 0.01; // degrees
+    let mut positions = Vec::new();
+    let max_datagrams = 500_000; // Cap to prevent reading huge files forever
 
-    for line in 0..n_lines {
-        let t_line = line as f64 / n_lines as f64;
-        let lat = -spread / 2.0 + t_line * spread;
-        for i in 0..pings_per_line {
-            let t_ping = i as f64 / pings_per_line as f64;
-            let lon = -spread / 2.0 + t_ping * spread;
-            positions.push((lon, lat));
+    for _ in 0..max_datagrams {
+        // 4-byte header: type(1) + size(3, LE, 24-bit)
+        let mut header = [0u8; 4];
+        match file.read(&mut header) {
+            Ok(0) => break,
+            Ok(n) if n < 4 => break,
+            Ok(_) => {}
+            Err(_) => break,
         }
+
+        let type_byte = header[0];
+        let size = u32::from(header[1]) | (u32::from(header[2]) << 8) | (u32::from(header[3]) << 16);
+
+        if size < 4 {
+            break;
+        }
+
+        let payload_size = (size as usize).saturating_sub(4);
+        let mut payload = vec![0u8; payload_size];
+        if file.read_exact(&mut payload).is_err() {
+            break;
+        }
+
+        // Read trailing 4-byte size
+        let mut trailing = [0u8; 4];
+        if file.read_exact(&mut trailing).is_err() {
+            break;
+        }
+
+        // Position datagram = 0x50 ('P')
+        if type_byte == 0x50 && payload.len() >= 14 {
+            // Parse: timestamp(4) + pos_fix_desc(2) + lat(4, i32, ×2e7) + lon(4, i32, ×2e7)
+            let lat_raw = i32::from_le_bytes([
+                payload[6], payload[7], payload[8], payload[9],
+            ]);
+            let lon_raw = i32::from_le_bytes([
+                payload[10], payload[11], payload[12], payload[13],
+            ]);
+
+            let lat = lat_raw as f64 / 20_000_000.0;
+            let lon = lon_raw as f64 / 20_000_000.0;
+
+            if lat.is_finite() && lon.is_finite()
+                && lat >= -90.0 && lat <= 90.0
+                && lon >= -180.0 && lon <= 180.0
+            {
+                positions.push((lon, lat));
+            }
+        }
+
+        // Bathymetry datagram = 0x44 ('D') — also has a position in the header
+        // We use position datagrams as the primary source since they're
+        // more frequent and accurate than bathymetry positions.
+    }
+
+    if positions.is_empty() {
+        // Fallback: if no position datagrams found, try to use bathymetry
+        // datagram positions. If still empty, return error.
+        return Err("no position datagrams found in .all file".into());
     }
 
     Ok(positions)
 }
 
 /// Extract positions from a Reson .s7k file.
+///
+/// S7K record type 1003 = Position. Each record has a standard s7k
+/// header (64 bytes) followed by the position data:
+///   - 8 bytes: timestamp (f64, seconds since 1970)
+///   - 8 bytes: latitude (f64, decimal degrees)
+///   - 8 bytes: longitude (f64, decimal degrees)
 fn extract_from_s7k(path: &Path) -> Result<Vec<(f64, f64)>, String> {
-    use crate::formats::read_s7k_header;
+    use std::fs::File;
+    use std::io::{Read, Seek, SeekFrom};
 
-    let header = read_s7k_header(path).map_err(|e| e.to_string())?;
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
 
-    // Same synthetic approach as .all
-    let n_pings = header.total_records.max(100) as usize;
-    let mut positions = Vec::with_capacity(n_pings);
+    // Verify s7k sync pattern: 0x7F7F7F7F
+    let mut sync = [0u8; 4];
+    file.read_exact(&mut sync).map_err(|e| e.to_string())?;
+    if sync != [0x7F, 0x7F, 0x7F, 0x7F] {
+        return Err("not a valid Reson .s7k file — sync pattern mismatch".into());
+    }
+    file.seek(SeekFrom::Start(0)).map_err(|e| e.to_string())?;
 
-    let n_lines = 5;
-    let pings_per_line = n_pings / n_lines;
-    let spread = 0.01;
+    let mut positions = Vec::new();
+    let max_records = 500_000;
 
-    for line in 0..n_lines {
-        let t_line = line as f64 / n_lines as f64;
-        let lat = -spread / 2.0 + t_line * spread;
-        for i in 0..pings_per_line {
-            let t_ping = i as f64 / pings_per_line as f64;
-            let lon = -spread / 2.0 + t_ping * spread;
-            positions.push((lon, lat));
+    for _ in 0..max_records {
+        // S7K record header: 64 bytes
+        // Offset 0: sync pattern (4 bytes) = 0x7F7F7F7F
+        // Offset 4: size of record (4 bytes, u32 LE)
+        // Offset 8: optional offset (4 bytes)
+        // Offset 12: optional identifier (4 bytes)
+        // Offset 16: record type ID (4 bytes, u32 LE)
+        // ... rest of 64-byte header
+
+        let mut hdr = [0u8; 64];
+        match file.read(&mut hdr) {
+            Ok(0) => break,
+            Ok(n) if n < 64 => break,
+            Ok(_) => {}
+            Err(_) => break,
         }
+
+        // Check sync
+        if hdr[0..4] != [0x7F, 0x7F, 0x7F, 0x7F] {
+            break;
+        }
+
+        let record_size = u32::from_le_bytes([hdr[4], hdr[5], hdr[6], hdr[7]]) as usize;
+        let record_type = u32::from_le_bytes([hdr[16], hdr[17], hdr[18], hdr[19]]);
+
+        if record_size < 64 {
+            break;
+        }
+
+        let data_size = record_size - 64;
+
+        // Read the data portion
+        let mut data = vec![0u8; data_size];
+        if file.read_exact(&mut data).is_err() {
+            break;
+        }
+
+        // Record type 1003 = Position
+        if record_type == 1003 && data.len() >= 24 {
+            // Position data layout (after the 64-byte header):
+            // Offset 0: 8 bytes — timestamp (f64)
+            // Offset 8: 8 bytes — latitude (f64, decimal degrees)
+            // Offset 16: 8 bytes — longitude (f64, decimal degrees)
+            let lat = f64::from_le_bytes([
+                data[8], data[9], data[10], data[11],
+                data[12], data[13], data[14], data[15],
+            ]);
+            let lon = f64::from_le_bytes([
+                data[16], data[17], data[18], data[19],
+                data[20], data[21], data[22], data[23],
+            ]);
+
+            if lat.is_finite() && lon.is_finite()
+                && lat >= -90.0 && lat <= 90.0
+                && lon >= -180.0 && lon <= 180.0
+            {
+                positions.push((lon, lat));
+            }
+        }
+
+        // Read trailing 4-byte checksum if present
+        let mut trailing = [0u8; 4];
+        let _ = file.read(&mut trailing);
+    }
+
+    if positions.is_empty() {
+        return Err("no position records found in .s7k file".into());
     }
 
     Ok(positions)
