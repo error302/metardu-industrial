@@ -50,6 +50,7 @@ import {
   Gauge,
   RefreshCw,
   Cpu,
+  Scissors,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
