@@ -12,12 +12,14 @@
  *   - Survey layer rendering dropped-file bounds as vector rectangles
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Map from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
+import ImageLayer from "ol/layer/Image";
+import Static from "ol/source/ImageStatic";
 import OSM from "ol/source/OSM";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { MousePosition, ScaleLine, FullScreen, Zoom } from "ol/control";
@@ -31,6 +33,7 @@ import "ol/ol.css";
 import { colors, domainAccent, type DomainMode } from "@/lib/tokens";
 import { registerEpsg, getOlProjection } from "@/lib/crs-registry";
 import { useSurveyStore } from "@/stores/survey-store";
+import { renderDem } from "@/lib/tauri-ipc";
 
 interface MapCanvasProps {
   domain: DomainMode;
@@ -264,6 +267,90 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
     const extent = source.getExtent();
     if (!extent || extent.some((v) => !Number.isFinite(v))) return;
     map.getView().fit(extent, { padding: [80, 80, 80, 80], maxZoom: 8 });
+  }, [files]);
+
+  // ── DEM rendering: when a GeoTIFF file is loaded, render it as
+  // a hillshaded color-ramp image overlay on the map. ──
+  const demLayerRef = useRef<ImageLayer<Static> | null>(null);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Remove any existing DEM layer
+    if (demLayerRef.current) {
+      map.removeLayer(demLayerRef.current);
+      demLayerRef.current = null;
+    }
+
+    // Find the first loaded GeoTIFF file
+    const geotiffFile = files.find((f) => f.kind === "geotiff" && f.status === "loaded");
+    if (!geotiffFile) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const result = await renderDem({
+          path: geotiffFile.path,
+          color_ramp: "terrain",
+        });
+
+        if (cancelled || !result) return;
+
+        // Create a data URL from the RGBA bytes
+        const canvas = document.createElement("canvas");
+        canvas.width = result.width;
+        canvas.height = result.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const imageData = ctx.createImageData(result.width, result.height);
+        const rgba = new Uint8ClampedArray(result.rgba);
+        imageData.data.set(rgba);
+        ctx.putImageData(imageData, 0, 0);
+
+        const dataUrl = canvas.toDataURL("image/png");
+
+        // Convert bounds from WGS84 to the map's projection
+        const [minX, minY, maxX, maxY] = result.bounds;
+        const projExtent = transformExtent(
+          [minX, minY, maxX, maxY],
+          "EPSG:4326",
+          map.getView().getProjection(),
+        );
+
+        // Create ImageStatic source with the rendered DEM
+        const source = new Static({
+          url: dataUrl,
+          imageExtent: projExtent,
+          interpolate: true,
+        });
+
+        const layer = new ImageLayer({
+          source,
+          opacity: 0.85,
+        });
+
+        if (!cancelled) {
+          map.addLayer(layer);
+          demLayerRef.current = layer;
+
+          // Zoom to the DEM extent
+          map.getView().fit(projExtent, { padding: [80, 80, 80, 80], maxZoom: 10 });
+        }
+      } catch (err) {
+        console.warn("DEM render failed:", err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (demLayerRef.current && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(demLayerRef.current);
+        demLayerRef.current = null;
+      }
+    };
   }, [files]);
 
   return (

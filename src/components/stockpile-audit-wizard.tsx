@@ -31,6 +31,7 @@ import {
   type ReportTable,
   type ReportStat,
 } from "@/lib/tauri-ipc";
+import { pickFile, pickSaveFile } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
 
 interface Props {
@@ -229,28 +230,25 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                   <Database className="mr-1 inline h-3 w-3" />
                   Stockpile yard survey DEM (current month)
                 </label>
-                {geotiffFiles.length === 0 ? (
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-gray">
-                    Drop a GeoTIFF DEM of the stockpile yard on the map first.
-                    Drone photogrammetry exports work well — clip to the stockpile
-                    polygon for best results.
-                  </div>
-                ) : (
-                  <select
-                    value={currPath}
-                    onChange={(e) => setCurrPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
-                    style={{ borderColor: currPath ? "#FFC107" : undefined }}
-                  >
-                    <option value="">— Select current survey —</option>
-                    {geotiffFiles.map((f) => (
-                      <option key={f.id} value={f.path}>{f.name}</option>
-                    ))}
-                  </select>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => { const p = await pickFile({ extensions: ["tif", "tiff"], filterName: "GeoTIFF DEM", title: "Select stockpile survey" }); if (p) setCurrPath(p); }}
+                    className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-2 text-xs text-white hover:bg-navy-elevated"
+                  ><Database className="h-3.5 w-3.5" /> Browse</button>
+                  {geotiffFiles.length > 0 && (
+                    <select
+                      value={currPath}
+                      onChange={(e) => setCurrPath(e.target.value)}
+                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                      style={{ borderColor: currPath ? "#FFC107" : undefined }}
+                    >
+                      <option value="">— Or pick loaded —</option>
+                      {geotiffFiles.map((f) => (<option key={f.id} value={f.path}>{f.name}</option>))}
+                    </select>
+                  )}
+                </div>
                 <p className="mt-1 text-[10px] text-steel-gray">
-                  Tip: clip the DEM to the stockpile footprint before running the audit.
-                  Use the cross-section profile tool to verify the boundary.
+                  Drone photogrammetry exports work well — clip to the stockpile polygon for best results.
                 </p>
               </div>
             </div>

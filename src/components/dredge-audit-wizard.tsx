@@ -38,6 +38,7 @@ import {
   type ReportTable,
   type ReportStat,
 } from "@/lib/tauri-ipc";
+import { pickFile, pickSaveFile } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
 
 interface Props {
@@ -246,23 +247,23 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   <Database className="mr-1 inline h-3 w-3" />
                   Pre-dredge survey (baseline seabed BEFORE dredging)
                 </label>
-                {geotiffFiles.length === 0 ? (
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-gray">
-                    Drop a GeoTIFF DEM file on the map first.
-                  </div>
-                ) : (
-                  <select
-                    value={prePath}
-                    onChange={(e) => setPrePath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
-                    style={{ borderColor: prePath ? colors.marineTurquoise : undefined }}
-                  >
-                    <option value="">— Select pre-dredge survey —</option>
-                    {geotiffFiles.map((f) => (
-                      <option key={f.id} value={f.path}>{f.name}</option>
-                    ))}
-                  </select>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => { const p = await pickFile({ extensions: ["tif", "tiff"], filterName: "GeoTIFF DEM", title: "Select pre-dredge survey" }); if (p) setPrePath(p); }}
+                    className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-2 text-xs text-white hover:bg-navy-elevated"
+                  ><Database className="h-3.5 w-3.5" /> Browse</button>
+                  {geotiffFiles.length > 0 && (
+                    <select
+                      value={prePath}
+                      onChange={(e) => setPrePath(e.target.value)}
+                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                      style={{ borderColor: prePath ? colors.marineTurquoise : undefined }}
+                    >
+                      <option value="">— Or pick loaded —</option>
+                      {geotiffFiles.map((f) => (<option key={f.id} value={f.path}>{f.name}</option>))}
+                    </select>
+                  )}
+                </div>
                 <p className="mt-1 text-[10px] text-steel-gray">
                   Hydrographic convention: depths positive downward (e.g., 12.5m = 12.5m below chart datum)
                 </p>
@@ -272,17 +273,23 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   <Database className="mr-1 inline h-3 w-3" />
                   Post-dredge survey (seabed AFTER dredging)
                 </label>
-                <select
-                  value={postPath}
-                  onChange={(e) => setPostPath(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
-                  style={{ borderColor: postPath ? colors.marineTurquoise : undefined }}
-                >
-                  <option value="">— Select post-dredge survey —</option>
-                  {geotiffFiles.filter((f) => f.path !== prePath).map((f) => (
-                    <option key={f.id} value={f.path}>{f.name}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => { const p = await pickFile({ extensions: ["tif", "tiff"], filterName: "GeoTIFF DEM", title: "Select post-dredge survey" }); if (p) setPostPath(p); }}
+                    className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-2 text-xs text-white hover:bg-navy-elevated"
+                  ><Database className="h-3.5 w-3.5" /> Browse</button>
+                  {geotiffFiles.length > 0 && (
+                    <select
+                      value={postPath}
+                      onChange={(e) => setPostPath(e.target.value)}
+                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                      style={{ borderColor: postPath ? colors.marineTurquoise : undefined }}
+                    >
+                      <option value="">— Or pick loaded —</option>
+                      {geotiffFiles.filter((f) => f.path !== prePath).map((f) => (<option key={f.id} value={f.path}>{f.name}</option>))}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
           )}
