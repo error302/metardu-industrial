@@ -42,6 +42,7 @@ pub enum LicenseTier {
 }
 
 impl LicenseTier {
+    #[allow(dead_code)]
     pub fn label(&self) -> &str {
         match self {
             LicenseTier::Core => "Core (Free)",
@@ -51,6 +52,7 @@ impl LicenseTier {
         }
     }
 
+    #[allow(dead_code)]
     pub fn color_hex(&self) -> &str {
         match self {
             LicenseTier::Core => "#64748B",     // steel gray
@@ -172,6 +174,7 @@ impl LicenseStatus {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum LicenseError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),

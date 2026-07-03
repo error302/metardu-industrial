@@ -92,6 +92,7 @@ pub enum SssError {
     #[error("XTF file truncated at offset {0}")]
     Truncated(u64),
     #[error("unsupported XTF packet type: {0}")]
+    #[allow(dead_code)]
     UnsupportedPacketType(u16),
     #[error("no sonar data found in file")]
     NoSonarData,
@@ -361,6 +362,7 @@ pub fn compute_target_height_from_shadow(
 ///
 /// slant_range = sample_index × sound_speed × sample_interval / 2
 /// (factor of 2 because sound travels out and back)
+#[allow(dead_code)]
 pub fn sample_index_to_slant_range(
     sample_index: usize,
     sound_speed_mps: f64,

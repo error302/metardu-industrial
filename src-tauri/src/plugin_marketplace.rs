@@ -86,6 +86,7 @@ pub struct InstalledPlugin {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum MarketplaceError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
@@ -249,6 +250,7 @@ pub fn uninstall_plugin(plugin_id: &str, app_data_dir: &Path) -> Result<(), Mark
 }
 
 /// Check if a plugin is installed.
+#[allow(dead_code)]
 pub fn is_plugin_installed(plugin_id: &str, app_data_dir: &Path) -> bool {
     if let Ok(installed) = list_installed_plugins(app_data_dir) {
         return installed.iter().any(|p| p.id == plugin_id);

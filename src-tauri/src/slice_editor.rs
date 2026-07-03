@@ -158,6 +158,7 @@ impl RejectMask {
 
     /// Clear all rejections (without affecting the undo stack —
     /// call this when starting a new slice).
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.rejected.clear();
         self.undo_stack.clear();
