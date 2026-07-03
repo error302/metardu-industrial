@@ -13,7 +13,6 @@ use crate::dem_render::{self, DemRenderRequest, DemRenderResult};
 pub async fn run_density_gates_cmd(
     request: DensityGatesRequest,
 ) -> Result<CoverageReport, String> {
-    let folder_label = request.folder_path.clone();
     tokio::task::spawn_blocking(move || {
         density_gates::run_density_gates(&request)
             .map_err(|e| ctx_no_input!("running density gates", e))

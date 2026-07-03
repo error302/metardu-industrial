@@ -129,9 +129,9 @@ pub fn compile_machine_control(
     }
 
     let file_size = match request.vendor {
-        MachineControlVendor::Leica => write_svd(output_path, &points, &lines)?,
-        MachineControlVendor::Trimble => write_tp3(output_path, &points, &lines)?,
-        MachineControlVendor::Topcon => write_top(output_path, &points, &lines)?,
+        MachineControlVendor::Leica => write_svd(output_path, &points, &lines).map_err(|e| e.to_string())?,
+        MachineControlVendor::Trimble => write_tp3(output_path, &points, &lines).map_err(|e| e.to_string())?,
+        MachineControlVendor::Topcon => write_top(output_path, &points, &lines).map_err(|e| e.to_string())?,
     };
 
     Ok(MachineControlResult {

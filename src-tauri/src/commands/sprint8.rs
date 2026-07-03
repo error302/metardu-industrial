@@ -5,7 +5,7 @@ use crate::plugin_marketplace::{
     self, InstalledPlugin, PluginRegistry, RegistryPlugin,
 };
 use crate::project::{
-    self, add_file_to_project, add_recent_report, load_project, new_project, remove_file_from_project,
+    add_file_to_project, add_recent_report, load_project, new_project, remove_file_from_project,
     save_project, update_view_state, MetarduProject, ProjectFile, ViewState,
 };
 use crate::updater::{self, UpdateInfo, UpdateStatus};

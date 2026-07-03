@@ -326,7 +326,7 @@ fn compute_hmac_sha256(message: &[u8], key: &[u8]) -> String {
 }
 
 /// Minimal SHA-256 implementation (no external dep).
-fn sha256(input: &[u8]) -> [u8; 32] {
+pub fn sha256(input: &[u8]) -> [u8; 32] {
     // SHA-256 constants
     const K: [u32; 64] = [
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,

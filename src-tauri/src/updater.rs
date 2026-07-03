@@ -20,7 +20,6 @@
 // using a public key embedded in the binary. No unsigned updates.
 
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateInfo {

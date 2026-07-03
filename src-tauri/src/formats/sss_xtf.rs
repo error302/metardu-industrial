@@ -26,7 +26,7 @@
 //   - Y axis = ping index (scrolls as new pings arrive)
 //   - Pixel intensity = backscatter amplitude (log-scaled)
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;

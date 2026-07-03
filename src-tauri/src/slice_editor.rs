@@ -68,7 +68,7 @@ pub struct SliceResult {
 /// RejectMask tracks which points have been flagged as rejected.
 /// Uses a HashSet of indices for O(1) membership + insert + remove.
 /// Supports undo via a stack of operations (each brush stroke is one op).
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RejectMask {
     /// Set of point indices marked as rejected
     pub rejected: HashSet<u32>,
