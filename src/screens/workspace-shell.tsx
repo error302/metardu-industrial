@@ -49,6 +49,7 @@ import {
   Key,
   Gauge,
   RefreshCw,
+  Cpu,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
