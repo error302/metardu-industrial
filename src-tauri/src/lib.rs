@@ -10,6 +10,14 @@
 #![allow(unknown_lints)]
 #![allow(never_type_fallback)]
 
+// error_context MUST be declared first because it uses #[macro_use] to
+// export the ctx!() and ctx_no_input!() macros. In Rust, #[macro_use]
+// only makes macros visible to modules declared TEXTUALLY AFTER the
+// #[macro_use] module. All command modules use ctx!() so this must
+// come before `mod commands;` and any other module that wraps errors.
+#[macro_use]
+mod error_context;
+
 #[allow(dead_code)]
 mod ar_companion;
 mod automation;
@@ -18,8 +26,6 @@ mod commands;
 mod deliverable;
 #[allow(dead_code)]
 mod distributed;
-#[macro_use]
-mod error_context;
 mod formats;
 mod geodesy;
 mod marine;

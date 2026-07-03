@@ -115,6 +115,7 @@ fn render_html(spec: &ReportSpec) -> String {
 
     h.push_str(&format!(
         "<!DOCTYPE html><html><head><meta charset='utf-8'><title>{t}</title>\
+        <meta name='generated' content='epoch {ts}' />\
         <style>\
         @page{{size:A4;margin:20mm 15mm}}\
         body{{font-family:Inter,system-ui,sans-serif;color:#0A192F;background:#fff;margin:0;font-size:11pt;line-height:1.5}}\
