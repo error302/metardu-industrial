@@ -18,7 +18,7 @@
 import { useState } from "react";
 import {
   X, ArrowRight, ArrowLeft, FileText, Loader2, CheckCircle2,
-  Database, AlertTriangle, ShieldAlert, Download, Plus, Trash2,
+  AlertTriangle, ShieldAlert, Download, Plus, Trash2,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {

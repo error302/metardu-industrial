@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from "react";
 import {
-  X, Loader2, Activity, CheckCircle2, AlertTriangle, FolderOpen, Map as MapIcon,
+  X, Loader2, Activity, AlertTriangle, FolderOpen, Map as MapIcon,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {

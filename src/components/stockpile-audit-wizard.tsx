@@ -31,7 +31,7 @@ import {
   type ReportTable,
   type ReportStat,
 } from "@/lib/tauri-ipc";
-import { pickFile, pickSaveFile } from "@/lib/file-picker";
+import { pickFile } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
 
 interface Props {

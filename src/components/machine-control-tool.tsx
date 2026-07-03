@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import {
-  X, Loader2, Cpu, CheckCircle2, FileText, Download, AlertTriangle,
+  X, Loader2, Cpu, CheckCircle2, FileText, Download,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
@@ -49,7 +49,7 @@ export function MachineControlTool({ open, onClose }: Props) {
     setVendor(v);
     if (inputPath) {
       const base = inputPath.replace(/\.(dxf|xml|landxml)$/i, "");
-      const ext = VENDORS.find((v) => v.value === v)?.ext ?? "svd";
+      const ext = VENDORS.find((vendorOption) => vendorOption.value === v)?.ext ?? "svd";
       setOutputPath(`${base}.${ext}`);
     }
   }

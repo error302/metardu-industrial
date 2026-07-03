@@ -11,7 +11,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  X, ShieldCheck, Loader2, CheckCircle2, AlertTriangle, Key, Crown, Lock,
+  X, ShieldCheck, Loader2, CheckCircle2, Key, Crown, Lock,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {

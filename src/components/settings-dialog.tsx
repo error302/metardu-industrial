@@ -23,7 +23,6 @@ import {
   domainAccent,
   APP_VERSION,
   APP_BUILD,
-  APP_NAME,
   type DomainMode,
 } from "@/lib/tokens";
 import { BrandLogoMark } from "@/components/brand-logo";

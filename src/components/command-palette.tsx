@@ -182,6 +182,9 @@ export function createCommandActions(callbacks: {
   onOpenLicense: () => void;
   onOpenBenchmark: () => void;
   onOpenTelemetry: () => void;
+  onOpenProject: () => void;
+  onOpenUpdate: () => void;
+  onOpenMarketplace: () => void;
   onOpenDensityGates: () => void;
   onOpenTidalSpline: () => void;
   onOpenMachineControl: () => void;

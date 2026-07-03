@@ -17,9 +17,9 @@
  * Per ROADMAP.md Priority #9.
  */
 
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
-  X, Loader2, Scissors, Undo2, Brush, Save, Check, AlertTriangle, Download,
+  X, Loader2, Scissors, Undo2, Brush, Save, AlertTriangle, Download,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {

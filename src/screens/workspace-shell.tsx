@@ -105,7 +105,6 @@ import { startStream, stopStream } from "@/lib/tauri-ipc";
 import {
   colors,
   domainAccent,
-  APP_NAME,
   APP_VERSION,
   type DomainMode,
 } from "@/lib/tokens";
@@ -340,6 +339,7 @@ export function WorkspaceShell() {
         {rightPanelOpen && (
           <RightPanel
             domain={activeDomain}
+            epsg={settings.defaultEpsg}
             profileLine={profileLine}
             onClearProfile={clearProfile}
             profileActive={profileActive}
@@ -802,11 +802,13 @@ function SidebarItem({
 
 function RightPanel({
   domain,
+  epsg,
   profileLine,
   onClearProfile,
   profileActive,
 }: {
   domain: DomainMode;
+  epsg: string;
   profileLine: ProfileLine | null;
   onClearProfile: () => void;
   profileActive: boolean;
@@ -819,20 +821,63 @@ function RightPanel({
 
   const fileCount = files.length;
   const loadedCount = files.filter((f) => f.status === "loaded").length;
+  const errorCount = files.filter((f) => f.status === "error").length;
+  const probingCount = files.filter((f) => f.status === "probing").length;
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+  const totalPoints = files.reduce((sum, f) => sum + (f.pointCount ?? 0), 0);
+  const lastAddedAt = files.reduce((latest, f) => Math.max(latest, f.addedAt), 0);
+  const hasBounds = files.some((f) => f.bounds);
+  const statusLabel =
+    fileCount === 0
+      ? "Ready for ingest"
+      : errorCount > 0
+        ? "Needs review"
+        : probingCount > 0
+          ? "Probing headers"
+          : "Ready for processing";
+  const nextActions =
+    domain === "mining"
+      ? [
+          ["Classify ground", "Run CSF before volume calculations."],
+          ["Compute volume", "Compare current DEM against a bench or previous survey."],
+          ["Package report", "Export branded PDF with density and bench breakdown."],
+        ]
+      : domain === "marine"
+        ? [
+            ["Clean bathymetry", "Run density gates and inspect gaps before gridding."],
+            ["Generate CUBE", "Build a defensible bathymetric surface."],
+            ["Certify delivery", "Run S-44 checks and package S-57 outputs."],
+          ]
+        : [
+            ["Ingest survey data", "Stage LAS/LAZ, GeoTIFF, MBES, drone, or control files."],
+            ["Run domain QC", "Use CSF/volumes for mining or density gates/CUBE for marine."],
+            ["Publish deliverables", "Package PDF reports, S-57 exports, and audit manifests."],
+          ];
+  const emptyTip =
+    domain === "marine"
+      ? "Drop a Kongsberg .all or Reson .s7k file anywhere to start the ingest pipeline."
+      : domain === "mining"
+        ? "Drop a LAS/LAZ point cloud or drone photogrammetry export to begin."
+        : "Drop LAS/LAZ, GeoTIFF, MBES, side-scan, drone manifest, or control files to begin.";
 
   return (
     <aside className="flex w-80 flex-col border-l border-navy-border bg-navy-panel">
       <div className="border-b border-navy-border px-4 py-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-steel-light">
-          {domain === "marine" ? "S-44 Status" : "Survey Status"}
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-steel-light">
+            Operations
+          </h3>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: accent }}>
+            {domainAccent[domain].label}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
         {/* Status block */}
         <div className="rounded-lg border border-navy-border bg-navy-base p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-steel-gray">Survey ready</span>
+            <span className="text-xs text-steel-gray">{statusLabel}</span>
             <span
               className="rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
               style={
@@ -844,15 +889,21 @@ function RightPanel({
                     }
               }
             >
-              {fileCount > 0 ? `${loadedCount}/${fileCount} loaded` : "No Data"}
+              {fileCount > 0 ? `${loadedCount}/${fileCount} loaded` : "No data"}
             </span>
           </div>
           <div className="mt-3 text-2xl font-bold text-white">
             {fileCount > 0 ? fileCount : "—"}
           </div>
           <div className="text-xs text-steel-gray">
-            {domain === "marine" ? "Files staged" : "Files staged"}
+            staged files
           </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <MetricTile label="Points" value={totalPoints ? compactNumber(totalPoints) : "—"} />
+          <MetricTile label="Data" value={totalSize ? formatBytes(totalSize) : "—"} />
+          <MetricTile label="Errors" value={String(errorCount)} tone={errorCount > 0 ? "fail" : "pass"} />
         </div>
 
         {/* Dropped files list */}
@@ -911,13 +962,30 @@ function RightPanel({
 
         {/* Quick stats */}
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <StatTile label="CRS" value="EPSG:4326" mono />
+          <StatTile label="CRS" value={epsg} mono />
           <StatTile label="Domain" value={domainAccent[domain].label} />
           <StatTile
-            label={domain === "marine" ? "S-44 Order" : "Bench Level"}
-            value="—"
+            label={domain === "marine" ? "S-44 Order" : "Coverage"}
+            value={hasBounds ? "Bounds OK" : "Pending"}
           />
-          <StatTile label="Last sync" value="—" />
+          <StatTile
+            label="Last ingest"
+            value={lastAddedAt ? new Date(lastAddedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+          />
+        </div>
+
+        <div className="mt-4">
+          <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+            Recommended next actions
+          </h4>
+          <div className="space-y-2">
+            {nextActions.map(([title, body]) => (
+              <div key={title} className="rounded-md border border-navy-border bg-navy-base p-2.5">
+                <div className="text-xs font-semibold text-white">{title}</div>
+                <div className="mt-0.5 text-[10px] leading-relaxed text-steel-gray">{body}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Hint card */}
@@ -930,9 +998,7 @@ function RightPanel({
           </div>
           <p className="leading-relaxed text-steel-light">
             {fileCount === 0
-              ? domain === "marine"
-                ? "Drop a Kongsberg .all or Reson .s7k file anywhere to start the ingest pipeline."
-                : "Drop a LAS/LAZ point cloud or drone photogrammetry export to begin."
+              ? emptyTip
               : "Click a file to focus it on the map. Right-click for processing options."}
           </p>
         </div>
@@ -969,6 +1035,34 @@ function formatBytes(bytes: number): string {
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
+function compactNumber(value: number): string {
+  return Intl.NumberFormat(undefined, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function MetricTile({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  tone?: "neutral" | "pass" | "fail";
+}) {
+  const color =
+    tone === "pass" ? colors.pass : tone === "fail" ? colors.fail : colors.steelLight;
+  return (
+    <div className="rounded-md border border-navy-border bg-navy-base p-2">
+      <div className="text-[9px] uppercase tracking-wider text-steel-gray">{label}</div>
+      <div className="mt-0.5 truncate font-mono text-xs font-semibold" style={{ color }}>
+        {value}
+      </div>
+    </div>
+  );
 }
 
 function StatTile({
@@ -1079,6 +1173,15 @@ function FloatingActions({
 
 function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
   const accent = domainAccent[domain].primary;
+  const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(11, 19));
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setUtcTime(new Date().toISOString().slice(11, 19));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <footer className="flex h-6 items-center justify-between border-t border-navy-border bg-navy-panel px-3 text-[11px]">
       <div className="flex items-center gap-4">
@@ -1101,7 +1204,7 @@ function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
       <div className="flex items-center gap-4 text-steel-gray">
         <span className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          <span className="font-mono">{new Date().toISOString().slice(11, 19)}Z</span>
+          <span className="font-mono">{utcTime}Z</span>
         </span>
         <span className="font-mono">v{APP_VERSION}</span>
       </div>

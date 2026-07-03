@@ -57,7 +57,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
   const [result, setResult] = useState<VolumeResultRpc | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [reportPath, setReportPath] = useState("/tmp/volume_report.html");
+  const [reportPath] = useState("/tmp/volume_report.html");
   const [reportGenerated, setReportGenerated] = useState(false);
 
   if (!open) return null;

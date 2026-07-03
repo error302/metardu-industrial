@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  X, Activity, AlertTriangle, Send, CheckCircle2, RefreshCw, BarChart3, Clock,
+  X, Activity, AlertTriangle, Send, RefreshCw, BarChart3, Clock,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {

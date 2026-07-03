@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import {
-  X, RefreshCw, Download, CheckCircle2, AlertTriangle, Loader2, Info,
+  X, RefreshCw, Download, CheckCircle2, Loader2, Info,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {

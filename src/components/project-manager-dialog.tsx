@@ -5,9 +5,9 @@
  * current project state, and save/load actions.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  X, Save, FolderOpen, FilePlus, Clock, FileBox, Loader2, CheckCircle2,
+  X, Save, FolderOpen, FilePlus, Clock, FileBox, Loader2,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
