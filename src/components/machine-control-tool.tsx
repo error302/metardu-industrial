@@ -14,6 +14,7 @@ import {
   type MachineControlVendor,
   type MachineControlResult,
 } from "@/lib/tauri-ipc";
+import { pickFile, pickSaveFile } from "@/lib/file-picker";
 
 interface Props {
   open: boolean;
@@ -109,12 +110,18 @@ export function MachineControlTool({ open, onClose }: Props) {
               Input alignment file (DXF or LandXML)
             </label>
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-steel-gray" />
+              <button
+                onClick={async () => {
+                  const p = await pickFile({ extensions: ["dxf", "xml", "landxml"], filterName: "DXF / LandXML", title: "Select alignment file" });
+                  if (p) updateInput(p);
+                }}
+                className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-2 text-xs text-white hover:bg-navy-elevated"
+              >
+                <FileText className="h-3.5 w-3.5" /> Browse
+              </button>
               <input
-                type="text"
-                value={inputPath}
-                onChange={(e) => updateInput(e.target.value)}
-                placeholder="/path/to/pit_design.dxf"
+                type="text" value={inputPath} onChange={(e) => updateInput(e.target.value)}
+                placeholder="Or type a path…"
                 className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
               />
             </div>
@@ -151,12 +158,22 @@ export function MachineControlTool({ open, onClose }: Props) {
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-steel-light">
               Output file path
             </label>
-            <input
-              type="text"
-              value={outputPath}
-              onChange={(e) => setOutputPath(e.target.value)}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
-            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  const ext = VENDORS.find((v) => v.value === vendor)?.ext ?? "svd";
+                  const p = await pickSaveFile({ extensions: [ext], filterName: VENDORS.find((v) => v.value === vendor)?.label ?? ext, title: "Save machine control file" });
+                  if (p) setOutputPath(p);
+                }}
+                className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-2 text-xs text-white hover:bg-navy-elevated"
+              >
+                <Download className="h-3.5 w-3.5" /> Save As
+              </button>
+              <input
+                type="text" value={outputPath} onChange={(e) => setOutputPath(e.target.value)}
+                className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+              />
+            </div>
           </div>
 
           {/* Compile button */}

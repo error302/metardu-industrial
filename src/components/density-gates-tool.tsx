@@ -14,6 +14,7 @@ import {
   type CoverageReport,
   type CoverageStatus,
 } from "@/lib/tauri-ipc";
+import { pickFolder } from "@/lib/file-picker";
 
 interface Props {
   open: boolean;
@@ -40,6 +41,11 @@ export function DensityGatesTool({ open, onClose }: Props) {
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<CoverageReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleBrowse = useCallback(async () => {
+    const path = await pickFolder("Select sonar data folder");
+    if (path) setFolderPath(path);
+  }, []);
 
   const handleRun = useCallback(async () => {
     if (!folderPath) return;
@@ -101,12 +107,17 @@ export function DensityGatesTool({ open, onClose }: Props) {
                 Sonar data folder (.all / .s7k)
               </label>
               <div className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4 text-steel-gray" />
+                <button
+                  onClick={handleBrowse}
+                  className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-2 text-xs text-white hover:bg-navy-elevated"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" /> Browse
+                </button>
                 <input
                   type="text"
                   value={folderPath}
                   onChange={(e) => setFolderPath(e.target.value)}
-                  placeholder="C:\surveys\harbor_2026 or /data/surveys/harbor"
+                  placeholder="Or type a folder path…"
                   className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
                 />
               </div>
