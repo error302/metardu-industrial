@@ -1508,3 +1508,239 @@ export async function pointInPolygon(
   if (!isTauri()) return false;
   return invoke<boolean>("point_in_polygon_cmd", { point, polygon });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 7 — License Manager + Telemetry + Benchmarks
+
+// License Manager
+export type LicenseTier = "core" | "pro" | "enterprise" | "trial";
+
+export interface LicensePayload {
+  customer: string;
+  tier: LicenseTier;
+  expiry: string;
+  seats: number;
+  features: string[];
+  license_id: string;
+  issued: string;
+  issuer: string;
+}
+
+export interface LicenseStatus {
+  valid: boolean;
+  tier: LicenseTier;
+  payload: LicensePayload | null;
+  days_remaining: number | null;
+  expired: boolean;
+  error: string | null;
+  unlocked_features: string[];
+}
+
+/** Get the current license status. */
+export async function getLicenseStatus(
+  licensePath?: string,
+): Promise<LicenseStatus> {
+  if (!isTauri()) {
+    return {
+      valid: false,
+      tier: "core",
+      payload: null,
+      days_remaining: null,
+      expired: false,
+      error: null,
+      unlocked_features: [],
+    };
+  }
+  return invoke<LicenseStatus>("get_license_status_cmd", { licensePath: licensePath ?? null });
+}
+
+/** Activate a license from pasted content. */
+export async function activateLicense(
+  licenseContent: string,
+  savePath?: string,
+): Promise<LicenseStatus | null> {
+  if (!isTauri()) return null;
+  return invoke<LicenseStatus>("activate_license_cmd", {
+    licenseContent,
+    savePath: savePath ?? null,
+  });
+}
+
+/** Generate a license file (admin tool). */
+export async function generateLicense(
+  payload: LicensePayload,
+): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string>("generate_license_cmd", { payload });
+}
+
+/** Check if a feature is unlocked by the current license. */
+export async function checkFeature(
+  feature: string,
+  licensePath?: string,
+): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>("check_feature_cmd", {
+    feature,
+    licensePath: licensePath ?? null,
+  });
+}
+
+// Telemetry + Crash Reporter
+export interface TelemetryConfig {
+  enabled: boolean;
+  crash_auto_submit: boolean;
+  endpoint_url: string;
+  anonymous_id: string;
+  app_version: string;
+}
+
+export interface TelemetryEvent {
+  timestamp_ms: number;
+  event_type: string;
+  event_name: string;
+  duration_ms: number | null;
+  success: boolean;
+  error: string | null;
+  license_tier: string;
+}
+
+export interface CrashDump {
+  crash_id: string;
+  timestamp_ms: number;
+  app_version: string;
+  os_info: string;
+  command: string;
+  message: string;
+  stack_trace: string;
+  license_tier: string;
+  anonymous_id: string;
+  submitted: boolean;
+}
+
+export interface TelemetryStats {
+  total_events: number;
+  total_crashes: number;
+  pending_crashes: number;
+  top_commands: [string, number][];
+  top_failures: [string, number][];
+  avg_ipc_duration_ms: number;
+  uptime_seconds: number;
+}
+
+/** Initialize telemetry at app startup. */
+export async function initTelemetry(config: TelemetryConfig): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("init_telemetry_cmd", { config });
+}
+
+/** Update the telemetry config. */
+export async function updateTelemetryConfig(config: TelemetryConfig): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("update_telemetry_config_cmd", { config });
+}
+
+/** Get the current telemetry config. */
+export async function getTelemetryConfig(): Promise<TelemetryConfig | null> {
+  if (!isTauri()) return null;
+  return invoke<TelemetryConfig>("get_telemetry_config_cmd");
+}
+
+/** Record a telemetry event. */
+export async function recordTelemetryEvent(
+  eventType: string,
+  eventName: string,
+  durationMs: number | null,
+  success: boolean,
+  error: string | null,
+  licenseTier: string,
+): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("record_telemetry_event_cmd", {
+    eventType,
+    eventName,
+    durationMs,
+    success,
+    error,
+    licenseTier,
+  });
+}
+
+/** Record a crash dump. */
+export async function recordCrash(
+  command: string,
+  message: string,
+  stackTrace: string,
+  licenseTier: string,
+): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string>("record_crash_cmd", { command, message, stackTrace, licenseTier });
+}
+
+/** Get aggregated telemetry stats. */
+export async function getTelemetryStats(): Promise<TelemetryStats | null> {
+  if (!isTauri()) return null;
+  return invoke<TelemetryStats>("get_telemetry_stats_cmd");
+}
+
+/** Get recent telemetry events. */
+export async function getRecentEvents(limit?: number): Promise<TelemetryEvent[]> {
+  if (!isTauri()) return [];
+  return invoke<TelemetryEvent[]>("get_recent_events_cmd", { limit: limit ?? null });
+}
+
+/** Get pending (unsubmitted) crash dumps. */
+export async function getPendingCrashes(): Promise<CrashDump[]> {
+  if (!isTauri()) return [];
+  return invoke<CrashDump[]>("get_pending_crashes_cmd");
+}
+
+/** Mark a crash dump as submitted. */
+export async function markCrashSubmitted(crashId: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("mark_crash_submitted_cmd", { crashId });
+}
+
+// Performance Benchmark Suite
+export interface Throughput {
+  value: number;
+  unit: string;
+}
+
+export interface BenchmarkResult {
+  name: string;
+  description: string;
+  iterations: number;
+  min_ms: number;
+  max_ms: number;
+  mean_ms: number;
+  p50_ms: number;
+  p95_ms: number;
+  throughput: Throughput | null;
+  passed: boolean;
+  notes: string;
+}
+
+export interface SystemInfo {
+  os: string;
+  arch: string;
+  cpu_count: number;
+  app_version: string;
+}
+
+export interface BenchmarkSuiteResult {
+  results: BenchmarkResult[];
+  total_duration_secs: number;
+  system_info: SystemInfo;
+  overall_pass: boolean;
+}
+
+/** Run the full performance benchmark suite. */
+export async function runBenchmarks(
+  iterations?: number,
+): Promise<BenchmarkSuiteResult | null> {
+  if (!isTauri()) return null;
+  return invoke<BenchmarkSuiteResult>("run_benchmarks_cmd", {
+    request: { iterations: iterations ?? null },
+  });
+}

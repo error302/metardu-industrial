@@ -21,6 +21,8 @@ mod error_context;
 #[allow(dead_code)]
 mod ar_companion;
 mod automation;
+#[allow(dead_code)]
+mod benchmarks;
 mod commands;
 #[allow(dead_code)]
 mod deliverable;
@@ -28,6 +30,7 @@ mod deliverable;
 mod distributed;
 mod formats;
 mod geodesy;
+mod license;
 mod marine;
 mod mining;
 mod ml;
@@ -41,6 +44,7 @@ mod report_engine;
 mod slice_editor;
 #[allow(dead_code)]
 mod streaming;
+mod telemetry;
 #[allow(dead_code)]
 mod wasm_sandbox;
 
@@ -62,6 +66,13 @@ use commands::{
     read_las_points_cmd, sample_profile, save_settings, sprint6::accepted_indices_cmd,
     sprint6::brush_reject_cmd, sprint6::compute_target_height_cmd, sprint6::point_in_polygon_cmd,
     sprint6::read_sss_pings_cmd, sprint6::slice_by_polygon_cmd, sprint6::undo_brush_cmd,
+    sprint7::activate_license_cmd, sprint7::check_feature_cmd, sprint7::generate_license_cmd,
+    sprint7::get_license_status_cmd, sprint7::get_pending_crashes_cmd,
+    sprint7::get_recent_events_cmd, sprint7::get_telemetry_config_cmd,
+    sprint7::get_telemetry_stats_cmd, sprint7::init_telemetry_cmd,
+    sprint7::mark_crash_submitted_cmd, sprint7::record_crash_cmd,
+    sprint7::record_telemetry_event_cmd, sprint7::run_benchmarks_cmd,
+    sprint7::update_telemetry_config_cmd,
     streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
     streaming::get_stream_status_cmd, streaming::merge_distributed_cube_results,
     streaming::start_coordinator_cmd, streaming::start_stream_cmd, streaming::stop_coordinator_cmd,
@@ -146,6 +157,21 @@ pub fn run() {
             undo_brush_cmd,
             accepted_indices_cmd,
             point_in_polygon_cmd,
+            // Sprint 7 — License + Telemetry + Benchmarks
+            get_license_status_cmd,
+            activate_license_cmd,
+            generate_license_cmd,
+            check_feature_cmd,
+            init_telemetry_cmd,
+            update_telemetry_config_cmd,
+            get_telemetry_config_cmd,
+            record_telemetry_event_cmd,
+            record_crash_cmd,
+            get_telemetry_stats_cmd,
+            get_recent_events_cmd,
+            get_pending_crashes_cmd,
+            mark_crash_submitted_cmd,
+            run_benchmarks_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

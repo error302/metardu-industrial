@@ -13,6 +13,7 @@ import {
   Search, ArrowRight, Calculator, Layers3, Terminal, Shield,
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, Ruler, Package, Scissors,
+  Key, Gauge, Activity,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -178,6 +179,9 @@ export function createCommandActions(callbacks: {
   onOpenDeliverable: () => void;
   onOpenSss: () => void;
   onOpenSliceEditor: () => void;
+  onOpenLicense: () => void;
+  onOpenBenchmark: () => void;
+  onOpenTelemetry: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -190,6 +194,9 @@ export function createCommandActions(callbacks: {
     { id: "deliverable", label: "Survey Deliverable Package", category: "Marine · Revenue", keywords: ["deliverable", "package", "zip", "manifest", "metadata", "iso", "19115", "bundle"], icon: <Package className={icon} />, action: callbacks.onOpenDeliverable },
     { id: "sss", label: "SSS Waterfall Viewer", category: "Marine · Advanced", keywords: ["sss", "side", "scan", "sonar", "waterfall", "xtf", "backscatter", "shadow"], icon: <Waves className={icon} />, action: callbacks.onOpenSss },
     { id: "slice", label: "3D Slice Editor (Reject Brush)", category: "Cross-cutting · Advanced", keywords: ["slice", "3d", "polygon", "reject", "brush", "cube", "clean", "qc"], icon: <Scissors className={icon} />, action: callbacks.onOpenSliceEditor },
+    { id: "license", label: "License Manager", category: "Enterprise · Activation", keywords: ["license", "activate", "pro", "enterprise", "trial", "tier", "unlock"], icon: <Key className={icon} />, action: callbacks.onOpenLicense },
+    { id: "benchmark", label: "Performance Benchmark Suite", category: "Enterprise · Diagnostics", keywords: ["benchmark", "performance", "speed", "timing", "throughput", "cpu"], icon: <Gauge className={icon} />, action: callbacks.onOpenBenchmark },
+    { id: "telemetry", label: "Telemetry & Crash Reporter", category: "Enterprise · Diagnostics", keywords: ["telemetry", "crash", "report", "usage", "stats", "diagnostics", "privacy"], icon: <Activity className={icon} />, action: callbacks.onOpenTelemetry },
     { id: "volume", label: "Volume Calculator", category: "Mining", keywords: ["volume", "fill", "cut", "bench", "stockpile"], icon: <Calculator className={icon} />, action: callbacks.onOpenVolumeCalc },
     { id: "odm", label: "ODM Pipeline (Drone → Point Cloud)", category: "Mining", keywords: ["odm", "drone", "photogrammetry", "docker"], icon: <Terminal className={icon} />, action: callbacks.onOpenOdm },
     { id: "csf", label: "Classify Ground (CSF)", category: "Mining", keywords: ["classify", "ground", "csf", "cloth", "point cloud"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCsf },

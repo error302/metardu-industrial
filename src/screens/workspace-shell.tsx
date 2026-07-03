@@ -46,6 +46,8 @@ import {
   ShieldAlert,
   Ruler,
   Package,
+  Key,
+  Gauge,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -75,6 +77,9 @@ import { CrossSectionProfilerWizard } from "@/components/cross-section-profiler-
 import { DeliverablePackageWizard } from "@/components/deliverable-package-wizard";
 import { SssWaterfallViewer } from "@/components/sss-waterfall-viewer";
 import { SliceEditor3D } from "@/components/slice-editor-3d";
+import { LicenseManagerDialog } from "@/components/license-manager-dialog";
+import { BenchmarkDialog } from "@/components/benchmark-dialog";
+import { TelemetryDialog } from "@/components/telemetry-dialog";
 import {
   LayoutProfiles,
   getLayoutSettings,
@@ -125,6 +130,9 @@ export function WorkspaceShell() {
   const [deliverableOpen, setDeliverableOpen] = useState(false);
   const [sssOpen, setSssOpen] = useState(false);
   const [sliceEditorOpen, setSliceEditorOpen] = useState(false);
+  const [licenseOpen, setLicenseOpen] = useState(false);
+  const [benchmarkOpen, setBenchmarkOpen] = useState(false);
+  const [telemetryOpen, setTelemetryOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -196,6 +204,9 @@ export function WorkspaceShell() {
     onOpenDeliverable: () => setDeliverableOpen(true),
     onOpenSss: () => setSssOpen(true),
     onOpenSliceEditor: () => setSliceEditorOpen(true),
+    onOpenLicense: () => setLicenseOpen(true),
+    onOpenBenchmark: () => setBenchmarkOpen(true),
+    onOpenTelemetry: () => setTelemetryOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -246,6 +257,9 @@ export function WorkspaceShell() {
             onOpenDeliverable={() => setDeliverableOpen(true)}
             onOpenSss={() => setSssOpen(true)}
             onOpenSliceEditor={() => setSliceEditorOpen(true)}
+            onOpenLicense={() => setLicenseOpen(true)}
+            onOpenBenchmark={() => setBenchmarkOpen(true)}
+            onOpenTelemetry={() => setTelemetryOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -345,6 +359,9 @@ export function WorkspaceShell() {
       <DeliverablePackageWizard open={deliverableOpen} onClose={() => setDeliverableOpen(false)} />
       <SssWaterfallViewer open={sssOpen} onClose={() => setSssOpen(false)} />
       <SliceEditor3D open={sliceEditorOpen} onClose={() => setSliceEditorOpen(false)} />
+      <LicenseManagerDialog open={licenseOpen} onClose={() => setLicenseOpen(false)} />
+      <BenchmarkDialog open={benchmarkOpen} onClose={() => setBenchmarkOpen(false)} />
+      <TelemetryDialog open={telemetryOpen} onClose={() => setTelemetryOpen(false)} />
     </div>
   );
 }
@@ -430,6 +447,9 @@ function LeftSidebar({
   onOpenDeliverable,
   onOpenSss,
   onOpenSliceEditor,
+  onOpenLicense,
+  onOpenBenchmark,
+  onOpenTelemetry,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -453,6 +473,9 @@ function LeftSidebar({
   onOpenDeliverable: () => void;
   onOpenSss: () => void;
   onOpenSliceEditor: () => void;
+  onOpenLicense: () => void;
+  onOpenBenchmark: () => void;
+  onOpenTelemetry: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -598,6 +621,25 @@ function LeftSidebar({
             icon={<Scissors className="h-3 w-3" />}
             label="3D Slice Editor"
             onClick={onOpenSliceEditor}
+          />
+        </SidebarSection>
+
+        {/* Enterprise */}
+        <SidebarSection title="Enterprise" icon={<Shield className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<Key className="h-3 w-3" />}
+            label="License Manager"
+            onClick={onOpenLicense}
+          />
+          <SidebarItem
+            icon={<Gauge className="h-3 w-3" />}
+            label="Performance Benchmark"
+            onClick={onOpenBenchmark}
+          />
+          <SidebarItem
+            icon={<Activity className="h-3 w-3" />}
+            label="Telemetry & Crash"
+            onClick={onOpenTelemetry}
           />
         </SidebarSection>
 

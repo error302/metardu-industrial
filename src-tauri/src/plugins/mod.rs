@@ -18,6 +18,8 @@
 
 #[allow(dead_code)]
 pub mod dynamic_loader;
+#[allow(dead_code)]
+pub mod reference_plugin_template;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
