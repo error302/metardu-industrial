@@ -30,6 +30,7 @@ mod deliverable;
 mod distributed;
 mod formats;
 mod geodesy;
+mod i18n;
 mod license;
 mod marine;
 mod mining;
@@ -38,13 +39,17 @@ mod modules;
 #[allow(dead_code)]
 mod performance;
 mod pipelines;
+mod plugin_marketplace;
 #[allow(dead_code)]
 mod plugins;
+mod project;
 mod report_engine;
 mod slice_editor;
 #[allow(dead_code)]
 mod streaming;
 mod telemetry;
+#[allow(dead_code)]
+mod updater;
 #[allow(dead_code)]
 mod wasm_sandbox;
 
@@ -73,6 +78,14 @@ use commands::{
     sprint7::mark_crash_submitted_cmd, sprint7::record_crash_cmd,
     sprint7::record_telemetry_event_cmd, sprint7::run_benchmarks_cmd,
     sprint7::update_telemetry_config_cmd,
+    sprint8::add_file_to_project_cmd, sprint8::add_recent_report_cmd,
+    sprint8::check_for_updates_cmd, sprint8::fetch_plugin_registry_cmd,
+    sprint8::get_available_languages_cmd, sprint8::get_current_version_cmd,
+    sprint8::get_update_status_cmd, sprint8::install_plugin_cmd,
+    sprint8::list_installed_plugins_cmd, sprint8::load_project_cmd,
+    sprint8::new_project_cmd, sprint8::remove_file_from_project_cmd,
+    sprint8::save_project_cmd, sprint8::search_registry_cmd,
+    sprint8::translate_cmd, sprint8::uninstall_plugin_cmd, sprint8::update_view_state_cmd,
     streaming::enqueue_distributed_cube, streaming::get_coordinator_status_cmd,
     streaming::get_stream_status_cmd, streaming::merge_distributed_cube_results,
     streaming::start_coordinator_cmd, streaming::start_stream_cmd, streaming::stop_coordinator_cmd,
@@ -172,6 +185,24 @@ pub fn run() {
             get_pending_crashes_cmd,
             mark_crash_submitted_cmd,
             run_benchmarks_cmd,
+            // Sprint 8 — Project + Updater + i18n + Marketplace
+            new_project_cmd,
+            save_project_cmd,
+            load_project_cmd,
+            add_file_to_project_cmd,
+            remove_file_from_project_cmd,
+            update_view_state_cmd,
+            add_recent_report_cmd,
+            check_for_updates_cmd,
+            get_update_status_cmd,
+            get_current_version_cmd,
+            translate_cmd,
+            get_available_languages_cmd,
+            fetch_plugin_registry_cmd,
+            list_installed_plugins_cmd,
+            install_plugin_cmd,
+            uninstall_plugin_cmd,
+            search_registry_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

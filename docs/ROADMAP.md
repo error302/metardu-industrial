@@ -1,6 +1,6 @@
 # MetaRDU Industrial — Development Roadmap & Revenue Strategy
 
-**Last updated**: 2026-07-03 (Sprint 7 complete)
+**Last updated**: 2026-07-03 (Sprint 8 complete)
 **Status**: Living document — the single source of truth for what to build and why.
 
 ---
@@ -252,6 +252,10 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Telemetry + Crash Reporter (Sprint 7) | ~420 | 9 | ✅ Opt-in usage stats + crash dump capture |
 | Performance Benchmark Suite (Sprint 7) | ~370 | 5 | ✅ 8 benchmarks + throughput + p95 timing |
 | Plugin SDK reference template (Sprint 7) | ~150 | — | ✅ Vendor-style FileReaderPlugin example |
+| Project file format .metardu (Sprint 8) | ~340 | 10 | ✅ JSON-based save/load + auto-save + versioning |
+| Auto-Updater (Sprint 8) | ~250 | 8 | ✅ Version check + download + install (Phase 9 will wire HTTP) |
+| i18n en/es/pt (Sprint 8) | ~330 | 10 | ✅ English + Spanish + Portuguese translation tables |
+| Plugin Marketplace (Sprint 8) | ~370 | 9 | ✅ Registry + install/uninstall + search + SHA-256 verify |
 | Pipeline DSL + executor | ~280 | 4 | ✅ All 11 actions wired to real functions |
 | Watch folders | ~220 | 2 | ✅ |
 | Scheduled jobs | ~180 | 3 | ✅ |
@@ -262,15 +266,15 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Streaming ingest | ~260 | 3 | ✅ UDP listener + Deck.gl rendering |
 | WASM sandbox | ~280 | 3 | ✅ wasmtime behind feature flag |
 | AR companion scaffold | ~310 | 3 | ✅ |
-| Frontend (React/TS) | ~16,500 | — | ✅ 27 dialogs, 72 IPC commands |
+| Frontend (React/TS) | ~19,000 | — | ✅ 30 dialogs, 89 IPC commands |
 
 ### Build Stats
-- Rust source: ~20,000 lines
-- TypeScript source: ~16,500 lines
+- Rust source: ~22,500 lines
+- TypeScript source: ~19,000 lines
 - Shared crate (metardu-core): ~1,500 lines
-- Documentation: ~3,000 lines
-- Unit tests: 159+ (Rust)
-- IPC commands: 72
+- Documentation: ~3,100 lines
+- Unit tests: 196+ (Rust)
+- IPC commands: 89
 - Binaries: 2 (metardu-industrial + metardu-worker)
 - Release tags: 2 (v0.1.0-alpha.1, v0.1.0-beta.1)
 
@@ -314,3 +318,9 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 21. ~~**Telemetry + Crash Reporter**~~ — ✅ Opt-in usage stats + crash dump capture + per-stroke undo
 22. ~~**Performance Benchmark Suite**~~ — ✅ 8 benchmarks (point cloud, CSF, volume, dredge, highwall, license, SHA-256, JSON) with p95 timing
 23. ~~**Plugin SDK reference template**~~ — ✅ Vendor-style FileReaderPlugin example (Norbit WBM format) with full source
+
+### Sprint 8: Production Distribution — ✅ COMPLETE
+24. ~~**Project file format (.metardu)**~~ — ✅ JSON-based save/load + auto-save + versioning + recent reports
+25. ~~**Auto-Updater**~~ — ✅ Version check + download + install (Phase 9 will wire real HTTP)
+26. ~~**Internationalization (i18n)**~~ — ✅ English + Spanish + Portuguese (Latin American mining market)
+27. ~~**Plugin Marketplace**~~ — ✅ Registry JSON + install/uninstall + search + SHA-256 verification

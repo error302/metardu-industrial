@@ -1744,3 +1744,209 @@ export async function runBenchmarks(
     request: { iterations: iterations ?? null },
   });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Sprint 8 — Project + Updater + i18n + Marketplace
+
+// Project File Format (.metardu)
+export interface ProjectFile {
+  path: string;
+  kind: string;
+  name: string;
+  size_bytes: number;
+  visible: boolean;
+  color?: string;
+  opacity: number;
+}
+
+export interface ViewState {
+  center_lon: number;
+  center_lat: number;
+  zoom: number;
+  rotation: number;
+}
+
+export interface CsfResultSummary {
+  file_path: string;
+  cloth_resolution: number;
+  classifications: number;
+  point_count: number;
+  ground_count: number;
+  elapsed_ms: number;
+  slope: number;
+}
+
+export interface CubeParamsSummary {
+  cell_size: number;
+  iho_order: string;
+  hypothesis_distance: number;
+  soundings_count: number;
+}
+
+export interface MetarduProject {
+  format_version: number;
+  name: string;
+  created: string;
+  modified: string;
+  default_epsg: string;
+  domain: string;
+  files: ProjectFile[];
+  view_state: ViewState;
+  csf_results: Record<string, CsfResultSummary>;
+  cube_params: CubeParamsSummary | null;
+  recent_reports: string[];
+  layout: string;
+  license_tier: string;
+  pipelines: string[];
+  theme: string;
+  metadata: Record<string, string>;
+}
+
+export interface NewProjectRequest {
+  name: string;
+  defaultEpsg: string;
+  domain: string;
+}
+
+export async function newProject(request: NewProjectRequest): Promise<MetarduProject | null> {
+  if (!isTauri()) return null;
+  return invoke<MetarduProject>("new_project_cmd", { request });
+}
+
+export async function saveProject(project: MetarduProject, path: string): Promise<string | null> {
+  if (!isTauri()) return null;
+  return invoke<string>("save_project_cmd", { project, path });
+}
+
+export async function loadProject(path: string): Promise<MetarduProject | null> {
+  if (!isTauri()) return null;
+  return invoke<MetarduProject>("load_project_cmd", { path });
+}
+
+export async function addFileToProject(project: MetarduProject, file: ProjectFile): Promise<MetarduProject | null> {
+  if (!isTauri()) return null;
+  return invoke<MetarduProject>("add_file_to_project_cmd", { project, file });
+}
+
+export async function removeFileFromProject(project: MetarduProject, path: string): Promise<MetarduProject | null> {
+  if (!isTauri()) return null;
+  return invoke<MetarduProject>("remove_file_from_project_cmd", { project, path });
+}
+
+export async function updateViewState(project: MetarduProject, view: ViewState): Promise<MetarduProject | null> {
+  if (!isTauri()) return null;
+  return invoke<MetarduProject>("update_view_state_cmd", { project, view });
+}
+
+export async function addRecentReport(project: MetarduProject, reportPath: string): Promise<MetarduProject | null> {
+  if (!isTauri()) return null;
+  return invoke<MetarduProject>("add_recent_report_cmd", { project, reportPath });
+}
+
+// Auto-Updater
+export interface UpdateInfo {
+  available: boolean;
+  latest_version: string;
+  current_version: string;
+  release_date: string;
+  release_notes: string;
+  download_url: string;
+  file_size: number;
+  signature: string;
+}
+
+export type UpdateState = "idle" | "checking" | "available" | "up_to_date" | "downloading" | "downloaded" | "installing" | "restart_required" | "error";
+
+export interface UpdateStatus {
+  state: UpdateState;
+  last_check: string;
+  info: UpdateInfo | null;
+  download_progress: number;
+  error: string | null;
+}
+
+export async function checkForUpdates(endpoint?: string): Promise<UpdateInfo | null> {
+  if (!isTauri()) return null;
+  return invoke<UpdateInfo>("check_for_updates_cmd", { endpoint: endpoint ?? null });
+}
+
+export async function getUpdateStatus(): Promise<UpdateStatus | null> {
+  if (!isTauri()) return null;
+  return invoke<UpdateStatus>("get_update_status_cmd");
+}
+
+export async function getCurrentVersion(): Promise<string> {
+  if (!isTauri()) return "0.0.0-browser";
+  return invoke<string>("get_current_version_cmd");
+}
+
+// i18n
+export async function translate(key: string, langCode: string): Promise<string> {
+  if (!isTauri()) return key;
+  return invoke<string>("translate_cmd", { key, langCode });
+}
+
+export async function getAvailableLanguages(): Promise<[string, string][]> {
+  if (!isTauri()) return [["en", "English"], ["es", "Español"], ["pt", "Português"]];
+  return invoke<[string, string][]>("get_available_languages_cmd");
+}
+
+// Plugin Marketplace
+export interface RegistryPlugin {
+  id: string;
+  name: string;
+  version: string;
+  vendor: string;
+  description: string;
+  plugin_type: string;
+  extensions: string[];
+  download_url: string;
+  sha256: string;
+  file_size: number;
+  min_app_version: string;
+  license: string;
+  homepage: string;
+  official: boolean;
+  downloads: number;
+}
+
+export interface PluginRegistry {
+  version: number;
+  name: string;
+  updated: string;
+  plugins: RegistryPlugin[];
+}
+
+export interface InstalledPlugin {
+  id: string;
+  name: string;
+  version: string;
+  vendor: string;
+  installed_path: string;
+  installed_date: string;
+}
+
+export async function fetchPluginRegistry(source: string): Promise<PluginRegistry | null> {
+  if (!isTauri()) return null;
+  return invoke<PluginRegistry>("fetch_plugin_registry_cmd", { source });
+}
+
+export async function listInstalledPlugins(): Promise<InstalledPlugin[]> {
+  if (!isTauri()) return [];
+  return invoke<InstalledPlugin[]>("list_installed_plugins_cmd");
+}
+
+export async function installPlugin(registry: PluginRegistry, pluginId: string): Promise<InstalledPlugin | null> {
+  if (!isTauri()) return null;
+  return invoke<InstalledPlugin>("install_plugin_cmd", { registry, pluginId });
+}
+
+export async function uninstallPlugin(pluginId: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("uninstall_plugin_cmd", { pluginId });
+}
+
+export async function searchRegistry(registry: PluginRegistry, query: string): Promise<RegistryPlugin[]> {
+  if (!isTauri()) return [];
+  return invoke<RegistryPlugin[]>("search_registry_cmd", { registry, query });
+}

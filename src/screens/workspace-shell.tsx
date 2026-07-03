@@ -48,6 +48,7 @@ import {
   Package,
   Key,
   Gauge,
+  RefreshCw,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -80,6 +81,9 @@ import { SliceEditor3D } from "@/components/slice-editor-3d";
 import { LicenseManagerDialog } from "@/components/license-manager-dialog";
 import { BenchmarkDialog } from "@/components/benchmark-dialog";
 import { TelemetryDialog } from "@/components/telemetry-dialog";
+import { ProjectManagerDialog } from "@/components/project-manager-dialog";
+import { UpdateCheckerDialog } from "@/components/update-checker-dialog";
+import { PluginMarketplaceDialog } from "@/components/plugin-marketplace-dialog";
 import {
   LayoutProfiles,
   getLayoutSettings,
@@ -133,6 +137,9 @@ export function WorkspaceShell() {
   const [licenseOpen, setLicenseOpen] = useState(false);
   const [benchmarkOpen, setBenchmarkOpen] = useState(false);
   const [telemetryOpen, setTelemetryOpen] = useState(false);
+  const [projectOpen, setProjectOpen] = useState(false);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [marketplaceOpen, setMarketplaceOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -207,6 +214,9 @@ export function WorkspaceShell() {
     onOpenLicense: () => setLicenseOpen(true),
     onOpenBenchmark: () => setBenchmarkOpen(true),
     onOpenTelemetry: () => setTelemetryOpen(true),
+    onOpenProject: () => setProjectOpen(true),
+    onOpenUpdate: () => setUpdateOpen(true),
+    onOpenMarketplace: () => setMarketplaceOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -260,6 +270,9 @@ export function WorkspaceShell() {
             onOpenLicense={() => setLicenseOpen(true)}
             onOpenBenchmark={() => setBenchmarkOpen(true)}
             onOpenTelemetry={() => setTelemetryOpen(true)}
+            onOpenProject={() => setProjectOpen(true)}
+            onOpenUpdate={() => setUpdateOpen(true)}
+            onOpenMarketplace={() => setMarketplaceOpen(true)}
           />
         )}
         <main className="relative flex-1 overflow-hidden">
@@ -362,6 +375,9 @@ export function WorkspaceShell() {
       <LicenseManagerDialog open={licenseOpen} onClose={() => setLicenseOpen(false)} />
       <BenchmarkDialog open={benchmarkOpen} onClose={() => setBenchmarkOpen(false)} />
       <TelemetryDialog open={telemetryOpen} onClose={() => setTelemetryOpen(false)} />
+      <ProjectManagerDialog open={projectOpen} onClose={() => setProjectOpen(false)} currentProject={null} onProjectLoaded={() => {}} />
+      <UpdateCheckerDialog open={updateOpen} onClose={() => setUpdateOpen(false)} />
+      <PluginMarketplaceDialog open={marketplaceOpen} onClose={() => setMarketplaceOpen(false)} />
     </div>
   );
 }
@@ -450,6 +466,9 @@ function LeftSidebar({
   onOpenLicense,
   onOpenBenchmark,
   onOpenTelemetry,
+  onOpenProject,
+  onOpenUpdate,
+  onOpenMarketplace,
 }: {
   domain: DomainMode;
   onOpenSettings: () => void;
@@ -476,6 +495,9 @@ function LeftSidebar({
   onOpenLicense: () => void;
   onOpenBenchmark: () => void;
   onOpenTelemetry: () => void;
+  onOpenProject: () => void;
+  onOpenUpdate: () => void;
+  onOpenMarketplace: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -493,7 +515,11 @@ function LeftSidebar({
 
       <div className="flex-1 overflow-y-auto p-2">
         <SidebarSection title="Project" icon={<Folder className="h-3 w-3" />}>
-          <SidebarItem icon={<FileBox className="h-3 w-3" />} label="Untitled Project" active />
+          <SidebarItem
+            icon={<FileBox className="h-3 w-3" />}
+            label="Project Manager"
+            onClick={onOpenProject}
+          />
           <SidebarItem icon={<Layers className="h-3 w-3" />} label="Layers" indent />
           <SidebarItem icon={<Database className="h-3 w-3" />} label="Data sources" indent />
         </SidebarSection>
@@ -640,6 +666,16 @@ function LeftSidebar({
             icon={<Activity className="h-3 w-3" />}
             label="Telemetry & Crash"
             onClick={onOpenTelemetry}
+          />
+          <SidebarItem
+            icon={<Package className="h-3 w-3" />}
+            label="Plugin Marketplace"
+            onClick={onOpenMarketplace}
+          />
+          <SidebarItem
+            icon={<RefreshCw className="h-3 w-3" />}
+            label="Check for Updates"
+            onClick={onOpenUpdate}
           />
         </SidebarSection>
 

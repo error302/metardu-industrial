@@ -11,6 +11,7 @@ pub mod monitoring;
 pub mod pipelines;
 pub mod sprint6;
 pub mod sprint7;
+pub mod sprint8;
 pub mod streaming;
 
 use crate::formats::{

@@ -13,7 +13,7 @@ import {
   Search, ArrowRight, Calculator, Layers3, Terminal, Shield,
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, Ruler, Package, Scissors,
-  Key, Gauge, Activity,
+  Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -182,6 +182,9 @@ export function createCommandActions(callbacks: {
   onOpenLicense: () => void;
   onOpenBenchmark: () => void;
   onOpenTelemetry: () => void;
+  onOpenProject: () => void;
+  onOpenUpdate: () => void;
+  onOpenMarketplace: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -197,6 +200,9 @@ export function createCommandActions(callbacks: {
     { id: "license", label: "License Manager", category: "Enterprise · Activation", keywords: ["license", "activate", "pro", "enterprise", "trial", "tier", "unlock"], icon: <Key className={icon} />, action: callbacks.onOpenLicense },
     { id: "benchmark", label: "Performance Benchmark Suite", category: "Enterprise · Diagnostics", keywords: ["benchmark", "performance", "speed", "timing", "throughput", "cpu"], icon: <Gauge className={icon} />, action: callbacks.onOpenBenchmark },
     { id: "telemetry", label: "Telemetry & Crash Reporter", category: "Enterprise · Diagnostics", keywords: ["telemetry", "crash", "report", "usage", "stats", "diagnostics", "privacy"], icon: <Activity className={icon} />, action: callbacks.onOpenTelemetry },
+    { id: "project", label: "Project Manager", category: "File · Project", keywords: ["project", "save", "load", "open", "new", "metardu"], icon: <FolderOpen className={icon} />, action: callbacks.onOpenProject },
+    { id: "update", label: "Check for Updates", category: "App · Updates", keywords: ["update", "version", "upgrade", "download", "release"], icon: <RefreshCw className={icon} />, action: callbacks.onOpenUpdate },
+    { id: "marketplace", label: "Plugin Marketplace", category: "Enterprise · Plugins", keywords: ["plugin", "marketplace", "install", "browse", "registry", "extension"], icon: <PackageIcon className={icon} />, action: callbacks.onOpenMarketplace },
     { id: "volume", label: "Volume Calculator", category: "Mining", keywords: ["volume", "fill", "cut", "bench", "stockpile"], icon: <Calculator className={icon} />, action: callbacks.onOpenVolumeCalc },
     { id: "odm", label: "ODM Pipeline (Drone → Point Cloud)", category: "Mining", keywords: ["odm", "drone", "photogrammetry", "docker"], icon: <Terminal className={icon} />, action: callbacks.onOpenOdm },
     { id: "csf", label: "Classify Ground (CSF)", category: "Mining", keywords: ["classify", "ground", "csf", "cloth", "point cloud"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCsf },
