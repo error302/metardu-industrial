@@ -40,6 +40,22 @@ export function SvpEditorDialog({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // SVG graph dimensions
+  const W = 400, H = 300, pad = 40;
+  const speedRange = profile ? profile.max_speed - profile.min_speed : 1;
+  const depthRange = profile ? profile.max_depth - profile.min_depth : 1;
+
+  // Build SVG path for the SVP curve — must be before early return
+  // (React hooks rules: all hooks must run unconditionally)
+  const pathD = useMemo(() => {
+    if (!profile || profile.points.length === 0) return "";
+    return profile.points.map((p, i) => {
+      const x = pad + ((p.speed - profile.min_speed) / (speedRange || 1)) * (W - 2 * pad);
+      const y = pad + ((p.depth - profile.min_depth) / (depthRange || 1)) * (H - 2 * pad);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+  }, [profile, speedRange, depthRange]);
+
   if (!open) return null;
 
   async function handleLoad() {
@@ -64,21 +80,6 @@ export function SvpEditorDialog({ open, onClose }: Props) {
       setLoading(false);
     }
   }
-
-  // SVG graph dimensions
-  const W = 400, H = 300, pad = 40;
-  const speedRange = profile ? profile.max_speed - profile.min_speed : 1;
-  const depthRange = profile ? profile.max_depth - profile.min_depth : 1;
-
-  // Build SVG path for the SVP curve
-  const pathD = useMemo(() => {
-    if (!profile || profile.points.length === 0) return "";
-    return profile.points.map((p, i) => {
-      const x = pad + ((p.speed - profile.min_speed) / (speedRange || 1)) * (W - 2 * pad);
-      const y = pad + ((p.depth - profile.min_depth) / (depthRange || 1)) * (H - 2 * pad);
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(" ");
-  }, [profile, speedRange, depthRange]);
 
   return (
     <div

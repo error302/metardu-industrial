@@ -58,6 +58,20 @@ export function SliceEditor3D({ open, onClose }: Props) {
 
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // Compute bounding box for 3D rendering — must be before early return
+  // (React hooks rules: all hooks must run unconditionally)
+  const bounds = useMemo(() => {
+    if (!sliceResult) return null;
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const p of sliceResult.points) {
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+      minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
+    }
+    return { minX, minY, minZ, maxX, maxY, maxZ };
+  }, [sliceResult]);
+
   if (!open) return null;
 
   const canSlice = !!lasPath && parsePolygon(polygonText).length >= 3;
@@ -156,19 +170,6 @@ export function SliceEditor3D({ open, onClose }: Props) {
       setError(err instanceof Error ? err.message : String(err));
     }
   }
-
-  // Compute bounding box for 3D rendering
-  const bounds = useMemo(() => {
-    if (!sliceResult) return null;
-    let minX = Infinity, minY = Infinity, minZ = Infinity;
-    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-    for (const p of sliceResult.points) {
-      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
-      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
-      minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
-    }
-    return { minX, minY, minZ, maxX, maxY, maxZ };
-  }, [sliceResult]);
 
   // Convert 3D world coords to SVG 2D coords (top-down view)
   function worldToSvg(p: Point3D): { x: number; y: number } {

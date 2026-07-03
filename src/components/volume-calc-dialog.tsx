@@ -60,10 +60,6 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
   const [reportPath] = useState("/tmp/volume_report.html");
   const [reportGenerated, setReportGenerated] = useState(false);
 
-  if (!open) return null;
-
-  const canCompute = currentPath !== "" && (referenceMode === "flat" || referencePath !== "");
-
   const handleBrowseCurrent = useCallback(async () => {
     const path = await pickFile({
       extensions: ["tif", "tiff"],
@@ -87,6 +83,10 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
       setReferenceName(path.split(/[\\/]/).pop() ?? path);
     }
   }, []);
+
+  if (!open) return null;
+
+  const canCompute = currentPath !== "" && (referenceMode === "flat" || referencePath !== "");
 
   const handleCompute = async () => {
     setLoading(true);
