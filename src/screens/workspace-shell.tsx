@@ -85,6 +85,7 @@ import { HighwallMonitoringWizard } from "@/components/highwall-monitoring-wizar
 import { CrossSectionProfilerWizard } from "@/components/cross-section-profiler-wizard";
 import { DeliverablePackageWizard } from "@/components/deliverable-package-wizard";
 import { EomAuditorDialog } from "@/components/eom-auditor-dialog";
+import { TriageDialog } from "@/components/triage-dialog";
 import { SssWaterfallViewer } from "@/components/sss-waterfall-viewer";
 import { SliceEditor3D } from "@/components/slice-editor-3d";
 import { LicenseManagerDialog } from "@/components/license-manager-dialog";
@@ -159,6 +160,7 @@ export function WorkspaceShell() {
   const [tidalSplineOpen, setTidalSplineOpen] = useState(false);
   const [machineControlOpen, setMachineControlOpen] = useState(false);
   const [eomAuditorOpen, setEomAuditorOpen] = useState(false);
+  const [triageOpen, setTriageOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -262,7 +264,8 @@ export function WorkspaceShell() {
       densityGatesOpen ||
       tidalSplineOpen ||
       machineControlOpen ||
-      eomAuditorOpen;
+      eomAuditorOpen ||
+      triageOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -300,6 +303,7 @@ export function WorkspaceShell() {
     tidalSplineOpen,
     machineControlOpen,
     eomAuditorOpen,
+    triageOpen,
   ]);
 
   // Command palette actions
@@ -339,6 +343,7 @@ export function WorkspaceShell() {
     onOpenTidalSpline: () => setTidalSplineOpen(true),
     onOpenMachineControl: () => setMachineControlOpen(true),
     onOpenEomAuditor: () => setEomAuditorOpen(true),
+    onOpenTriage: () => setTriageOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -401,6 +406,7 @@ export function WorkspaceShell() {
     onOpenTidalSpline: () => setTidalSplineOpen(true),
     onOpenMachineControl: () => setMachineControlOpen(true),
     onOpenEomAuditor: () => setEomAuditorOpen(true),
+    onOpenTriage: () => setTriageOpen(true),
   };
 
   return (
@@ -557,6 +563,7 @@ export function WorkspaceShell() {
       <TidalSplineTool open={tidalSplineOpen} onClose={() => setTidalSplineOpen(false)} />
       <MachineControlTool open={machineControlOpen} onClose={() => setMachineControlOpen(false)} />
       <EomAuditorDialog open={eomAuditorOpen} onClose={() => setEomAuditorOpen(false)} />
+      <TriageDialog open={triageOpen} onClose={() => setTriageOpen(false)} />
     </div>
   );
 }
@@ -691,6 +698,7 @@ function LeftSidebar({
   onOpenTidalSpline,
   onOpenMachineControl,
   onOpenEomAuditor,
+  onOpenTriage,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -728,6 +736,7 @@ function LeftSidebar({
   onOpenTidalSpline: () => void;
   onOpenMachineControl: () => void;
   onOpenEomAuditor: () => void;
+  onOpenTriage: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -779,6 +788,7 @@ function LeftSidebar({
           />
           <SidebarItem icon={<Layers className="h-3 w-3" />} label="Layers" indent onClick={onOpenProject} />
           <SidebarItem icon={<Database className="h-3 w-3" />} label="Data sources" indent onClick={onOpenProject} />
+          <SidebarItem icon={<FolderOpen className="h-3 w-3" />} label="Mission Triage" onClick={onOpenTriage} />
         </SidebarSection>
 
         {domain !== "marine" && (
