@@ -1,5 +1,0 @@
-/home/z/my-project/metardu-industrial/crates/metardu-core/target/debug/deps/num-2fa62007ec34e725.d: /home/z/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-0.3.1/src/lib.rs
-
-/home/z/my-project/metardu-industrial/crates/metardu-core/target/debug/deps/libnum-2fa62007ec34e725.rmeta: /home/z/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-0.3.1/src/lib.rs
-
-/home/z/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/num-0.3.1/src/lib.rs:

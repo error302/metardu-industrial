@@ -58,3 +58,4 @@ license_priv.pem
 # Keep the public key
 !src-tauri/src/keys/
 !src-tauri/src/keys/license_pub.pem
+crates/metardu-core/target/
