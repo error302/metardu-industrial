@@ -420,3 +420,68 @@ pub async fn run_triage_cmd(dir: String) -> Result<TriageReport, String> {
     .await
     .map_err(|e| format!("run_triage_cmd: task join error: {e}"))?
 }
+
+// ── NTRIP/RTCM3 Client ──
+
+use metardu_core::ntrip::{NtripClient, NtripConfig, NtripStatus};
+use std::sync::Mutex;
+
+static NTRIP_CLIENT: std::sync::OnceLock<Mutex<Option<NtripClient>>> = std::sync::OnceLock::new();
+
+fn ntrip_state() -> &'static Mutex<Option<NtripClient>> {
+    NTRIP_CLIENT.get_or_init(|| Mutex::new(None))
+}
+
+/// Start the NTRIP client — connects to a caster and begins streaming RTCM corrections.
+#[tauri::command]
+pub async fn start_ntrip_cmd(config: NtripConfig) -> Result<NtripStatus, String> {
+    // Stop any existing client
+    {
+        let mut state = ntrip_state().lock().map_err(|e| e.to_string())?;
+        if let Some(client) = state.take() {
+            client.stop();
+        }
+    }
+
+    let host = config.host.clone();
+    let port = config.port;
+    let client = tokio::task::spawn_blocking(move || {
+        NtripClient::start(config)
+            .map_err(|e| format!("NTRIP connection failed to {}:{} — {}", host, port, e))
+    })
+    .await
+    .map_err(|e| format!("start_ntrip_cmd: task join error: {e}"))??;
+
+    let status = client.get_status();
+    let mut state = ntrip_state().lock().map_err(|e| e.to_string())?;
+    *state = Some(client);
+    Ok(status)
+}
+
+/// Stop the NTRIP client.
+#[tauri::command]
+pub async fn stop_ntrip_cmd() -> Result<(), String> {
+    let mut state = ntrip_state().lock().map_err(|e| e.to_string())?;
+    if let Some(client) = state.take() {
+        client.stop();
+    }
+    Ok(())
+}
+
+/// Get the current NTRIP client status.
+#[tauri::command]
+pub async fn get_ntrip_status_cmd() -> Result<NtripStatus, String> {
+    let state = ntrip_state().lock().map_err(|e| e.to_string())?;
+    Ok(match state.as_ref() {
+        Some(client) => client.get_status(),
+        None => NtripStatus {
+            connected: false,
+            mountpoint: String::new(),
+            messages_received: 0,
+            bytes_received: 0,
+            last_message_type: None,
+            last_error: None,
+            uptime_secs: 0,
+        },
+    })
+}

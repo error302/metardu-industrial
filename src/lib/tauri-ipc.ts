@@ -2360,3 +2360,53 @@ export async function runTriage(dir: string): Promise<TriageReportRpc | null> {
   if (!isTauri()) return null;
   return invoke<TriageReportRpc>("run_triage_cmd", { dir });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// NTRIP/RTCM3 Client — RTK correction streaming
+
+export interface NtripConfigRpc {
+  host: string;
+  port: number;
+  mountpoint: string;
+  username: string | null;
+  password: string | null;
+  timeout_secs: number;
+}
+
+export interface NtripStatusRpc {
+  connected: boolean;
+  mountpoint: string;
+  messages_received: number;
+  bytes_received: number;
+  last_message_type: number | null;
+  last_error: string | null;
+  uptime_secs: number;
+}
+
+/** Start NTRIP client — connects to caster and begins streaming RTCM corrections. */
+export async function startNtrip(config: NtripConfigRpc): Promise<NtripStatusRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<NtripStatusRpc>("start_ntrip_cmd", { config });
+}
+
+/** Stop the NTRIP client. */
+export async function stopNtrip(): Promise<void> {
+  if (!isTauri()) return;
+  return invoke<void>("stop_ntrip_cmd");
+}
+
+/** Get the current NTRIP client status. */
+export async function getNtripStatus(): Promise<NtripStatusRpc | null> {
+  if (!isTauri()) {
+    return {
+      connected: false,
+      mountpoint: "",
+      messages_received: 0,
+      bytes_received: 0,
+      last_message_type: null,
+      last_error: null,
+      uptime_secs: 0,
+    };
+  }
+  return invoke<NtripStatusRpc>("get_ntrip_status_cmd");
+}

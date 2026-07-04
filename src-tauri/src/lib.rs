@@ -69,7 +69,8 @@ use commands::{
     eom::import_dxf_surface_cmd, eom::is_eom_watch_folder_running,
     eom::run_eom_pipeline_cmd, eom::sign_eom_license_cmd, eom::start_eom_watch_folder,
     eom::stop_eom_watch_folder, eom::verify_eom_license_cmd,
-    eom::run_triage_cmd,
+    eom::run_triage_cmd, eom::start_ntrip_cmd, eom::stop_ntrip_cmd,
+    eom::get_ntrip_status_cmd,
     generate_report_cmd, get_settings, init_module, is_proj_available, list_modules,
     marine::check_s44_compliance_cmd, marine::compute_cross_sections_cmd,
     marine::compute_dredge_audit_cmd, marine::compute_tpu_batch, marine::export_s57,
@@ -235,6 +236,10 @@ pub fn run() {
             import_dxf_surface_cmd,
             // Mission Data Triage
             run_triage_cmd,
+            // NTRIP/RTCM3 Client
+            start_ntrip_cmd,
+            stop_ntrip_cmd,
+            get_ntrip_status_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

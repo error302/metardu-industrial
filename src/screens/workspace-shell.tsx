@@ -86,6 +86,7 @@ import { CrossSectionProfilerWizard } from "@/components/cross-section-profiler-
 import { DeliverablePackageWizard } from "@/components/deliverable-package-wizard";
 import { EomAuditorDialog } from "@/components/eom-auditor-dialog";
 import { TriageDialog } from "@/components/triage-dialog";
+import { NtripDialog } from "@/components/ntrip-dialog";
 import { SssWaterfallViewer } from "@/components/sss-waterfall-viewer";
 import { SliceEditor3D } from "@/components/slice-editor-3d";
 import { LicenseManagerDialog } from "@/components/license-manager-dialog";
@@ -161,6 +162,7 @@ export function WorkspaceShell() {
   const [machineControlOpen, setMachineControlOpen] = useState(false);
   const [eomAuditorOpen, setEomAuditorOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
+  const [ntripOpen, setNtripOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -265,7 +267,8 @@ export function WorkspaceShell() {
       tidalSplineOpen ||
       machineControlOpen ||
       eomAuditorOpen ||
-      triageOpen;
+      triageOpen ||
+      ntripOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -304,6 +307,7 @@ export function WorkspaceShell() {
     machineControlOpen,
     eomAuditorOpen,
     triageOpen,
+    ntripOpen,
   ]);
 
   // Command palette actions
@@ -344,6 +348,7 @@ export function WorkspaceShell() {
     onOpenMachineControl: () => setMachineControlOpen(true),
     onOpenEomAuditor: () => setEomAuditorOpen(true),
     onOpenTriage: () => setTriageOpen(true),
+    onOpenNtrip: () => setNtripOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -407,6 +412,7 @@ export function WorkspaceShell() {
     onOpenMachineControl: () => setMachineControlOpen(true),
     onOpenEomAuditor: () => setEomAuditorOpen(true),
     onOpenTriage: () => setTriageOpen(true),
+    onOpenNtrip: () => setNtripOpen(true),
   };
 
   return (
@@ -564,6 +570,7 @@ export function WorkspaceShell() {
       <MachineControlTool open={machineControlOpen} onClose={() => setMachineControlOpen(false)} />
       <EomAuditorDialog open={eomAuditorOpen} onClose={() => setEomAuditorOpen(false)} />
       <TriageDialog open={triageOpen} onClose={() => setTriageOpen(false)} />
+      <NtripDialog open={ntripOpen} onClose={() => setNtripOpen(false)} />
     </div>
   );
 }
@@ -699,6 +706,7 @@ function LeftSidebar({
   onOpenMachineControl,
   onOpenEomAuditor,
   onOpenTriage,
+  onOpenNtrip,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -737,6 +745,7 @@ function LeftSidebar({
   onOpenMachineControl: () => void;
   onOpenEomAuditor: () => void;
   onOpenTriage: () => void;
+  onOpenNtrip: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -941,6 +950,11 @@ function LeftSidebar({
 
         {/* Enterprise */}
         <SidebarSection title="Enterprise" icon={<Shield className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<Radio className="h-3 w-3" />}
+            label="NTRIP Client"
+            onClick={onOpenNtrip}
+          />
           <SidebarItem
             icon={<Key className="h-3 w-3" />}
             label="License Manager"

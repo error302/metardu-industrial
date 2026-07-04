@@ -190,6 +190,7 @@ export function createCommandActions(callbacks: {
   onOpenMachineControl: () => void;
   onOpenEomAuditor: () => void;
   onOpenTriage: () => void;
+  onOpenNtrip: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -213,6 +214,7 @@ export function createCommandActions(callbacks: {
     { id: "machine_control", label: "Machine Control Compiler", category: "Mining · Bottleneck", keywords: ["machine", "control", "dxf", "leica", "trimble", "topcon", "svd", "tp3", "guidance", "dozer"], icon: <Cpu className={icon} />, action: callbacks.onOpenMachineControl },
     { id: "eom_auditor", label: "EOM Volumetric Auditor", category: "Mining · Revenue", keywords: ["eom", "end", "month", "volumetric", "audit", "reconcile", "production", "report", "pdf", "license"], icon: <ShieldCheck className={icon} />, action: callbacks.onOpenEomAuditor },
     { id: "triage", label: "Mission Data Triage", category: "Field Tools", keywords: ["triage", "field", "verify", "coverage", "gap", "exif", "gnss"], icon: <FolderOpen className={icon} />, action: callbacks.onOpenTriage },
+    { id: "ntrip", label: "NTRIP Client", category: "Field Tools", keywords: ["ntrip", "rtcm", "rtk", "correction", "gnss", "base", "station"], icon: <Radio className={icon} />, action: callbacks.onOpenNtrip },
     { id: "volume", label: "Volume Calculator", category: "Mining", keywords: ["volume", "fill", "cut", "bench", "stockpile"], icon: <Calculator className={icon} />, action: callbacks.onOpenVolumeCalc },
     { id: "odm", label: "ODM Pipeline (Drone → Point Cloud)", category: "Mining", keywords: ["odm", "drone", "photogrammetry", "docker"], icon: <Terminal className={icon} />, action: callbacks.onOpenOdm },
     { id: "csf", label: "Classify Ground (CSF)", category: "Mining", keywords: ["classify", "ground", "csf", "cloth", "point cloud"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCsf },
