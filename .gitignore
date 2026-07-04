@@ -44,3 +44,17 @@ Thumbs.db
 # Test outputs
 coverage
 *.lcov
+
+# Build artifacts for standalone binaries
+metardu-eom-cli/target/
+metardu-verify/target/
+
+# License private key — NEVER commit
+keys/
+*.priv.pem
+*_priv.pem
+license_priv.pem
+
+# Keep the public key
+!src-tauri/src/keys/
+!src-tauri/src/keys/license_pub.pem
