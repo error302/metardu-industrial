@@ -121,8 +121,8 @@ export function EomAuditorDialog({ open, onClose }: Props) {
   const [watchEvents, setWatchEvents] = useState<EomWatchEventRpc[]>([]);
 
   useEscapeKey(onClose, open);
-  if (!open) return null;
 
+  // All hooks MUST be before the early return — React rules of hooks.
   // Refresh license status when the dialog opens.
   useEffect(() => {
     if (!open) return;
@@ -152,6 +152,8 @@ export function EomAuditorDialog({ open, onClose }: Props) {
       unlisten.then((fn) => fn());
     };
   }, [open]);
+
+  if (!open) return null;
 
   const canRun = !!currentLasPath && !running;
 

@@ -33,9 +33,8 @@ export function NtripDialog({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEscapeKey(onClose, open);
-  if (!open) return null;
 
-  // Poll status when connected
+  // All hooks MUST be before the early return — React rules of hooks.
   useEffect(() => {
     if (!open) return;
     getNtripStatus().then(setStatus).catch(() => {});
@@ -44,6 +43,8 @@ export function NtripDialog({ open, onClose }: Props) {
     }, 2000);
     return () => clearInterval(interval);
   }, [open]);
+
+  if (!open) return null;
 
   const handleConnect = async () => {
     setConnecting(true);
