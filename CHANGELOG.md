@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 9: Commercial Module + Field Tools
+
+#### EOM Volumetric Auditor (Commercial Module)
+- LAS 1.2/1.3/1.4 reader with transparent LAZ decompression (pure Rust, `laz` crate)
+- CSF (Cloth Simulation Filter) ground classification — pure Rust port
+- IDW DEM rasterization with rayon parallelism
+- Cut/fill volume calculation with per-bench breakdown
+- EOM pipeline orchestrator: LAS → CSF → DEM → volumes → signed PDF
+- SHA-256 audit hash + chain-of-custody appendix embedded in PDF metadata
+- RSA-2048 node-locked license verification (PKCS#1v1.5 + SHA-256)
+  - Three tiers: perpetual, per-report, site-based
+  - Per-report metering (only signed exports decrement counter)
+  - Machine fingerprint (MAC + CPU + disk serial hash)
+  - PEM key import/export, tamper-evident signing
+- Local report counter sidecar (JSON, platform-aware paths)
+- Standalone PDF verifier binary (metardu-verify — free, open-source)
+
+#### DXF Design Surface Import
+- DXF TIN surface import via `dxf` crate (3DFACE entities)
+- Barycentric interpolation rasterization to regular DEM grid
+- Volume calc against design surface (actual vs design = overbreak/underbreak)
+- Wired into Volume Calc dialog as 3rd reference option
+
+#### NTRIP/RTCM3 Client
+- TCP NTRIP caster connection with HTTP-style auth (base64)
+- RTCM v3.x message stream parsing (preamble detection, length extraction)
+- Background streaming thread with status reporting
+- Config dialog: caster host/port, mountpoint, credentials, live status
+
+#### Mission Data Triage
+- EXIF parsing for drone images (kamadak-exif — GPS position + timestamp)
+- LAS/LAZ header analysis (bounds, point count, file health)
+- RINEX header parsing (approximate position from APPROX POSITION XYZ)
+- NMEA log parsing (GGA sentence extraction, trajectory bounds)
+- Parallel file analysis via rayon
+- CRS mismatch detection, empty file detection, temporal span
+
+#### Watch Folder Zero-Touch Ingest
+- Background polling loop detects new .las/.laz files
+- Auto-runs EOM pipeline + generates signed PDF next to input
+- Tauri events for UI notifications
+
+#### UI Improvements
+- Responsive workspace shell (sidebar drawer, icon-only rail, auto-collapse)
+- Density setting (compact 12px / comfortable 14px) wired to CSS
+- Reduced motion toggle wired to CSS
+- Escape-to-close on all 33 dialogs (useEscapeKey hook)
+- All 47 sidebar items have onClick handlers (zero dead stubs)
+- EOM Auditor dialog with live progress bar, license banner, watch folder section
+- Triage dialog with file inventory table, summary tiles, gap warnings
+- NTRIP dialog with connection status, message counter, uptime
+
+#### Machine Control File Compiler
+- DXF → Leica .svd / Trimble .tp3 / Topcon .top (573-line Rust implementation)
+- UI with vendor selector, file picker, compile + result display
+
+### Changed
+- Updated ROADMAP.md with Sprint 9 status
+- Updated README.md from "Phase 0 in progress" to current feature list
+- Gitignore: private key protection, target directories excluded
+
 ### Added — Phase 0 Foundation
 
 #### Brand & UX
