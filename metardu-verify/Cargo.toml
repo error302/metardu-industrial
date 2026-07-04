@@ -1,0 +1,16 @@
+[package]
+name = "metardu-verify"
+version = "0.1.0"
+edition = "2021"
+description = "Standalone open-source verifier for MetaRDU Industrial chain-of-custody PDFs"
+
+[[bin]]
+name = "metardu-verify"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["arbitrary_precision", "preserve_order"] }
+sha2 = "0.10"
+lopdf = "0.34"

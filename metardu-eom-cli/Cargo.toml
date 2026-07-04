@@ -1,0 +1,15 @@
+[package]
+name = "metardu-eom-cli"
+version = "0.1.0"
+edition = "2021"
+description = "MetaRDU Industrial EOM pipeline demo + RSA license signing/verifying tooling"
+
+[[bin]]
+name = "metardu-eom-cli"
+path = "src/main.rs"
+
+[dependencies]
+metardu-core = { path = "../crates/metardu-core" }
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
