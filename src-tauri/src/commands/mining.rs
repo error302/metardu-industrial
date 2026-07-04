@@ -65,6 +65,40 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
             .and_then(|s| s.parse().ok())
             .ok_or_else(|| format!("invalid flat:Z reference: '{}'", request.reference_path))?;
         (vec![z; current_grid.len()], current_header.clone())
+    } else if request.reference_path.starts_with("dxf:") {
+        // DXF design surface: import the TIN, rasterize to match current DEM
+        let dxf_path_str = request.reference_path.strip_prefix("dxf:").unwrap_or("");
+        let dxf_path = PathBuf::from(dxf_path_str);
+        let surface = metardu_core::mining::dxf_import::import_dxf_surface(&dxf_path)
+            .map_err(|e| ctx!("importing DXF design surface", dxf_path_str, e))?;
+        let cell_size = if let Some(ps) = current_header.model_pixel_scale {
+            ps[0].max(ps[1])
+        } else {
+            let width_m = current_header.bounds.map(|b| b[2] - b[0]).unwrap_or(100.0);
+            width_m.max(1.0) / current_header.width.max(1) as f64
+        };
+        let bounds = current_header.bounds.map(|b| (b[0], b[1], b[2], b[3]));
+        let design_dem = metardu_core::mining::dxf_import::rasterize_dxf_to_dem(&surface, cell_size, bounds)
+            .map_err(|e| ctx_no_input!("rasterizing DXF design surface", e))?;
+        let ref_grid = if design_dem.cols == current_header.width as usize
+            && design_dem.rows == current_header.length as usize
+        {
+            design_dem.data
+        } else {
+            let mut grid = vec![f64::NAN; current_grid.len()];
+            for i in 0..grid.len() {
+                let row = i / current_header.width as usize;
+                let col = i % current_header.width as usize;
+                let src_col = (col as f64 * design_dem.cols as f64 / current_header.width as f64) as usize;
+                let src_row = (row as f64 * design_dem.rows as f64 / current_header.length as f64) as usize;
+                let src_col = src_col.min(design_dem.cols - 1);
+                let src_row = src_row.min(design_dem.rows - 1);
+                let val = design_dem.data[src_row * design_dem.cols + src_col];
+                grid[i] = if val.is_nan() { 0.0 } else { val };
+            }
+            grid
+        };
+        (ref_grid, current_header.clone())
     } else {
         let ref_path = PathBuf::from(&request.reference_path);
         let header = read_geotiff_header(&ref_path)

@@ -7,7 +7,7 @@
  * compiled in.
  */
 
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri, Channel } from "@tauri-apps/api/core";
 
 export interface ModuleInfo {
   id: string;
@@ -2082,4 +2082,229 @@ export async function renderDem(
 ): Promise<DemRenderResult | null> {
   if (!isTauri()) return null;
   return invoke<DemRenderResult>("render_dem_cmd", { request });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// EOM Volumetric Auditor — commercial module v1
+
+export interface CsfParamsRpc {
+  cloth_resolution: number;
+  classification_threshold: number;
+  max_iterations: number;
+  rigidness: number;
+  time_step: number;
+  cloth_init_offset: number;
+}
+
+export interface DemParamsRpc {
+  cell_size: number;
+  idw_power: number;
+  search_radius_cells: number;
+  min_points: number;
+}
+
+export interface EomInputRpc {
+  current_las_path: string;
+  previous_las_path: string | null;
+  reference_flat_elevation: number;
+  csf_params: CsfParamsRpc;
+  dem_params: DemParamsRpc;
+  bench_interval: number;
+  max_points: number;
+}
+
+export interface BenchVolumeRpc {
+  z_min: number; z_max: number; fill_volume: number; cut_volume: number;
+  net_volume: number; fill_cells: number; cut_cells: number;
+}
+
+export interface VolumeResultRpc {
+  fill_volume: number; cut_volume: number; net_volume: number;
+  cell_area: number; fill_cells: number; cut_cells: number;
+  benches: BenchVolumeRpc[];
+}
+
+export interface DemGridRpc {
+  data: number[]; cols: number; rows: number; cell_size: number;
+  origin_x: number; origin_y: number; nodata_count: number;
+  z_min: number; z_max: number;
+}
+
+export interface LasHeaderRpcEom {
+  file_source_id: number; global_encoding: number; version_major: number;
+  version_minor: number; system_identifier: string; generating_software: string;
+  file_creation_day: number; file_creation_year: number; header_size: number;
+  offset_to_point_data: number; number_of_vlrs: number; point_data_format: number;
+  point_data_record_length: number; point_count: number; points_by_return: number[];
+  scale_x: number; scale_y: number; scale_z: number;
+  offset_x: number; offset_y: number; offset_z: number;
+  min_x: number; min_y: number; min_z: number;
+  max_x: number; max_y: number; max_z: number;
+  crs_wkt: string | null; geotiff_keys: number[] | null;
+}
+
+export interface EomOutputRpc {
+  current_header: LasHeaderRpcEom;
+  current_point_count: number;
+  current_ground_count: number;
+  current_dem: DemGridRpc;
+  previous_header: LasHeaderRpcEom | null;
+  previous_point_count: number | null;
+  previous_ground_count: number | null;
+  previous_dem: DemGridRpc | null;
+  volumes: VolumeResultRpc;
+  processing_time_ms: number;
+  current_file_hash: string;
+  previous_file_hash: string | null;
+  warnings: string[];
+}
+
+export type EomProgressRpc =
+  | { kind: "Started" }
+  | { kind: "ReadingCurrentLas"; message: number }
+  | { kind: "ClassifyingCurrent"; message: number }
+  | { kind: "RasterizingCurrentDem"; message: [number, number] }
+  | { kind: "ReadingPreviousLas"; message: number }
+  | { kind: "ClassifyingPrevious"; message: number }
+  | { kind: "RasterizingPreviousDem"; message: [number, number] }
+  | { kind: "ComputingVolumes" }
+  | { kind: "HashingFiles" }
+  | { kind: "Done"; message: EomOutputRpc };
+
+export interface ReportDataRpc {
+  eom_output: EomOutputRpc;
+  customer: string; site: string; surveyor: string;
+  report_date: string; software_version: string;
+  signed: boolean;
+}
+
+export interface MachineFingerprintRpc {
+  mac_address: string; cpu_brand: string; disk_serial: string; fingerprint_hash: string;
+}
+
+export interface LicenseClaimsRpc {
+  license_id: string; customer: string; product: string; tier: string;
+  issued_at: string; expires_at: string; fingerprint: string;
+  max_seats: number | null; reports_remaining: number | null; site_id: string | null;
+}
+
+export interface LicenseFileRpc {
+  claims: LicenseClaimsRpc; signature: string; key_id: string;
+}
+
+export type LicenseStatusRpc =
+  | { state: "Trial"; trial_reports_remaining: number }
+  | { state: "Active"; customer: string; license_id: string; tier: string; expires_at: string; reports_remaining: number | null }
+  | { state: "Invalid"; reason: string }
+  | { state: "Exhausted"; customer: string; license_id: string }
+  | { state: "Expired"; customer: string; expired_at: string };
+
+export interface EomWatchFolderConfigRpc {
+  path: string; poll_interval_secs: number;
+  csf_params: CsfParamsRpc; dem_params: DemParamsRpc;
+  bench_interval: number; reference_flat_elevation: number;
+  customer: string; site: string; surveyor: string;
+}
+
+export interface EomWatchEventRpc {
+  kind: "started" | "completed" | "failed";
+  file_path: string; report_path: string | null;
+  fill_volume: number | null; cut_volume: number | null; net_volume: number | null;
+  error: string | null; processing_time_ms: number | null;
+}
+
+export interface DesignDemRpc {
+  data: number[]; cols: number; rows: number;
+  cell_size: number; origin_x: number; origin_y: number;
+}
+
+export const DEFAULT_CSF_PARAMS: CsfParamsRpc = {
+  cloth_resolution: 0.5, classification_threshold: 0.5, max_iterations: 500,
+  rigidness: 2, time_step: 0.65, cloth_init_offset: 10.0,
+};
+
+export const DEFAULT_DEM_PARAMS: DemParamsRpc = {
+  cell_size: 0.5, idw_power: 2.0, search_radius_cells: 3.0, min_points: 1,
+};
+
+export async function runEomPipeline(
+  input: EomInputRpc,
+  onProgress?: (progress: EomProgressRpc) => void,
+): Promise<EomOutputRpc | null> {
+  if (!isTauri()) {
+    const stages: EomProgressRpc[] = [
+      { kind: "Started" },
+      { kind: "ReadingCurrentLas", message: 2500 },
+      { kind: "ClassifyingCurrent", message: 2500 },
+      { kind: "RasterizingCurrentDem", message: [99, 99] },
+      { kind: "ComputingVolumes" },
+      { kind: "HashingFiles" },
+    ];
+    for (const stage of stages) { onProgress?.(stage); await new Promise((r) => setTimeout(r, 500)); }
+    return null;
+  }
+  const channel = new Channel<EomProgressRpc>();
+  if (onProgress) { channel.onmessage = onProgress; }
+  return invoke<EomOutputRpc>("run_eom_pipeline_cmd", { input, onProgress: channel });
+}
+
+export async function generateEomReport(report: ReportDataRpc, outputPath: string): Promise<void> {
+  if (!isTauri()) { console.log("[browser-mode] would write PDF report to", outputPath); return; }
+  return invoke<void>("generate_eom_report_cmd", { report, outputPath });
+}
+
+export async function detectMachineFingerprint(): Promise<MachineFingerprintRpc | null> {
+  if (!isTauri()) {
+    return { mac_address: "00:00:00:00:00:00", cpu_brand: "browser-mode-cpu", disk_serial: "browser-mode-disk", fingerprint_hash: "0".repeat(64) };
+  }
+  return invoke<MachineFingerprintRpc>("detect_machine_fingerprint_cmd");
+}
+
+export async function verifyEomLicense(
+  license: LicenseFileRpc,
+  expectedProduct?: string,
+  expectedTier?: string,
+): Promise<LicenseClaimsRpc | null> {
+  if (!isTauri()) {
+    if (!license.claims.customer) { throw new Error("license verification failed: empty customer"); }
+    return license.claims;
+  }
+  return invoke<LicenseClaimsRpc>("verify_eom_license_cmd", {
+    license, expectedProduct: expectedProduct ?? null, expectedTier: expectedTier ?? null,
+  });
+}
+
+export async function signEomLicense(claims: LicenseClaimsRpc): Promise<LicenseFileRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<LicenseFileRpc>("sign_eom_license_cmd", { claims });
+}
+
+export async function checkLicenseStatus(license: LicenseFileRpc | null): Promise<LicenseStatusRpc> {
+  if (!isTauri()) { return { state: "Trial", trial_reports_remaining: 3 }; }
+  return invoke<LicenseStatusRpc>("check_license_status_cmd", { license });
+}
+
+export async function consumeReport(license: LicenseFileRpc | null): Promise<LicenseStatusRpc> {
+  if (!isTauri()) { return { state: "Trial", trial_reports_remaining: 2 }; }
+  return invoke<LicenseStatusRpc>("consume_report_cmd", { license });
+}
+
+export async function importDxfSurface(path: string, cellSize: number): Promise<DesignDemRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<DesignDemRpc>("import_dxf_surface_cmd", { path, cellSize });
+}
+
+export async function startEomWatchFolder(config: EomWatchFolderConfigRpc): Promise<void> {
+  if (!isTauri()) return;
+  return invoke<void>("start_eom_watch_folder", { config });
+}
+
+export async function stopEomWatchFolder(): Promise<void> {
+  if (!isTauri()) return;
+  return invoke<void>("stop_eom_watch_folder");
+}
+
+export async function isEomWatchFolderRunning(): Promise<boolean> {
+  if (!isTauri()) return false;
+  return invoke<boolean>("is_eom_watch_folder_running");
 }

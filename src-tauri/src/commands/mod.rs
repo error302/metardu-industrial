@@ -5,6 +5,7 @@
 pub mod automation;
 pub mod bottleneck_tools;
 pub mod deliverable;
+pub mod eom;
 pub mod marine;
 pub mod mining;
 pub mod ml;
