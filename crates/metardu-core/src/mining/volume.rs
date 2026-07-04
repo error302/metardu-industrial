@@ -22,9 +22,9 @@
 // with two GeoTIFF paths; the IPC layer reads the GeoTIFFs and converts
 // to grids.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VolumeResult {
     /// Total fill volume (current above reference), cubic meters
     pub fill_volume: f64,
@@ -42,7 +42,7 @@ pub struct VolumeResult {
     pub benches: Vec<BenchVolume>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BenchVolume {
     /// Lower elevation bound of this bench (meters)
     pub z_min: f64,

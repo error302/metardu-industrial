@@ -80,8 +80,8 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
         let bounds = current_header.bounds.map(|b| (b[0], b[1], b[2], b[3]));
         let design_dem = metardu_core::mining::dxf_import::rasterize_dxf_to_dem(&surface, cell_size, bounds)
             .map_err(|e| ctx_no_input!("rasterizing DXF design surface", e))?;
-        let ref_grid = if design_dem.cols == current_header.width as usize
-            && design_dem.rows == current_header.length as usize
+        let ref_grid = if design_dem.ncols == current_header.width as usize
+            && design_dem.nrows == current_header.length as usize
         {
             design_dem.data
         } else {
@@ -89,11 +89,11 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
             for i in 0..grid.len() {
                 let row = i / current_header.width as usize;
                 let col = i % current_header.width as usize;
-                let src_col = (col as f64 * design_dem.cols as f64 / current_header.width as f64) as usize;
-                let src_row = (row as f64 * design_dem.rows as f64 / current_header.length as f64) as usize;
-                let src_col = src_col.min(design_dem.cols - 1);
-                let src_row = src_row.min(design_dem.rows - 1);
-                let val = design_dem.data[src_row * design_dem.cols + src_col];
+                let src_col = (col as f64 * design_dem.ncols as f64 / current_header.width as f64) as usize;
+                let src_row = (row as f64 * design_dem.nrows as f64 / current_header.length as f64) as usize;
+                let src_col = src_col.min(design_dem.ncols - 1);
+                let src_row = src_row.min(design_dem.nrows - 1);
+                let val = design_dem.data[src_row * design_dem.ncols + src_col];
                 grid[i] = if val.is_nan() { 0.0 } else { val };
             }
             grid

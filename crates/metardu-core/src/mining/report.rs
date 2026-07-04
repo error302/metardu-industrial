@@ -25,7 +25,7 @@ pub const SOFTWARE_VERSION: &str = "MetaRDU Industrial 1.0.0";
 
 /// 22-field chain-of-custody record. `report_hash` is the SHA-256 of the
 /// canonical CoC JSON with `report_hash` left as an empty string.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChainOfCustody {
     /// 1. Unique custody identifier (UUID or sequential ID).
     pub custody_id: String,
