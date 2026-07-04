@@ -25,6 +25,7 @@ import {
 export function ModuleLoadingScreen() {
   const setPhase = useAppStore((s) => s.setPhase);
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
+  const hydrated = useAppStore((s) => s.hydrated);
   const { isNarrow, isVeryNarrow } = useViewport();
 
   const [modules, setModules] = useState<ModuleInfo[]>([]);
@@ -66,17 +67,28 @@ export function ModuleLoadingScreen() {
         }
       }
 
-      // Brief beat, then advance
-      setTimeout(() => {
+      // Brief beat, then advance — but only if hydration is done.
+      // If hydrate() hasn't finished yet (rare but possible if Rust
+      // IPC is slow on first call), keep polling until it does, so
+      // we don't accidentally send the user back to onboarding when
+      // they actually completed it last session.
+      const tryAdvance = () => {
         if (!mounted) return;
-        setPhase(hasCompletedOnboarding ? "workspace" : "onboarding");
-      }, 500);
+        if (!useAppStore.getState().hydrated) {
+          setTimeout(tryAdvance, 100);
+          return;
+        }
+        setPhase(
+          useAppStore.getState().hasCompletedOnboarding ? "workspace" : "onboarding",
+        );
+      };
+      setTimeout(tryAdvance, 500);
     }
     loadAll();
     return () => {
       mounted = false;
     };
-  }, [setPhase, hasCompletedOnboarding]);
+  }, [setPhase, hasCompletedOnboarding, hydrated]);
 
   const completedCount = Object.values(statuses).filter(
     (s) => s === "ok" || s === "fail",
@@ -243,9 +255,13 @@ export function ModuleLoadingScreen() {
           {showLogs ? "Hide logs" : "Show logs"}
         </button>
         <button
-          onClick={() =>
-            setPhase(hasCompletedOnboarding ? "workspace" : "onboarding")
-          }
+          onClick={() => {
+            // If hydration is somehow still pending, read the latest
+            // state directly from the store rather than the stale
+            // closure value.
+            const s = useAppStore.getState();
+            setPhase(s.hasCompletedOnboarding ? "workspace" : "onboarding");
+          }}
           className="text-xs text-steel-gray hover:text-white"
         >
           Skip →

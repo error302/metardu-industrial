@@ -188,10 +188,12 @@ export function WorkspaceShell() {
     domain: activeDomain,
   });
 
-  // Ctrl+K opens command palette
+  // Ctrl+K opens command palette — case-insensitive so Caps Lock + Ctrl+K
+  // and Shift+Ctrl+K both work. Tauri webview on Linux sometimes delivers
+  // the uppercase variant depending on IME state.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
         e.preventDefault();
         setCommandPaletteOpen((v) => !v);
       }

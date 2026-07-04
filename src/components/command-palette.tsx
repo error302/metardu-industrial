@@ -6,6 +6,10 @@
  *
  * On a survey vessel in 2m seas, clicking 16×16px icons is impossible.
  * Typing a command is drastically easier.
+ *
+ * Recent-commands history: the last 5 executed commands are persisted
+ * to localStorage and shown at the top of the empty-state list so the
+ * surveyor can one-click back into yesterday's workflow.
  */
 
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -14,6 +18,7 @@ import {
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
   Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
+  Clock,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -32,14 +37,63 @@ interface Props {
   actions: CommandAction[];
 }
 
+const RECENT_KEY = "metardu.recent_commands";
+const MAX_RECENT = 5;
+
+/** Load recent command ids from localStorage. */
+function loadRecentIds(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((x): x is string => typeof x === "string").slice(0, MAX_RECENT);
+  } catch {
+    return [];
+  }
+}
+
+/** Persist recent command ids to localStorage. */
+function saveRecentIds(ids: string[]): void {
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(ids.slice(0, MAX_RECENT)));
+  } catch {
+    // localStorage may be unavailable — non-fatal
+  }
+}
+
+/** Push a command id onto the recent list (most-recent-first, deduped). */
+function pushRecent(id: string): string[] {
+  const next = [id, ...loadRecentIds().filter((x) => x !== id)].slice(0, MAX_RECENT);
+  saveRecentIds(next);
+  return next;
+}
+
 export function CommandPalette({ open, onClose, actions }: Props) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recentIds, setRecentIds] = useState<string[]>(() => loadRecentIds());
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Recent actions (resolved from ids) — kept stable across re-renders.
+  const recentActions = useMemo(() => {
+    if (recentIds.length === 0) return [];
+    const byId = new Map(actions.map((a) => [a.id, a]));
+    return recentIds
+      .map((id) => byId.get(id))
+      .filter((a): a is CommandAction => Boolean(a));
+  }, [recentIds, actions]);
 
   // Filter actions by fuzzy match on label + keywords
   const filtered = useMemo(() => {
-    if (!query.trim()) return actions.slice(0, 10);
+    if (!query.trim()) {
+      // Empty state: show recent first (if any), then top alphabetical.
+      // We mark recent ones so the renderer can show a "Recent" header.
+      const recents = recentActions;
+      const recentIdSet = new Set(recents.map((a) => a.id));
+      const rest = actions.filter((a) => !recentIdSet.has(a.id)).slice(0, 10 - recents.length);
+      return [...recents, ...rest];
+    }
     const q = query.toLowerCase();
     return actions
       .filter((a) => {
@@ -52,16 +106,24 @@ export function CommandPalette({ open, onClose, actions }: Props) {
         return qi === q.length;
       })
       .slice(0, 12);
-  }, [query, actions]);
+  }, [query, actions, recentActions]);
 
   // Reset on open
   useEffect(() => {
     if (open) {
       setQuery("");
       setSelectedIndex(0);
+      setRecentIds(loadRecentIds());
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
+
+  // Execute a command — also pushes it onto the recent list.
+  const runCommand = (action: CommandAction) => {
+    setRecentIds(pushRecent(action.id));
+    action.action();
+    onClose();
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -76,15 +138,17 @@ export function CommandPalette({ open, onClose, actions }: Props) {
         setSelectedIndex((i) => Math.max(i - 1, 0));
       } else if (e.key === "Enter" && filtered[selectedIndex]) {
         e.preventDefault();
-        filtered[selectedIndex].action();
-        onClose();
+        runCommand(filtered[selectedIndex]);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, filtered, selectedIndex, onClose]);
 
   if (!open) return null;
+
+  const recentIdSet = new Set(recentActions.map((a) => a.id));
 
   return (
     <div
@@ -119,33 +183,52 @@ export function CommandPalette({ open, onClose, actions }: Props) {
               No commands match "{query}"
             </div>
           ) : (
-            filtered.map((action, i) => (
-              <button
-                key={action.id}
-                onClick={() => { action.action(); onClose(); }}
-                onMouseEnter={() => setSelectedIndex(i)}
-                className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors ${
-                  i === selectedIndex ? "bg-navy-elevated" : "hover:bg-navy-elevated/50"
-                }`}
-                style={i === selectedIndex ? { boxShadow: `inset 2px 0 0 ${colors.industrialOrange}` } : undefined}
-              >
-                <span style={{ color: colors.steelLight }}>{action.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white">{action.label}</div>
-                  <div className="text-[10px] text-steel-gray">{action.category}</div>
+            filtered.map((action, i) => {
+              const isRecent = !query.trim() && recentIdSet.has(action.id);
+              const isFirstNonRecent = !query.trim() && !isRecent && i === recentActions.length;
+              return (
+                <div key={action.id}>
+                  {isFirstNonRecent && recentActions.length > 0 && (
+                    <div className="px-3 pb-1 pt-2 text-[9px] font-semibold uppercase tracking-wider text-steel-gray">
+                      All commands
+                    </div>
+                  )}
+                  <button
+                    onClick={() => runCommand(action)}
+                    onMouseEnter={() => setSelectedIndex(i)}
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors ${
+                      i === selectedIndex ? "bg-navy-elevated" : "hover:bg-navy-elevated/50"
+                    }`}
+                    style={i === selectedIndex ? { boxShadow: `inset 2px 0 0 ${colors.industrialOrange}` } : undefined}
+                  >
+                    <span style={{ color: colors.steelLight }}>{action.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-white">{action.label}</div>
+                      <div className="text-[10px] text-steel-gray">{action.category}</div>
+                    </div>
+                    {isRecent && (
+                      <span
+                        className="flex items-center gap-1 rounded border border-navy-border bg-navy-base px-1.5 py-0.5 text-[8px] font-mono text-steel-gray"
+                        title="Recently used"
+                      >
+                        <Clock className="h-2.5 w-2.5" />
+                        RECENT
+                      </span>
+                    )}
+                    {i === selectedIndex && !isRecent && (
+                      <ArrowRight className="h-3 w-3" style={{ color: colors.industrialOrange }} />
+                    )}
+                  </button>
                 </div>
-                {i === selectedIndex && (
-                  <ArrowRight className="h-3 w-3" style={{ color: colors.industrialOrange }} />
-                )}
-              </button>
-            ))
+              );
+            })
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-navy-border px-4 py-2 text-[9px] text-steel-gray">
           <span>↑↓ navigate · Enter select · Esc close</span>
-          <span>{filtered.length} results</span>
+          <span>{filtered.length} results{recentActions.length > 0 && !query.trim() ? ` · ${recentActions.length} recent` : ""}</span>
         </div>
       </div>
     </div>
