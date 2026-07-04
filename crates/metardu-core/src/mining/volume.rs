@@ -65,6 +65,16 @@ pub enum VolumeError {
     InvalidCellDims(f64, f64),
 }
 
+/// The NODATA sentinel value used throughout the pipeline.
+/// Cells with this value are excluded from volume calculations.
+pub const NODATA: f64 = -9999.0;
+
+/// Check if a value is a NODATA sentinel (either our -9999.0 or NaN).
+#[inline]
+fn is_nodata(v: f64) -> bool {
+    v == NODATA || v.is_nan()
+}
+
 /// Compute volumes by differencing two elevation grids.
 ///
 /// `current` and `reference` must have the same dimensions. They are
@@ -79,6 +89,12 @@ pub enum VolumeError {
 ///
 /// `bench_interval` is the elevation band width for bench-by-bench
 /// breakdown (e.g., 5.0 for 5m benches). Pass 0.0 to skip bench breakdown.
+///
+/// **NODATA handling**: Cells where either the current or reference value
+/// is `NODATA` (-9999.0) or `NaN` are skipped entirely — they do not
+/// contribute to fill, cut, or bench volumes. This prevents silent
+/// corruption of results when the DEM has gaps (sparse point clouds,
+/// edge effects from IDW interpolation).
 pub fn compute_volumes(
     current: &[f64],
     reference: &[f64],
@@ -106,13 +122,22 @@ pub fn compute_volumes(
     let mut cut_volume = 0.0;
     let mut fill_cells = 0usize;
     let mut cut_cells = 0usize;
+    let mut nodata_cells = 0usize;
 
-    // Determine bench bounds for breakdown
+    // Determine bench bounds for breakdown — skip NODATA cells
     let mut z_min = f64::INFINITY;
     let mut z_max = f64::NEG_INFINITY;
     for (c, r) in current.iter().zip(reference.iter()) {
+        if is_nodata(*c) || is_nodata(*r) {
+            nodata_cells += 1;
+            continue;
+        }
         z_min = z_min.min(*c).min(*r);
         z_max = z_max.max(*c).max(*r);
+    }
+    // If all cells are NODATA, we can't compute volumes
+    if z_min == f64::INFINITY {
+        return Err(VolumeError::Empty);
     }
     let benches = if bench_interval > 0.0 {
         build_bench_breakpoints(z_min, z_max, bench_interval)
@@ -133,6 +158,10 @@ pub fn compute_volumes(
         .collect();
 
     for (c, r) in current.iter().zip(reference.iter()) {
+        // Skip NODATA cells — they don't contribute to volumes
+        if is_nodata(*c) || is_nodata(*r) {
+            continue;
+        }
         let dz = c - r;
         if dz > 0.0 {
             fill_volume += dz * cell_area;
@@ -144,10 +173,6 @@ pub fn compute_volumes(
 
         // Bench breakdown: contribute to each bench the cell overlaps
         for bench in &mut bench_results {
-            // The cell's elevation range is [*c, *c] (a single value).
-            // We assign it to the bench that contains *c.
-            // For surveys this matches the convention: a cell at elevation z
-            // contributes to the bench [z_min_b, z_max_b] where z is in that band.
             if *c >= bench.z_min && *c < bench.z_max {
                 if dz > 0.0 {
                     bench.fill_volume += dz * cell_area;
@@ -270,5 +295,52 @@ mod tests {
     fn test_empty_grids_error() {
         let result = compute_volumes(&[], &[], 1.0, 1.0, 0.0);
         assert!(matches!(result, Err(VolumeError::Empty)));
+    }
+
+    #[test]
+    fn test_nodata_cells_skipped() {
+        // 4-cell grid: 2 valid cells, 2 NODATA cells
+        // Valid: current=110, ref=100 → dz=10, fill=10*100=1000 per cell
+        // NODATA: current=-9999, ref=100 → should be SKIPPED
+        // NODATA: current=110, ref=-9999 → should be SKIPPED
+        let current = vec![110.0, NODATA, 110.0, 110.0];
+        let reference = vec![100.0, 100.0, NODATA, 100.0];
+        let result = compute_volumes(&current, &reference, 10.0, 10.0, 0.0).unwrap();
+        // Only 2 valid cells: fill = 2 * 10 * 100 = 2000
+        assert_eq!(result.fill_volume, 2000.0);
+        assert_eq!(result.fill_cells, 2);
+        assert_eq!(result.cut_volume, 0.0);
+    }
+
+    #[test]
+    fn test_nan_cells_skipped() {
+        // Same as above but with NaN instead of -9999
+        let current = vec![110.0, f64::NAN, 110.0, 110.0];
+        let reference = vec![100.0, 100.0, f64::NAN, 100.0];
+        let result = compute_volumes(&current, &reference, 10.0, 10.0, 0.0).unwrap();
+        assert_eq!(result.fill_volume, 2000.0);
+        assert_eq!(result.fill_cells, 2);
+    }
+
+    #[test]
+    fn test_all_nodata_errors() {
+        let current = vec![NODATA; 4];
+        let reference = vec![NODATA; 4];
+        let result = compute_volumes(&current, &reference, 10.0, 10.0, 0.0);
+        assert!(matches!(result, Err(VolumeError::Empty)));
+    }
+
+    #[test]
+    fn test_nodata_in_bench_breakdown() {
+        // 4-cell grid: 2 valid + 2 NODATA, with bench breakdown
+        let current = vec![105.0, NODATA, 115.0, NODATA];
+        let reference = vec![100.0, 100.0, 100.0, 100.0];
+        let result = compute_volumes(&current, &reference, 10.0, 10.0, 10.0).unwrap();
+        // Only 2 valid cells. Bench [100,110): 105 → fill=5*100=500
+        // Bench [110,120): 115 → fill=15*100=1500
+        assert_eq!(result.benches.len(), 2);
+        assert_eq!(result.benches[0].fill_volume, 500.0);
+        assert_eq!(result.benches[1].fill_volume, 1500.0);
+        assert_eq!(result.fill_cells, 2);
     }
 }
