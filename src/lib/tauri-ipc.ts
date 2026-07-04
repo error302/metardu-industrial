@@ -2164,17 +2164,12 @@ export interface EomOutputRpc {
   warnings: string[];
 }
 
-export type EomProgressRpc =
-  | { kind: "Started" }
-  | { kind: "ReadingCurrentLas"; message: number }
-  | { kind: "ClassifyingCurrent"; message: number }
-  | { kind: "RasterizingCurrentDem"; message: [number, number] }
-  | { kind: "ReadingPreviousLas"; message: number }
-  | { kind: "ClassifyingPrevious"; message: number }
-  | { kind: "RasterizingPreviousDem"; message: [number, number] }
-  | { kind: "ComputingVolumes" }
-  | { kind: "HashingFiles" }
-  | { kind: "Done"; message: EomOutputRpc };
+export interface EomProgressRpc {
+  stage: string;
+  current: number;
+  total: number;
+  message: string;
+}
 
 export interface ReportDataRpc {
   eom_output: EomOutputRpc;
@@ -2238,12 +2233,13 @@ export async function runEomPipeline(
 ): Promise<EomOutputRpc | null> {
   if (!isTauri()) {
     const stages: EomProgressRpc[] = [
-      { kind: "Started" },
-      { kind: "ReadingCurrentLas", message: 2500 },
-      { kind: "ClassifyingCurrent", message: 2500 },
-      { kind: "RasterizingCurrentDem", message: [99, 99] },
-      { kind: "ComputingVolumes" },
-      { kind: "HashingFiles" },
+      { stage: "hashing", current: 0, total: 1, message: "Hashing source file…" },
+      { stage: "ingest", current: 0, total: 1, message: "Reading 2500 points…" },
+      { stage: "csf", current: 0, total: 200, message: "Classifying ground points…" },
+      { stage: "dem", current: 0, total: 1, message: "Rasterizing 50×50 DEM…" },
+      { stage: "volume", current: 0, total: 1, message: "Computing cut/fill volumes…" },
+      { stage: "audit", current: 0, total: 1, message: "Sealing audit hash…" },
+      { stage: "done", current: 1, total: 1, message: "Pipeline complete" },
     ];
     for (const stage of stages) { onProgress?.(stage); await new Promise((r) => setTimeout(r, 500)); }
     return null;

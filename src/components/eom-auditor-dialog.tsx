@@ -76,16 +76,14 @@ interface Props {
  * we don't render a dot for it; instead, completion is signalled by all
  * dots turning green and the results panel appearing below).
  */
-const STAGE_LABELS: { kind: EomProgressRpc["kind"]; label: string }[] = [
-  { kind: "Started", label: "Start" },
-  { kind: "ReadingCurrentLas", label: "Read LAS" },
-  { kind: "ClassifyingCurrent", label: "Classify" },
-  { kind: "RasterizingCurrentDem", label: "DEM" },
-  { kind: "ReadingPreviousLas", label: "Prev LAS" },
-  { kind: "ClassifyingPrevious", label: "Prev Classify" },
-  { kind: "RasterizingPreviousDem", label: "Prev DEM" },
-  { kind: "ComputingVolumes", label: "Volumes" },
-  { kind: "HashingFiles", label: "SHA-256" },
+const STAGE_LABELS: { stage: string; label: string }[] = [
+  { stage: "hashing", label: "SHA-256" },
+  { stage: "ingest", label: "Read LAS" },
+  { stage: "csf", label: "Classify" },
+  { stage: "dem", label: "DEM" },
+  { stage: "volume", label: "Volumes" },
+  { stage: "audit", label: "Audit" },
+  { stage: "done", label: "Done" },
 ];
 
 export function EomAuditorDialog({ open, onClose }: Props) {
@@ -177,14 +175,10 @@ export function EomAuditorDialog({ open, onClose }: Props) {
 
     try {
       const out = await runEomPipeline(input, (p: EomProgressRpc) => {
-        const idx = STAGE_LABELS.findIndex((s) => s.kind === p.kind);
+        const idx = STAGE_LABELS.findIndex((s) => s.stage === p.stage);
         if (idx >= 0) {
           setActiveStage(idx);
-          setStageMessage(formatStageMessage(p));
-        }
-        if (p.kind === "Done") {
-          setResult(p.message);
-          setActiveStage(STAGE_LABELS.length);
+          setStageMessage(`${p.message} (${p.current}/${p.total})`);
         }
       });
       // Browser-mode mock returns null; native returns the same payload via
@@ -500,7 +494,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
                     const isDone = activeStage > idx || activeStage === STAGE_LABELS.length;
                     const isActive = activeStage === idx;
                     return (
-                      <div key={s.kind} className="flex flex-1 flex-col items-center gap-1">
+                      <div key={s.stage} className="flex flex-1 flex-col items-center gap-1">
                         <div
                           className="h-2.5 w-full rounded-full transition-colors"
                           style={{
@@ -1124,27 +1118,3 @@ function TextField({
 /* Helpers                                                        */
 /* ──────────────────────────────────────────────────────────── */
 
-function formatStageMessage(p: EomProgressRpc): string {
-  switch (p.kind) {
-    case "Started":
-      return "Initializing pipeline…";
-    case "ReadingCurrentLas":
-      return `Reading ${p.message.toLocaleString()} points…`;
-    case "ClassifyingCurrent":
-      return `Classified ${p.message.toLocaleString()} ground points…`;
-    case "RasterizingCurrentDem":
-      return `Building DEM ${p.message[0]} × ${p.message[1]}…`;
-    case "ReadingPreviousLas":
-      return `Reading previous survey (${p.message.toLocaleString()} pts)…`;
-    case "ClassifyingPrevious":
-      return `Previous survey: ${p.message.toLocaleString()} ground pts…`;
-    case "RasterizingPreviousDem":
-      return `Previous DEM ${p.message[0]} × ${p.message[1]}…`;
-    case "ComputingVolumes":
-      return "Subtracting DEMs · bench breakdown…";
-    case "HashingFiles":
-      return "Computing SHA-256 audit hashes…";
-    case "Done":
-      return "Done";
-  }
-}
