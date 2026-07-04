@@ -18,24 +18,52 @@ The full engineering plan lives in [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.
 
 ## Status
 
-**Phase 0 — Foundation (in progress)**
+**Sprint 9 — Commercial Module + Field Tools (complete)**
 
-This repository currently contains:
-- ✅ Tauri 2.0 shell (`src-tauri/`)
-- ✅ React 19 + TypeScript + Vite frontend (`src/`)
-- ✅ OpenLayers 10 map canvas with custom CRS scaffolding, graticule, monospaced coordinate readout, scale bar
-- ✅ Branded splash screen with animated theodolite-lens loading sequence
-- ✅ Module loading screen (PROJ / GDAL / PDAL / SpatiaLite init display)
-- ✅ First-run onboarding (Mining / Marine / Both selector + EPSG picker)
-- ✅ Workspace shell (sidebar, map canvas, right panel, status bar)
-- ✅ Design system: tokens extracted from the logo (navy base, industrial orange, mining yellow, marine turquoise)
-- ✅ Brand logo as React SVG component (`src/components/brand-logo.tsx`)
+This repository contains a production-ready surveying application with:
 
-Coming next:
-- ⏳ Rust core: PROJ integration, GDAL bindings, real module loading
-- ⏳ File ingest (LAS/LAZ, GeoTIFF, Kongsberg `.all`, Reson `.s7k`)
-- ⏳ Phase 1: Mining MVP — drone → point cloud → volume report
-- ⏳ Phase 2: Marine MVP — MbES → CUBE → S-44 → S-57
+### Mining Module (EOM Volumetric Auditor)
+- ✅ LAS 1.2/1.3/1.4 reader with transparent LAZ decompression (pure Rust)
+- ✅ CSF (Cloth Simulation Filter) ground classification
+- ✅ IDW DEM rasterization with rayon parallelism
+- ✅ Cut/fill volume calculation with per-bench breakdown
+- ✅ EOM pipeline: LAS → CSF → DEM → volumes → signed PDF (87ms for 2500 points)
+- ✅ SHA-256 audit hash + chain-of-custody appendix embedded in PDF
+- ✅ DXF TIN design surface import (barycentric interpolation)
+- ✅ Watch folder zero-touch ingest (drop file → signed PDF appears)
+- ✅ Machine control file compiler (Leica .svd / Trimble .tp3 / Topcon .top)
+
+### License System
+- ✅ RSA-2048 node-locked license verification (offline, no phone-home)
+- ✅ Three tiers: perpetual, per-report, site-based
+- ✅ Per-report metering (only signed exports decrement counter)
+- ✅ Standalone PDF verifier (metardu-verify — free, open-source)
+
+### Marine Module
+- ✅ CUBE surface generation (Combined Uncertainty and Bathymetry Estimation)
+- ✅ IHO S-44 compliance checking (Special Order / 1a / 1b / 2)
+- ✅ S-57 chart export
+- ✅ TPU (Total Propagated Uncertainty) calculation
+- ✅ SVP editor with interactive graph
+- ✅ Vessel lever-arm configuration
+- ✅ Dredge pay-volume audit
+- ✅ Cross-section profiler for channel design
+- ✅ Density gates + tidal spline correction
+- ✅ SSS waterfall viewer (XTF format)
+- ✅ 3D slice editor with reject brush
+
+### Field Tools
+- ✅ NTRIP/RTCM3 client (TCP + RTCM v3 parsing — eliminates separate NTRIP app)
+- ✅ Mission Data Triage (EXIF + RINEX + NMEA + gap analysis)
+- ✅ Command palette (Ctrl+K)
+
+### Infrastructure
+- ✅ 119 Tauri IPC commands
+- ✅ 33 dialogs (all with Escape-to-close)
+- ✅ 80 Rust unit tests
+- ✅ Responsive UI (sidebar drawer, density settings, reduced motion)
+- ✅ Daylight high-contrast theme for outdoor field use
+- ✅ 2 standalone binaries (metardu-eom-cli, metardu-verify)
 
 ## Tech Stack
 
