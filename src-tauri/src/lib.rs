@@ -69,6 +69,7 @@ use commands::{
     eom::import_dxf_surface_cmd, eom::is_eom_watch_folder_running,
     eom::run_eom_pipeline_cmd, eom::sign_eom_license_cmd, eom::start_eom_watch_folder,
     eom::stop_eom_watch_folder, eom::verify_eom_license_cmd,
+    eom::run_triage_cmd,
     generate_report_cmd, get_settings, init_module, is_proj_available, list_modules,
     marine::check_s44_compliance_cmd, marine::compute_cross_sections_cmd,
     marine::compute_dredge_audit_cmd, marine::compute_tpu_batch, marine::export_s57,
@@ -232,6 +233,8 @@ pub fn run() {
             is_eom_watch_folder_running,
             // DXF Design Surface Import
             import_dxf_surface_cmd,
+            // Mission Data Triage
+            run_triage_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

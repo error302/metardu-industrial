@@ -2308,3 +2308,55 @@ export async function isEomWatchFolderRunning(): Promise<boolean> {
   if (!isTauri()) return false;
   return invoke<boolean>("is_eom_watch_folder_running");
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Mission Data Triage — field data verification + gap analysis
+
+export type TriageFileKindRpc =
+  | "drone_image" | "las_pointcloud" | "laz_pointcloud"
+  | "geotiff" | "gnss_rinex" | "gnss_nmea" | "unknown";
+
+export type FileStatusRpc = "ok" | "warning" | "error" | "empty";
+
+export interface TriageFileRpc {
+  path: string;
+  filename: string;
+  kind: TriageFileKindRpc;
+  status: FileStatusRpc;
+  size_bytes: number;
+  bounds: [number, number, number, number] | null;
+  point_count: number | null;
+  timestamp_start: number | null;
+  timestamp_end: number | null;
+  crs: string | null;
+  error: string | null;
+}
+
+export interface CoverageGapRpc {
+  center_lon: number;
+  center_lat: number;
+  radius_m: number;
+  description: string;
+}
+
+export interface TriageReportRpc {
+  files: TriageFileRpc[];
+  total_files: number;
+  healthy_files: number;
+  warning_files: number;
+  error_files: number;
+  total_size_bytes: number;
+  total_points: number;
+  total_images: number;
+  coverage_gaps: CoverageGapRpc[];
+  time_span_secs: number | null;
+  crs_mismatch: boolean;
+  detected_crs_list: string[];
+  warnings: string[];
+}
+
+/** Run triage analysis on a directory of field data files. */
+export async function runTriage(dir: string): Promise<TriageReportRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<TriageReportRpc>("run_triage_cmd", { dir });
+}

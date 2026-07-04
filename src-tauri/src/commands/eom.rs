@@ -403,3 +403,20 @@ pub struct FingerprintAdapter {
     pub site_id: String,
     pub fingerprint_hash: String,
 }
+
+// ── Mission Data Triage ──
+
+use metardu_core::triage::{run_triage, TriageReport};
+
+/// Run triage analysis on a directory of field data files.
+#[tauri::command]
+pub async fn run_triage_cmd(dir: String) -> Result<TriageReport, String> {
+    let dir_label = dir.clone();
+    tokio::task::spawn_blocking(move || {
+        let path = PathBuf::from(&dir);
+        run_triage(&path)
+            .map_err(|e| format!("triage analysis failed: {} — {}", dir_label, e))
+    })
+    .await
+    .map_err(|e| format!("run_triage_cmd: task join error: {e}"))?
+}

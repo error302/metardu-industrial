@@ -17,6 +17,7 @@ rayon = "1"
 printpdf = "0.7"
 laz = "0.10"
 dxf = "0.5"
+kamadak-exif = "0.5"
 
 [dev-dependencies]
 tempfile = "3"

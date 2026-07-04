@@ -12,6 +12,7 @@
 pub mod marine;
 pub mod mining;
 pub mod ntrip;
+pub mod triage;
 
 // Re-export the key types and functions
 pub use marine::cube::{
