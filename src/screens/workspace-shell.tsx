@@ -46,6 +46,7 @@ import {
   Boxes,
   Bomb,
   ShieldAlert,
+  ShieldCheck,
   Ruler,
   Package,
   Key,
@@ -83,6 +84,7 @@ import { BlastReportWizard } from "@/components/blast-report-wizard";
 import { HighwallMonitoringWizard } from "@/components/highwall-monitoring-wizard";
 import { CrossSectionProfilerWizard } from "@/components/cross-section-profiler-wizard";
 import { DeliverablePackageWizard } from "@/components/deliverable-package-wizard";
+import { EomAuditorDialog } from "@/components/eom-auditor-dialog";
 import { SssWaterfallViewer } from "@/components/sss-waterfall-viewer";
 import { SliceEditor3D } from "@/components/slice-editor-3d";
 import { LicenseManagerDialog } from "@/components/license-manager-dialog";
@@ -156,6 +158,7 @@ export function WorkspaceShell() {
   const [densityGatesOpen, setDensityGatesOpen] = useState(false);
   const [tidalSplineOpen, setTidalSplineOpen] = useState(false);
   const [machineControlOpen, setMachineControlOpen] = useState(false);
+  const [eomAuditorOpen, setEomAuditorOpen] = useState(false);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -258,7 +261,8 @@ export function WorkspaceShell() {
       marketplaceOpen ||
       densityGatesOpen ||
       tidalSplineOpen ||
-      machineControlOpen;
+      machineControlOpen ||
+      eomAuditorOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -295,6 +299,7 @@ export function WorkspaceShell() {
     densityGatesOpen,
     tidalSplineOpen,
     machineControlOpen,
+    eomAuditorOpen,
   ]);
 
   // Command palette actions
@@ -333,6 +338,7 @@ export function WorkspaceShell() {
     onOpenDensityGates: () => setDensityGatesOpen(true),
     onOpenTidalSpline: () => setTidalSplineOpen(true),
     onOpenMachineControl: () => setMachineControlOpen(true),
+    onOpenEomAuditor: () => setEomAuditorOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -394,6 +400,7 @@ export function WorkspaceShell() {
     onOpenDensityGates: () => setDensityGatesOpen(true),
     onOpenTidalSpline: () => setTidalSplineOpen(true),
     onOpenMachineControl: () => setMachineControlOpen(true),
+    onOpenEomAuditor: () => setEomAuditorOpen(true),
   };
 
   return (
@@ -549,6 +556,7 @@ export function WorkspaceShell() {
       <DensityGatesTool open={densityGatesOpen} onClose={() => setDensityGatesOpen(false)} />
       <TidalSplineTool open={tidalSplineOpen} onClose={() => setTidalSplineOpen(false)} />
       <MachineControlTool open={machineControlOpen} onClose={() => setMachineControlOpen(false)} />
+      <EomAuditorDialog open={eomAuditorOpen} onClose={() => setEomAuditorOpen(false)} />
     </div>
   );
 }
@@ -682,6 +690,7 @@ function LeftSidebar({
   onOpenDensityGates,
   onOpenTidalSpline,
   onOpenMachineControl,
+  onOpenEomAuditor,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -718,6 +727,7 @@ function LeftSidebar({
   onOpenDensityGates: () => void;
   onOpenTidalSpline: () => void;
   onOpenMachineControl: () => void;
+  onOpenEomAuditor: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -823,6 +833,11 @@ function LeftSidebar({
               icon={<Cpu className="h-3 w-3" />}
               label="Machine Control Compiler"
               onClick={onOpenMachineControl}
+            />
+            <SidebarItem
+              icon={<ShieldCheck className="h-3 w-3" />}
+              label="EOM Volumetric Auditor"
+              onClick={onOpenEomAuditor}
             />
           </SidebarSection>
         )}
