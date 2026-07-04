@@ -5,6 +5,7 @@
  */
 
 import { useState } from "react";
+import { useEscapeKey } from "@/lib/use-escape-key";
 import {
   X, Loader2, Cpu, CheckCircle2, FileText, Download,
 } from "lucide-react";
@@ -35,6 +36,7 @@ export function MachineControlTool({ open, onClose }: Props) {
   const [result, setResult] = useState<MachineControlResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   // Auto-set output path when input + vendor change

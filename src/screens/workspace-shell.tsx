@@ -13,6 +13,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type Map from "ol/Map";
+import { useViewport } from "@/lib/use-viewport";
+import { isNative } from "@/lib/tauri-ipc";
 import {
   Folder,
   FileBox,
@@ -51,6 +53,8 @@ import {
   RefreshCw,
   Cpu,
   Scissors,
+  PanelLeft,
+  PanelRight,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -113,8 +117,12 @@ import { useSurveyStore } from "@/stores/survey-store";
 
 export function WorkspaceShell() {
   const { activeDomain, settings } = useAppStore();
+  const viewport = useViewport();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  // Tracks whether the sidebar is in overlay drawer mode (very narrow widths).
+  // Below sm, the sidebar slides in over the map rather than pushing the map.
+  const [drawerSidebarOpen, setDrawerSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [volumeCalcOpen, setVolumeCalcOpen] = useState(false);
   const [odmOpen, setOdmOpen] = useState(false);
@@ -192,6 +200,103 @@ export function WorkspaceShell() {
     setRightPanelOpen(settings.rightPanelOpen);
   }, [layout]);
 
+  // Responsive auto-collapse — when the viewport shrinks, panels give up
+  // space so the map stays usable. We don't fight the user: if they
+  // manually re-open a panel we let them, but layout switches and narrow
+  // widths re-trigger this.
+  useEffect(() => {
+    if (viewport.isCompact) {
+      // < lg: collapse the right panel so the map gets priority.
+      setRightPanelOpen(false);
+    }
+    if (viewport.isVeryNarrow) {
+      // < sm: collapse the inline sidebar; it becomes a drawer.
+      setSidebarOpen(false);
+    }
+  }, [viewport.isCompact, viewport.isVeryNarrow]);
+
+  // Auto-close drawer sidebar when the viewport grows past sm.
+  useEffect(() => {
+    if (!viewport.isVeryNarrow) {
+      setDrawerSidebarOpen(false);
+    }
+  }, [viewport.isVeryNarrow]);
+
+  // Lock body scroll when any dialog overlay is open. We piggy-back on the
+  // CSS hook defined in index.css.
+  useEffect(() => {
+    const anyDialogOpen =
+      settingsOpen ||
+      volumeCalcOpen ||
+      odmOpen ||
+      csfOpen ||
+      s44Open ||
+      cubeOpen ||
+      s57Open ||
+      monitoringOpen ||
+      mlOpen ||
+      pipelineOpen ||
+      eomOpen ||
+      s44CertOpen ||
+      commandPaletteOpen ||
+      svpOpen ||
+      vesselConfigOpen ||
+      cubeDisambigOpen ||
+      dredgeAuditOpen ||
+      stockpileAuditOpen ||
+      blastReportOpen ||
+      highwallOpen ||
+      crossSectionOpen ||
+      deliverableOpen ||
+      sssOpen ||
+      sliceEditorOpen ||
+      licenseOpen ||
+      benchmarkOpen ||
+      telemetryOpen ||
+      projectOpen ||
+      updateOpen ||
+      marketplaceOpen ||
+      densityGatesOpen ||
+      tidalSplineOpen ||
+      machineControlOpen;
+    document.body.classList.toggle("has-open-dialog", anyDialogOpen);
+    return () => document.body.classList.remove("has-open-dialog");
+  }, [
+    settingsOpen,
+    volumeCalcOpen,
+    odmOpen,
+    csfOpen,
+    s44Open,
+    cubeOpen,
+    s57Open,
+    monitoringOpen,
+    mlOpen,
+    pipelineOpen,
+    eomOpen,
+    s44CertOpen,
+    commandPaletteOpen,
+    svpOpen,
+    vesselConfigOpen,
+    cubeDisambigOpen,
+    dredgeAuditOpen,
+    stockpileAuditOpen,
+    blastReportOpen,
+    highwallOpen,
+    crossSectionOpen,
+    deliverableOpen,
+    sssOpen,
+    sliceEditorOpen,
+    licenseOpen,
+    benchmarkOpen,
+    telemetryOpen,
+    projectOpen,
+    updateOpen,
+    marketplaceOpen,
+    densityGatesOpen,
+    tidalSplineOpen,
+    machineControlOpen,
+  ]);
+
   // Command palette actions
   const commandActions = useMemo(() => createCommandActions({
     onOpenVolumeCalc: () => setVolumeCalcOpen(true),
@@ -250,46 +355,91 @@ export function WorkspaceShell() {
     }
   }, [isStreaming]);
 
+  // Sidebar JSX differs by viewport:
+  //   - wide (≥ sm): rendered inline alongside the map when `sidebarOpen` is true.
+  //   - very narrow (< sm): rendered as an overlay drawer when `drawerSidebarOpen`
+  //     is true. The inline `sidebarOpen` flag stays false so it doesn't take space.
+  //   - narrow (md range): rendered inline but in icon-only rail mode.
+  const isInlineSidebar = sidebarOpen && !viewport.isVeryNarrow;
+  const isDrawerSidebar = viewport.isVeryNarrow && drawerSidebarOpen;
+
+  const sidebarActions = {
+    onOpenSettings: () => setSettingsOpen(true),
+    onOpenVolumeCalc: () => setVolumeCalcOpen(true),
+    onOpenOdm: () => setOdmOpen(true),
+    onOpenCsf: () => setCsfOpen(true),
+    onOpenS44: () => setS44Open(true),
+    onOpenCube: () => setCubeOpen(true),
+    onOpenS57: () => setS57Open(true),
+    onOpenMonitoring: () => setMonitoringOpen(true),
+    onOpenMl: () => setMlOpen(true),
+    onOpenPipeline: () => setPipelineOpen(true),
+    onOpenSvp: () => setSvpOpen(true),
+    onOpenVesselConfig: () => setVesselConfigOpen(true),
+    onOpenCubeDisambig: () => setCubeDisambigOpen(true),
+    onOpenDredgeAudit: () => setDredgeAuditOpen(true),
+    onOpenStockpileAudit: () => setStockpileAuditOpen(true),
+    onOpenBlastReport: () => setBlastReportOpen(true),
+    onOpenHighwall: () => setHighwallOpen(true),
+    onOpenCrossSection: () => setCrossSectionOpen(true),
+    onOpenDeliverable: () => setDeliverableOpen(true),
+    onOpenSss: () => setSssOpen(true),
+    onOpenSliceEditor: () => setSliceEditorOpen(true),
+    onOpenLicense: () => setLicenseOpen(true),
+    onOpenBenchmark: () => setBenchmarkOpen(true),
+    onOpenTelemetry: () => setTelemetryOpen(true),
+    onOpenProject: () => setProjectOpen(true),
+    onOpenUpdate: () => setUpdateOpen(true),
+    onOpenMarketplace: () => setMarketplaceOpen(true),
+    onOpenDensityGates: () => setDensityGatesOpen(true),
+    onOpenTidalSpline: () => setTidalSplineOpen(true),
+    onOpenMachineControl: () => setMachineControlOpen(true),
+  };
+
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
-      <TitleBar domain={activeDomain} layout={layout} onLayoutChange={setLayout} />
+      <TitleBar
+        domain={activeDomain}
+        layout={layout}
+        onLayoutChange={setLayout}
+        onToggleSidebar={() => {
+          // Below sm we toggle the drawer; above we toggle the inline sidebar.
+          if (viewport.isVeryNarrow) setDrawerSidebarOpen((v) => !v);
+          else setSidebarOpen((v) => !v);
+        }}
+        onToggleRight={() => setRightPanelOpen((v) => !v)}
+      />
       <div className="flex flex-1 overflow-hidden">
-        {sidebarOpen && (
+        {isInlineSidebar && (
           <LeftSidebar
             domain={activeDomain}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
-            onOpenOdm={() => setOdmOpen(true)}
-            onOpenCsf={() => setCsfOpen(true)}
-            onOpenS44={() => setS44Open(true)}
-            onOpenCube={() => setCubeOpen(true)}
-            onOpenS57={() => setS57Open(true)}
-            onOpenMonitoring={() => setMonitoringOpen(true)}
-            onOpenMl={() => setMlOpen(true)}
-            onOpenPipeline={() => setPipelineOpen(true)}
-            onOpenSvp={() => setSvpOpen(true)}
-            onOpenVesselConfig={() => setVesselConfigOpen(true)}
-            onOpenCubeDisambig={() => setCubeDisambigOpen(true)}
-            onOpenDredgeAudit={() => setDredgeAuditOpen(true)}
-            onOpenStockpileAudit={() => setStockpileAuditOpen(true)}
-            onOpenBlastReport={() => setBlastReportOpen(true)}
-            onOpenHighwall={() => setHighwallOpen(true)}
-            onOpenCrossSection={() => setCrossSectionOpen(true)}
-            onOpenDeliverable={() => setDeliverableOpen(true)}
-            onOpenSss={() => setSssOpen(true)}
-            onOpenSliceEditor={() => setSliceEditorOpen(true)}
-            onOpenLicense={() => setLicenseOpen(true)}
-            onOpenBenchmark={() => setBenchmarkOpen(true)}
-            onOpenTelemetry={() => setTelemetryOpen(true)}
-            onOpenProject={() => setProjectOpen(true)}
-            onOpenUpdate={() => setUpdateOpen(true)}
-            onOpenMarketplace={() => setMarketplaceOpen(true)}
-            onOpenDensityGates={() => setDensityGatesOpen(true)}
-            onOpenTidalSpline={() => setTidalSplineOpen(true)}
-            onOpenMachineControl={() => setMachineControlOpen(true)}
+            railMode={viewport.isNarrow}
+            {...sidebarActions}
           />
         )}
-        <main className="relative flex-1 overflow-hidden">
+
+        {isDrawerSidebar && (
+          <>
+            <div
+              className="drawer-backdrop absolute inset-0 z-40 lg:hidden"
+              onClick={() => setDrawerSidebarOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="absolute left-0 top-0 bottom-0 z-50 w-[280px] max-w-[85vw]">
+              <LeftSidebar
+                domain={activeDomain}
+                railMode={false}
+                onDismiss={() => setDrawerSidebarOpen(false)}
+                {...sidebarActions}
+              />
+            </div>
+          </>
+        )}
+
+        <main
+          className="relative flex-1 overflow-hidden"
+          style={{ containerType: "inline-size", containerName: "map-canvas" }}
+        >
           <MapCanvas
             domain={activeDomain}
             epsg={settings.defaultEpsg}
@@ -305,7 +455,10 @@ export function WorkspaceShell() {
           <FileDropOverlay domain={activeDomain} />
           <CrsSwitchBanner />
           <FloatingActions
-            onToggleSidebar={() => setSidebarOpen((v) => !v)}
+            onToggleSidebar={() => {
+              if (viewport.isVeryNarrow) setDrawerSidebarOpen((v) => !v);
+              else setSidebarOpen((v) => !v);
+            }}
             onToggleRight={() => setRightPanelOpen((v) => !v)}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
@@ -323,7 +476,7 @@ export function WorkspaceShell() {
           />
           {profileActive && (
             <div
-              className="pointer-events-none absolute left-1/2 top-12 z-30 -translate-x-1/2 rounded-md border px-3 py-1.5 text-[11px] backdrop-blur"
+              className="pointer-events-none absolute left-1/2 top-12 z-30 -translate-x-1/2 rounded-md border px-3 py-1.5 text-[11px] backdrop-blur max-w-[90%]"
               style={{
                 background: "rgba(10, 25, 47, 0.95)",
                 borderColor: `${domainAccent[activeDomain].primary}60`,
@@ -406,23 +559,41 @@ function TitleBar({
   domain,
   layout,
   onLayoutChange,
+  onToggleSidebar,
+  onToggleRight,
 }: {
   domain: DomainMode;
   layout: LayoutProfile;
   onLayoutChange: (l: LayoutProfile) => void;
+  onToggleSidebar: () => void;
+  onToggleRight: () => void;
 }) {
   const accent = domainAccent[domain].primary;
+  // In browser mode the fake window controls (minimize/maximize/close) do
+  // nothing — they're cosmetic leftovers from the Tauri shell. Hide them so
+  // users don't click expecting the app to minimize.
+  const showWindowControls = isNative();
   return (
-    <header className="title-bar flex items-center justify-between border-b border-navy-border bg-navy-panel px-3">
-      <div className="flex items-center gap-3">
-        <BrandLogoMark size={28} />
-        <span className="text-[13px] font-semibold tracking-wide text-white">
+    <header className="title-bar flex items-center justify-between gap-2 border-b border-navy-border bg-navy-panel px-2 sm:px-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <button
+          onClick={onToggleSidebar}
+          title="Toggle sidebar"
+          aria-label="Toggle sidebar"
+          className="rounded p-1 text-steel-light hover:bg-navy-elevated hover:text-white flex-shrink-0"
+        >
+          <PanelLeft className="h-4 w-4" />
+        </button>
+        <BrandLogoMark size={28} className="flex-shrink-0" />
+        <span className="text-[13px] font-semibold tracking-wide text-white hidden sm:inline truncate">
           Meta<span style={{ color: colors.industrialOrange }}>RDU</span> Industrial
         </span>
-        <span className="text-steel-gray">/</span>
-        <span className="text-[13px] text-steel-light">Untitled Project</span>
+        <span className="text-steel-gray hidden md:inline">/</span>
+        <span className="text-[13px] text-steel-light hidden md:inline truncate">
+          Untitled Project
+        </span>
         <span
-          className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
+          className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider flex-shrink-0"
           style={{
             background: `${accent}20`,
             color: accent,
@@ -433,19 +604,43 @@ function TitleBar({
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <LayoutProfiles active={layout} onChange={onLayoutChange} />
-        <div className="flex items-center gap-1">
-          <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <Minus className="h-3.5 w-3.5" />
-          </button>
-          <button className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <Square className="h-3 w-3" />
-          </button>
-          <button className="rounded p-1 text-steel-gray hover:bg-fail/20 hover:text-fail">
-            <X className="h-3.5 w-3.5" />
-          </button>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden md:block">
+          <LayoutProfiles active={layout} onChange={onLayoutChange} />
         </div>
+        <button
+          onClick={onToggleRight}
+          title="Toggle right panel"
+          aria-label="Toggle right panel"
+          className="rounded p-1 text-steel-light hover:bg-navy-elevated hover:text-white"
+        >
+          <PanelRight className="h-4 w-4" />
+        </button>
+        {showWindowControls && (
+          <div className="flex items-center gap-1">
+            <button
+              className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
+              title="Minimize"
+              aria-label="Minimize window"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <button
+              className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
+              title="Maximize"
+              aria-label="Maximize window"
+            >
+              <Square className="h-3 w-3" />
+            </button>
+            <button
+              className="rounded p-1 text-steel-gray hover:bg-fail/20 hover:text-fail"
+              title="Close"
+              aria-label="Close window"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
@@ -455,6 +650,8 @@ function TitleBar({
 
 function LeftSidebar({
   domain,
+  railMode = false,
+  onDismiss,
   onOpenSettings,
   onOpenVolumeCalc,
   onOpenOdm,
@@ -487,6 +684,10 @@ function LeftSidebar({
   onOpenMachineControl,
 }: {
   domain: DomainMode;
+  /** When true, sidebar collapses to icon-only rail (md-range widths). */
+  railMode?: boolean;
+  /** When set, renders a dismiss (×) button — used in drawer mode. */
+  onDismiss?: () => void;
   onOpenSettings: () => void;
   onOpenVolumeCalc: () => void;
   onOpenOdm: () => void;
@@ -521,15 +722,40 @@ function LeftSidebar({
   const accent = domainAccent[domain].primary;
 
   return (
-    <aside className="flex w-[260px] flex-col border-r border-navy-border bg-navy-panel">
-      <div className="border-b border-navy-border p-3">
-        <button
-          className="new-survey-btn flex w-full items-center justify-center gap-2 rounded-md py-2.5 transition-colors"
-          style={{ background: accent, color: colors.navyBase }}
-        >
-          <Plus className="h-4 w-4" />
-          New Survey
-        </button>
+    <aside
+      className={`sidebar-transition flex h-full flex-col border-r border-navy-border bg-navy-panel ${
+        railMode ? "sidebar-rail w-14" : "w-[260px]"
+      }`}
+    >
+      <div className="border-b border-navy-border p-3 flex items-center gap-2">
+        {railMode ? (
+          <button
+            title="New Survey"
+            aria-label="New Survey"
+            className="flex h-8 w-8 items-center justify-center rounded-md transition-colors flex-shrink-0"
+            style={{ background: accent, color: colors.navyBase }}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            className="new-survey-btn flex flex-1 items-center justify-center gap-2 rounded-md py-2.5 transition-colors"
+            style={{ background: accent, color: colors.navyBase }}
+          >
+            <Plus className="h-4 w-4" />
+            New Survey
+          </button>
+        )}
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            title="Close menu"
+            aria-label="Close menu"
+            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -758,7 +984,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+      <div className="sidebar-section-label flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
         {icon}
         {title}
       </div>
@@ -783,17 +1009,29 @@ function SidebarItem({
   return (
     <button
       onClick={onClick}
-      className={`sidebar-item flex w-full items-center gap-2 rounded-md py-2 transition-colors ${
+      title={label}
+      className={`sidebar-item accent-bar-left focusable-row ${
+        active ? "is-active" : ""
+      } flex w-full items-center gap-2 rounded-md py-2 transition-colors ${
         active
           ? "bg-navy-elevated text-white"
           : "text-steel-light hover:bg-navy-elevated/50 hover:text-white"
       } ${indent ? "pl-6" : "pl-2"} pr-2`}
     >
-      {icon && <span className="text-steel-gray">{icon}</span>}
-      <span className="flex-1 text-left">{label}</span>
-      {active && (
-        <ChevronRight className="h-3 w-3" style={{ color: colors.industrialOrange }} />
+      {icon && (
+        <span className="sidebar-item-icon text-steel-gray flex-shrink-0">
+          {icon}
+        </span>
       )}
+      <span className="flex-1 text-left truncate">{label}</span>
+      {active && (
+        <ChevronRight
+          className="h-3 w-3 flex-shrink-0"
+          style={{ color: colors.industrialOrange }}
+        />
+      )}
+      {/* Tooltip — shown only in rail mode via CSS (see .sidebar-tooltip) */}
+      <span className="sidebar-tooltip">{label}</span>
     </button>
   );
 }
@@ -861,13 +1099,16 @@ function RightPanel({
         : "Drop LAS/LAZ, GeoTIFF, MBES, side-scan, drone manifest, or control files to begin.";
 
   return (
-    <aside className="flex w-80 flex-col border-l border-navy-border bg-navy-panel">
-      <div className="border-b border-navy-border px-4 py-3">
-        <div className="flex items-center justify-between">
+    <aside className="sidebar-transition flex w-72 xl:w-80 flex-col border-l border-navy-border bg-navy-panel">
+      <div className="border-b border-navy-border px-3 sm:px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-steel-light">
             Operations
           </h3>
-          <span className="text-[10px] uppercase tracking-wider" style={{ color: accent }}>
+          <span
+            className="text-[10px] uppercase tracking-wider truncate"
+            style={{ color: accent }}
+          >
             {domainAccent[domain].label}
           </span>
         </div>
@@ -1111,25 +1352,31 @@ function FloatingActions({
   isStreaming: boolean;
   onToggleStream: () => void;
 }) {
+  // Reusable button class — keeps the action buttons visually consistent.
+  const baseBtn =
+    "rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur transition-colors hover:bg-navy-elevated hover:text-white";
   return (
-    <div className="absolute right-3 top-3 flex flex-col gap-1">
+    <div className="absolute right-2 sm:right-3 top-2 sm:top-3 flex flex-col gap-1 z-20">
       <button
         onClick={onToggleRight}
         title="Toggle right panel"
-        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        aria-label="Toggle right panel"
+        className={baseBtn}
       >
         <Square className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onToggleSidebar}
         title="Toggle sidebar"
-        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        aria-label="Toggle sidebar"
+        className={baseBtn}
       >
         <Layers className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onToggleProfile}
         title="Profile tool"
+        aria-label="Toggle profile tool"
         className="rounded border p-2 backdrop-blur transition-colors"
         style={{
           background: profileActive ? colors.industrialOrange : "rgba(10, 25, 47, 0.85)",
@@ -1142,6 +1389,7 @@ function FloatingActions({
       <button
         onClick={onToggleStream}
         title="Live stream (UDP)"
+        aria-label="Toggle live stream"
         className="rounded border p-2 backdrop-blur transition-colors"
         style={{
           background: isStreaming ? colors.marineTurquoise : "rgba(10, 25, 47, 0.85)",
@@ -1154,14 +1402,16 @@ function FloatingActions({
       <button
         onClick={onOpenVolumeCalc}
         title="Volume calculator"
-        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        aria-label="Open volume calculator"
+        className={`hidden sm:block ${baseBtn}`}
       >
         <Calculator className="h-3.5 w-3.5" />
       </button>
       <button
         onClick={onOpenSettings}
         title="Settings"
-        className="rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur hover:bg-navy-elevated hover:text-white"
+        aria-label="Open settings"
+        className={baseBtn}
       >
         <Settings className="h-3.5 w-3.5" />
       </button>
@@ -1183,26 +1433,26 @@ function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
   }, []);
 
   return (
-    <footer className="flex h-6 items-center justify-between border-t border-navy-border bg-navy-panel px-3 text-[11px]">
-      <div className="flex items-center gap-4">
-        <span className="flex items-center gap-1.5 text-steel-light">
+    <footer className="flex h-6 items-center justify-between gap-2 border-t border-navy-border bg-navy-panel px-2 sm:px-3 text-[11px] overflow-hidden">
+      <div className="no-scrollbar flex items-center gap-2 sm:gap-4 overflow-x-auto">
+        <span className="flex items-center gap-1.5 text-steel-light flex-shrink-0">
           <span
             className="h-1.5 w-1.5 rounded-full"
             style={{ background: colors.pass }}
           />
           Ready
         </span>
-        <span className="flex items-center gap-1 text-steel-gray">
+        <span className="flex items-center gap-1 text-steel-gray flex-shrink-0">
           <MapPin className="h-3 w-3" style={{ color: accent }} />
           <span className="font-mono text-steel-light">{epsg}</span>
         </span>
-        <span className="flex items-center gap-1 text-steel-gray">
+        <span className="hidden sm:flex items-center gap-1 text-steel-gray flex-shrink-0">
           <Crosshair className="h-3 w-3" />
           <span style={{ color: accent }}>{domainAccent[domain].label}</span>
         </span>
       </div>
-      <div className="flex items-center gap-4 text-steel-gray">
-        <span className="flex items-center gap-1">
+      <div className="flex items-center gap-2 sm:gap-4 text-steel-gray flex-shrink-0">
+        <span className="hidden sm:flex items-center gap-1">
           <Clock className="h-3 w-3" />
           <span className="font-mono">{utcTime}Z</span>
         </span>

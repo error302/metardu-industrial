@@ -10,6 +10,8 @@
 // a single source of truth.
 
 pub mod marine;
+pub mod mining;
+pub mod ntrip;
 
 // Re-export the key types and functions
 pub use marine::cube::{

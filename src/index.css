@@ -342,3 +342,181 @@ body,
 .status-dot--fail {
   background: var(--color-fail);
 }
+
+/* =========================================================================
+   Responsive helpers — used by workspace shell + screens
+   ========================================================================= */
+
+/* Sidebar transition — smooth width + opacity when entering/leaving
+   icon-only mode and drawer mode. */
+.sidebar-transition {
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease-out;
+}
+
+/* Drawer backdrop — used when sidebar becomes an overlay on very narrow widths */
+.drawer-backdrop {
+  background: rgba(5, 12, 24, 0.6);
+  backdrop-filter: blur(2px);
+  animation: fade-in 200ms ease-out forwards;
+}
+
+/* Icon-only sidebar rail — labels hidden, just icons centered */
+.sidebar-rail .sidebar-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sidebar-rail .sidebar-item span:not(.sidebar-item-icon) {
+  display: none;
+}
+.sidebar-rail .sidebar-section-label {
+  display: none;
+}
+
+/* Hide scrollbars on horizontal scroll regions (status bar wrap) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Truncate utility — for ellipsized text in narrow layouts */
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Subtle scale-in animation for dialogs and panels */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-scale-in {
+  animation: scale-in 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Focusable card hover — for sidebar items, dialog rows, etc. */
+.focusable-row {
+  transition: background-color 150ms ease-out, border-color 150ms ease-out,
+    transform 150ms ease-out;
+}
+.focusable-row:hover {
+  transform: translateX(1px);
+}
+.focusable-row:active {
+  transform: translateX(0);
+}
+
+/* Active accent bar — for selected sidebar items */
+.accent-bar-left {
+  position: relative;
+}
+.accent-bar-left::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--color-industrial-orange);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+.accent-bar-left.is-active::before {
+  opacity: 1;
+}
+
+/* Reduced motion — respect user OS preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Container queries support — used by map canvas to adapt OL controls */
+@container map-canvas (max-width: 480px) {
+  .ol-zoom {
+    top: 8px !important;
+    left: 8px !important;
+  }
+  .ol-full-screen {
+    top: 8px !important;
+    left: 48px !important;
+  }
+  .metardu-mouse-position {
+    font-size: 10px !important;
+    padding: 3px 6px !important;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Long-press tooltip for icon-only sidebar — show label on hover */
+.sidebar-rail .sidebar-item {
+  position: relative;
+}
+.sidebar-rail .sidebar-item:hover .sidebar-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translate(-4px, -50%);
+  background: var(--color-navy-elevated);
+  color: var(--color-white);
+  border: 1px solid var(--color-navy-border);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 50;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialog overlay scroll lock — when any dialog is open, prevent body scroll */
+body.has-open-dialog {
+  overflow: hidden;
+}
+
+/* Smaller font scale on very narrow viewports — keeps workspace usable */
+@media (max-width: 640px) {
+  html,
+  body,
+  #root {
+    font-size: 13px;
+  }
+  .title-bar {
+    height: 40px;
+  }
+}
+
+/* Print-friendly: hide non-essential UI when printing reports */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

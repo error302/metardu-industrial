@@ -15,6 +15,7 @@ import {
 } from "@/lib/tokens";
 import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore } from "@/stores/app-store";
+import { useViewport } from "@/lib/use-viewport";
 
 // Common mining/marine CRS quick-picks
 const CRS_QUICKPICKS = [
@@ -32,6 +33,7 @@ const CRS_QUICKPICKS = [
 
 export function OnboardingScreen() {
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
+  const { isNarrow, isVeryNarrow } = useViewport();
   const [domain, setDomain] = useState<DomainMode | null>(null);
   const [epsg, setEpsg] = useState("EPSG:4326");
   const [search, setSearch] = useState("");
@@ -45,10 +47,10 @@ export function OnboardingScreen() {
   return (
     <div className="flex h-full w-full flex-col bg-navy-base">
       {/* Header */}
-      <header className="flex h-12 items-center justify-between border-b border-navy-border px-6">
-        <div className="flex items-center gap-3">
+      <header className="flex h-12 items-center justify-between border-b border-navy-border px-4 sm:px-6">
+        <div className="flex items-center gap-3 min-w-0">
           <BrandLogoMark size={24} />
-          <span className="text-sm font-medium tracking-wide text-white">
+          <span className="text-sm font-medium tracking-wide text-white truncate">
             {APP_NAME}
           </span>
         </div>
@@ -56,16 +58,17 @@ export function OnboardingScreen() {
           onClick={() =>
             completeOnboarding({ defaultDomain: "both", defaultEpsg: "EPSG:4326" })
           }
-          className="text-xs text-steel-gray hover:text-white"
+          className="text-xs text-steel-gray hover:text-white whitespace-nowrap"
         >
-          Skip onboarding →
+          <span className="hidden sm:inline">Skip onboarding →</span>
+          <span className="sm:hidden">Skip →</span>
         </button>
       </header>
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-8 py-10">
-          <h1 className="text-2xl font-bold text-white">
+        <div className="mx-auto max-w-3xl px-4 sm:px-8 py-6 sm:py-10">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">
             Welcome to {APP_NAME}
           </h1>
           <p className="mt-2 text-sm text-steel-light">
@@ -74,7 +77,7 @@ export function OnboardingScreen() {
           </p>
 
           {/* Domain selection */}
-          <section className="mt-10">
+          <section className="mt-8 sm:mt-10">
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-steel-light">
               1 · Which surveys will you be running?
             </h2>
@@ -82,7 +85,11 @@ export function OnboardingScreen() {
               Select both if you serve mining and marine clients.
             </p>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div
+              className={`grid gap-3 sm:gap-4 ${
+                isVeryNarrow ? "grid-cols-1" : isNarrow ? "grid-cols-1" : "grid-cols-3"
+              }`}
+            >
               <DomainCard
                 selected={domain === "mining"}
                 onClick={() => setDomain("mining")}
@@ -119,7 +126,7 @@ export function OnboardingScreen() {
           </section>
 
           {/* CRS selection */}
-          <section className="mt-10">
+          <section className="mt-8 sm:mt-10">
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-steel-light">
               2 · Default coordinate system
             </h2>
@@ -182,7 +189,7 @@ export function OnboardingScreen() {
           </section>
 
           {/* Get started */}
-          <div className="mt-10 flex items-center justify-between">
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-xs text-steel-gray">
               {domain ? (
                 <>

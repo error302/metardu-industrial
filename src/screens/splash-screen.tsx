@@ -3,12 +3,17 @@
  * Shown on cold start for ~2.5s. Animated theodolite lens rotates as
  * the brand identity establishes. Progress bar fills mining (top) and
  * marine (bottom) of the split lens simultaneously — dual-domain metaphor.
+ *
+ * Responsive: logo scales down on narrow viewports, footer is anchored
+ * to the viewport (not the inner content box) so it always sits at the
+ * bottom of the screen.
  */
 
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { colors, APP_VERSION, APP_BUILD } from "@/lib/tokens";
 import { useAppStore } from "@/stores/app-store";
+import { useViewport } from "@/lib/use-viewport";
 
 const STAGES = [
   { label: "Loading brand assets", duration: 300 },
@@ -21,6 +26,7 @@ export function SplashScreen() {
   const setPhase = useAppStore((s) => s.setPhase);
   const [progress, setProgress] = useState(0);
   const [stageIdx, setStageIdx] = useState(0);
+  const { isNarrow, isVeryNarrow } = useViewport();
 
   useEffect(() => {
     let mounted = true;
@@ -54,6 +60,10 @@ export function SplashScreen() {
     };
   }, [setPhase]);
 
+  // Logo size adapts: 180px on wide, 120px on narrow, 96px on very narrow
+  const logoSize = isVeryNarrow ? 96 : isNarrow ? 120 : 180;
+  const progressWidth = isVeryNarrow ? 240 : isNarrow ? 280 : 288;
+
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-navy-base">
       {/* Subtle survey grid background */}
@@ -68,8 +78,9 @@ export function SplashScreen() {
         }}
       />
 
-      <div className="relative z-10 flex flex-col items-center">
-        <BrandLogo size={180} animated showWordmark />
+      {/* Centered brand block */}
+      <div className="relative z-10 flex flex-col items-center px-6">
+        <BrandLogo size={logoSize} animated showWordmark />
 
         {/* Version + build */}
         <div className="mt-6 font-mono text-[10px] tracking-wider text-steel-gray">
@@ -77,12 +88,12 @@ export function SplashScreen() {
         </div>
 
         {/* Progress bar */}
-        <div className="mt-8 w-72">
+        <div className="mt-8" style={{ width: progressWidth }}>
           <div className="mb-2 flex items-center justify-between text-[11px] font-mono">
-            <span className="text-steel-light">
+            <span className="text-steel-light truncate">
               {STAGES[stageIdx]?.label ?? "Ready"}
             </span>
-            <span style={{ color: colors.industrialOrange }}>
+            <span style={{ color: colors.industrialOrange }} className="ml-2 tabular-nums">
               {Math.round(progress)}%
             </span>
           </div>
@@ -96,11 +107,11 @@ export function SplashScreen() {
             />
           </div>
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="absolute bottom-8 left-0 right-0 text-center text-[10px] tracking-[0.2em] text-steel-gray/60">
-          GEODETIC · BATHYMETRIC · INDUSTRIAL
-        </div>
+      {/* Footer — anchored to viewport bottom, not the inner content box */}
+      <div className="absolute bottom-6 left-0 right-0 z-10 px-4 text-center text-[10px] tracking-[0.2em] text-steel-gray/60">
+        GEODETIC · BATHYMETRIC · INDUSTRIAL
       </div>
     </div>
   );
