@@ -515,6 +515,12 @@ export function WorkspaceShell() {
             profileLine={profileLine}
             onClearProfile={clearProfile}
             profileActive={profileActive}
+            onOpenCsf={() => setCsfOpen(true)}
+            onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
+            onOpenEomAuditor={() => setEomAuditorOpen(true)}
+            onOpenS44={() => setS44Open(true)}
+            onOpenCube={() => setCubeOpen(true)}
+            onOpenDeliverable={() => setDeliverableOpen(true)}
           />
         )}
       </div>
@@ -1085,12 +1091,24 @@ function RightPanel({
   profileLine,
   onClearProfile,
   profileActive,
+  onOpenCsf,
+  onOpenVolumeCalc,
+  onOpenEomAuditor,
+  onOpenS44,
+  onOpenCube,
+  onOpenDeliverable,
 }: {
   domain: DomainMode;
   epsg: string;
   profileLine: ProfileLine | null;
   onClearProfile: () => void;
   profileActive: boolean;
+  onOpenCsf: () => void;
+  onOpenVolumeCalc: () => void;
+  onOpenEomAuditor: () => void;
+  onOpenS44: () => void;
+  onOpenCube: () => void;
+  onOpenDeliverable: () => void;
 }) {
   const accent = domainAccent[domain].primary;
   const files = useSurveyStore((s) => s.files);
@@ -1117,20 +1135,20 @@ function RightPanel({
   const nextActions =
     domain === "mining"
       ? [
-          ["Classify ground", "Run CSF before volume calculations."],
-          ["Compute volume", "Compare current DEM against a bench or previous survey."],
-          ["Package report", "Export branded PDF with density and bench breakdown."],
+          { title: "Classify ground", body: "Run CSF before volume calculations.", onClick: onOpenCsf },
+          { title: "Compute volume", body: "Compare current DEM against a bench or previous survey.", onClick: onOpenVolumeCalc },
+          { title: "EOM Auditor", body: "Automated LAS → signed PDF volume report.", onClick: onOpenEomAuditor },
         ]
       : domain === "marine"
         ? [
-            ["Clean bathymetry", "Run density gates and inspect gaps before gridding."],
-            ["Generate CUBE", "Build a defensible bathymetric surface."],
-            ["Certify delivery", "Run S-44 checks and package S-57 outputs."],
+            { title: "Generate CUBE", body: "Build a defensible bathymetric surface.", onClick: onOpenCube },
+            { title: "S-44 Compliance", body: "Run S-44 checks and verify TPU.", onClick: onOpenS44 },
+            { title: "Package delivery", body: "Package S-57 outputs and audit manifest.", onClick: onOpenDeliverable },
           ]
         : [
-            ["Ingest survey data", "Stage LAS/LAZ, GeoTIFF, MBES, drone, or control files."],
-            ["Run domain QC", "Use CSF/volumes for mining or density gates/CUBE for marine."],
-            ["Publish deliverables", "Package PDF reports, S-57 exports, and audit manifests."],
+            { title: "Ingest survey data", body: "Stage LAS/LAZ, GeoTIFF, MBES, drone, or control files.", onClick: () => {} },
+            { title: "Run domain QC", body: "Use CSF/volumes for mining or density gates/CUBE for marine.", onClick: onOpenEomAuditor },
+            { title: "Publish deliverables", body: "Package PDF reports, S-57 exports, and audit manifests.", onClick: onOpenDeliverable },
           ];
   const emptyTip =
     domain === "marine"
@@ -1261,11 +1279,18 @@ function RightPanel({
             Recommended next actions
           </h4>
           <div className="space-y-2">
-            {nextActions.map(([title, body]) => (
-              <div key={title} className="rounded-md border border-navy-border bg-navy-base p-2.5">
-                <div className="text-xs font-semibold text-white">{title}</div>
-                <div className="mt-0.5 text-[10px] leading-relaxed text-steel-gray">{body}</div>
-              </div>
+            {nextActions.map((action) => (
+              <button
+                key={action.title}
+                onClick={action.onClick}
+                className="w-full rounded-md border border-navy-border bg-navy-base p-2.5 text-left transition-colors hover:border-industrial-orange/40 hover:bg-navy-elevated/50"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-white">{action.title}</div>
+                  <ChevronRight className="h-3 w-3 text-steel-gray" />
+                </div>
+                <div className="mt-0.5 text-[10px] leading-relaxed text-steel-gray">{action.body}</div>
+              </button>
             ))}
           </div>
         </div>
@@ -1474,7 +1499,7 @@ function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
   }, []);
 
   return (
-    <footer className="flex h-6 items-center justify-between gap-2 border-t border-navy-border bg-navy-panel px-2 sm:px-3 text-[11px] overflow-hidden">
+    <footer className="flex h-7 items-center justify-between gap-2 border-t border-navy-border bg-navy-panel px-2 sm:px-3 text-[11px] overflow-hidden">
       <div className="no-scrollbar flex items-center gap-2 sm:gap-4 overflow-x-auto">
         <span className="flex items-center gap-1.5 text-steel-light flex-shrink-0">
           <span
@@ -1491,13 +1516,17 @@ function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
           <Crosshair className="h-3 w-3" />
           <span style={{ color: accent }}>{domainAccent[domain].label}</span>
         </span>
+        <span className="hidden md:flex items-center gap-1 text-steel-gray/60 flex-shrink-0">
+          <kbd className="rounded border border-navy-border bg-navy-base px-1 py-0.5 font-mono text-[9px]">⌘K</kbd>
+          <span>Commands</span>
+        </span>
       </div>
       <div className="flex items-center gap-2 sm:gap-4 text-steel-gray flex-shrink-0">
         <span className="hidden sm:flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          <span className="font-mono">{utcTime}Z</span>
+          <span className="font-mono tabular-nums">{utcTime}Z</span>
         </span>
-        <span className="font-mono">v{APP_VERSION}</span>
+        <span className="font-mono text-steel-gray/60">v{APP_VERSION}</span>
       </div>
     </footer>
   );
