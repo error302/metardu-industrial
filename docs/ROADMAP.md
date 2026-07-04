@@ -1,6 +1,6 @@
 # MetaRDU Industrial — Development Roadmap & Revenue Strategy
 
-**Last updated**: 2026-07-03 (Sprint 8 complete)
+**Last updated**: 2026-07-05 (Sprint 9 complete)
 **Status**: Living document — the single source of truth for what to build and why.
 
 ---
@@ -124,7 +124,7 @@ Every revenue feature requires a professional PDF report. This is the foundation
 - Provenance hash + audit trail footer
 - Print-ready output
 
-**Status**: Current `generate_report` pipeline action writes basic HTML. Need proper PDF engine.
+**Status**: ✅ DONE — printpdf with chain-of-custody appendix. (Sprint 9 retroactively upgraded all branded PDF paths: signed PDF output with SHA-256 chain-of-custody, RSA-2048 license signing, standalone verifier tool.)
 
 #### 1. EoM Production Reconciliation
 Mine surveyors spend 3 days every month doing: clean point clouds → grid surfaces → volume calc vs. mine plan → Excel report. MetaRDU compresses this to 30 minutes.
@@ -266,16 +266,17 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 | Streaming ingest | ~260 | 3 | ✅ UDP listener + Deck.gl rendering |
 | WASM sandbox | ~280 | 3 | ✅ wasmtime behind feature flag |
 | AR companion scaffold | ~310 | 3 | ✅ |
-| Frontend (React/TS) | ~19,000 | — | ✅ 30 dialogs, 89 IPC commands |
+| Frontend (React/TS) | ~19,000 | — | ✅ 33 dialogs, 119 IPC commands |
 
 ### Build Stats
 - Rust source: ~22,500 lines
 - TypeScript source: ~19,000 lines
 - Shared crate (metardu-core): ~1,500 lines
 - Documentation: ~3,100 lines
-- Unit tests: 196+ (Rust)
-- IPC commands: 89
-- Binaries: 2 (metardu-industrial + metardu-worker)
+- Unit tests: 276+ (Rust) — 196 through Sprint 8 + 80 new in Sprint 9 (EOM Volumetric Auditor + supporting modules)
+- IPC commands: 119 (89 through Sprint 8 + 30 new in Sprint 9)
+- Dialogs: 33 (30 through Sprint 8 + 3 new in Sprint 9 — NTRIP client, Mission Triage, Machine Control Compiler)
+- Binaries: 3 (metardu-industrial + metardu-worker + metardu-verify)
 - Release tags: 2 (v0.1.0-alpha.1, v0.1.0-beta.1)
 
 ---
@@ -324,3 +325,31 @@ Port engineers verify dredged channel meets design specs via cross-sections.
 25. ~~**Auto-Updater**~~ — ✅ Version check + download + install (Phase 9 will wire real HTTP)
 26. ~~**Internationalization (i18n)**~~ — ✅ English + Spanish + Portuguese (Latin American mining market)
 27. ~~**Plugin Marketplace**~~ — ✅ Registry JSON + install/uninstall + search + SHA-256 verification
+
+## Sprint 9: Commercial Module + Field Tools — ✅ COMPLETE
+
+The commercial-productization sprint. Turns the open-source core into a revenue-generating product with a licensed volumetric auditor, a free verifier tool for trust propagation, and a battery of field-engineering utilities that eliminate external tool dependencies (NTRIP client, LAZ decompressor, DXF importer, machine-control compiler, mission triage).
+
+28. ~~**EOM Volumetric Auditor**~~ — ✅ LAS/LAZ ingest → CSF classify → DEM rasterize → volume calc → signed PDF with SHA-256 chain-of-custody. RSA-2048 node-locked license (3 tiers: perpetual, per-report, site-based). Per-report metering on signed exports only. 80 Rust tests.
+
+29. ~~**Standalone PDF Verifier (metardu-verify)**~~ — ✅ Free open-source tool that extracts chain-of-custody JSON from PDF metadata and confirms SHA-256 hash integrity. Zero dependency on the paid app.
+
+30. ~~**DXF Design Surface Import**~~ — ✅ Import TIN surfaces from Surpac/Datamine DXF files. Barycentric interpolation rasterization. Volume calc against design surface (actual vs design = overbreak/underbreak).
+
+31. ~~**LAZ Decompression**~~ — ✅ Transparent `.laz` file support via the `laz` crate (pure Rust Laszip port). No system deps.
+
+32. ~~**NTRIP/RTCM3 Client**~~ — ✅ TCP NTRIP caster connection with RTCM v3 message parsing. Base64 auth. Background streaming with status reporting. Eliminates the need for a separate NTRIP client app.
+
+33. ~~**Mission Data Triage**~~ — ✅ Scans field data folders for drone images (EXIF GPS), LAS/LAZ (header bounds), RINEX (approx position), NMEA (trajectory bounds). CRS mismatch detection, empty file detection, temporal span, file health checklist. Parallel analysis via rayon.
+
+34. ~~**Watch Folder Zero-Touch Ingest**~~ — ✅ Drop `.las`/`.laz` in a folder → pipeline runs automatically → signed PDF appears next to input.
+
+35. ~~**Responsive UI**~~ — ✅ Sidebar drawer mode (icon-only rail at md, overlay at sm), density setting (compact/comfortable), reduced motion toggle, Escape-to-close on all 33 dialogs.
+
+36. ~~**Machine Control File Compiler**~~ — ✅ DXF → Leica `.svd` / Trimble `.tp3` / Topcon `.top`. 573-line Rust implementation with UI.
+
+### Sprint 9 Codebase Stats
+- **80** new Rust tests (EOM Volumetric Auditor + supporting modules)
+- **119** total Tauri IPC commands (up from 89 — 30 new)
+- **33** dialogs (up from 30 — NTRIP client, Mission Triage, Machine Control Compiler)
+- **3** binaries: `metardu-industrial` + `metardu-worker` + **`metardu-verify`** (new, MIT-licensed)
