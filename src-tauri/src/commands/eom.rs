@@ -28,12 +28,38 @@ fn bundled_public_key() -> Result<RsaPubKey, String> {
 }
 
 fn get_machine_id() -> String {
-    let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "unknown".to_string());
-    let os = if cfg!(target_os = "linux") { "linux" }
-        else if cfg!(target_os = "macos") { "macos" }
-        else if cfg!(target_os = "windows") { "windows" }
-        else { "unknown" };
-    format!("{}-{}", os, hostname)
+    // Match the CLI's detect_machine_fingerprint logic exactly so that
+    // a license signed by the CLI verifies in the app.
+    use sha2::{Digest, Sha256};
+    let mut input = String::new();
+    input.push_str("metardu-eom-cli|");
+    input.push_str("os=");
+    input.push_str(std::env::consts::OS);
+    input.push_str("|arch=");
+    input.push_str(std::env::consts::ARCH);
+    input.push_str("|hostname=");
+    // Try HOSTNAME env var (Linux), then fall back to machine name
+    let hostname = std::env::var("HOSTNAME")
+        .or_else(|_| std::env::var("COMPUTERNAME"))
+        .unwrap_or_else(|_| "unknown".to_string());
+    input.push_str(&hostname);
+    // MAC addresses on Linux: read /sys/class/net/*/address
+    if let Ok(entries) = std::fs::read_dir("/sys/class/net") {
+        let mut macs: Vec<String> = entries
+            .filter_map(|e| e.ok())
+            .filter_map(|e| std::fs::read_to_string(e.path().join("address")).ok())
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty() && s != "00:00:00:00:00:00")
+            .collect();
+        macs.sort();
+        for mac in macs {
+            input.push_str("|mac=");
+            input.push_str(&mac);
+        }
+    }
+    let mut hasher = Sha256::new();
+    hasher.update(input.as_bytes());
+    hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 #[tauri::command]
@@ -68,13 +94,44 @@ pub async fn run_eom_pipeline_cmd(
 
 #[tauri::command]
 pub async fn generate_eom_report_cmd(
-    report: ReportDataAdapter,
+    eom_output: EomOutputAdapter,
+    customer: String,
+    site: String,
+    surveyor: String,
     output_path: String,
+    signed: bool,
 ) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
-        let core_data = ReportData::from(report);
+        let report = ReportData {
+            title: "MetaRDU Industrial — EOM Volumetric Report".to_string(),
+            subtitle: format!("{} — {}", customer, site),
+            author: surveyor.clone(),
+            project: customer,
+            site,
+            created_at: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+            signed,
+            summary: format!(
+                "Fill: +{:.2} m³\nCut: -{:.2} m³\nNet: {:+.2} m³\nAudit: {}",
+                eom_output.fill_volume, eom_output.cut_volume, eom_output.net_volume, eom_output.audit_hash
+            ),
+            chain_of_custody: metardu_core::mining::report::ChainOfCustody {
+                custody_id: format!("EOM-{}", &eom_output.audit_hash[..12]),
+                created_at: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+                custodian: surveyor.clone(),
+                source_file: eom_output.source_file,
+                source_hash: eom_output.source_hash,
+                point_count: eom_output.points_read,
+                ground_count: eom_output.ground_points as u64,
+                fill_volume: eom_output.fill_volume,
+                cut_volume: eom_output.cut_volume,
+                net_volume: eom_output.net_volume,
+                dem_cell_size: eom_output.dem_cell_size,
+                ..Default::default()
+            },
+            software_version: "0.1.0".to_string(),
+        };
         let path = PathBuf::from(&output_path);
-        generate_pdf_report(&path, &core_data)
+        generate_pdf_report(&path, &report)
             .map_err(|e| format!("PDF generation failed: {e}"))
     })
     .await
@@ -351,16 +408,45 @@ pub struct EomOutputAdapter {
     pub audit_hash: String,
     pub points_read: u64,
     pub ground_points: usize,
+    pub non_ground_points: usize,
     pub volumes: metardu_core::mining::VolumeResult,
+    pub fill_volume: f64,
+    pub cut_volume: f64,
+    pub net_volume: f64,
+    pub cell_area: f64,
+    pub fill_cells: usize,
+    pub cut_cells: usize,
+    pub dem_cols: usize,
+    pub dem_rows: usize,
+    pub dem_cell_size: f64,
+    pub source_file: String,
+    pub source_hash: String,
+    pub processing_time_ms: u64,
+    pub warnings: Vec<String>,
 }
 
 impl From<EomOutput> for EomOutputAdapter {
     fn from(o: EomOutput) -> Self {
+        let coc = &o.chain_of_custody;
         Self {
-            audit_hash: o.audit_hash,
+            audit_hash: o.audit_hash.clone(),
             points_read: o.points_read,
             ground_points: o.ground_points,
-            volumes: o.volumes,
+            non_ground_points: o.non_ground_points,
+            fill_volume: o.volumes.fill_volume,
+            cut_volume: o.volumes.cut_volume,
+            net_volume: o.volumes.net_volume,
+            cell_area: o.volumes.cell_area,
+            fill_cells: o.volumes.fill_cells,
+            cut_cells: o.volumes.cut_cells,
+            volumes: o.volumes.clone(),
+            dem_cols: o.dem.ncols,
+            dem_rows: o.dem.nrows,
+            dem_cell_size: o.dem.cell_size,
+            source_file: coc.source_file.clone(),
+            source_hash: coc.source_hash.clone(),
+            processing_time_ms: 0, // TODO: pass from pipeline if available
+            warnings: Vec::new(),
         }
     }
 }

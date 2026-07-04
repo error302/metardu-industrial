@@ -2144,18 +2144,23 @@ export interface LasHeaderRpcEom {
 }
 
 export interface EomOutputRpc {
-  current_header: LasHeaderRpcEom;
-  current_point_count: number;
-  current_ground_count: number;
-  current_dem: DemGridRpc;
-  previous_header: LasHeaderRpcEom | null;
-  previous_point_count: number | null;
-  previous_ground_count: number | null;
-  previous_dem: DemGridRpc | null;
+  audit_hash: string;
+  points_read: number;
+  ground_points: number;
+  non_ground_points: number;
   volumes: VolumeResultRpc;
+  fill_volume: number;
+  cut_volume: number;
+  net_volume: number;
+  cell_area: number;
+  fill_cells: number;
+  cut_cells: number;
+  dem_cols: number;
+  dem_rows: number;
+  dem_cell_size: number;
+  source_file: string;
+  source_hash: string;
   processing_time_ms: number;
-  current_file_hash: string;
-  previous_file_hash: string | null;
   warnings: string[];
 }
 
@@ -2248,9 +2253,18 @@ export async function runEomPipeline(
   return invoke<EomOutputRpc>("run_eom_pipeline_cmd", { input, onProgress: channel });
 }
 
-export async function generateEomReport(report: ReportDataRpc, outputPath: string): Promise<void> {
+export async function generateEomReport(
+  eomOutput: EomOutputRpc,
+  customer: string,
+  site: string,
+  surveyor: string,
+  outputPath: string,
+  signed: boolean,
+): Promise<void> {
   if (!isTauri()) { console.log("[browser-mode] would write PDF report to", outputPath); return; }
-  return invoke<void>("generate_eom_report_cmd", { report, outputPath });
+  return invoke<void>("generate_eom_report_cmd", {
+    eomOutput, customer, site, surveyor, outputPath, signed,
+  });
 }
 
 export async function detectMachineFingerprint(): Promise<MachineFingerprintRpc | null> {

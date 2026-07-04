@@ -44,10 +44,10 @@ import {
   Layers,
   KeyRound,
 } from "lucide-react";
-import { colors, APP_VERSION } from "@/lib/tokens";
 import { useEscapeKey } from "@/lib/use-escape-key";
 import { pickFile, pickSaveFile, pickFolder } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
+import { colors } from "@/lib/tokens";
 import {
   runEomPipeline,
   generateEomReport,
@@ -64,7 +64,6 @@ import {
   type LicenseStatusRpc,
   type EomWatchEventRpc,
   type EomWatchFolderConfigRpc,
-  type ReportDataRpc,
 } from "@/lib/tauri-ipc";
 
 interface Props {
@@ -211,9 +210,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
       `Customer: ${customer || "—"}  ·  Site: ${site || "—"}`,
       `Surveyor: ${surveyor || "—"}`,
       `Current LAS: ${currentLasPath.split(/[\\/]/).pop() ?? currentLasPath}`,
-      previousLasPath
-        ? `Previous LAS: ${previousLasPath.split(/[\\/]/).pop() ?? previousLasPath}`
-        : "Previous LAS: (none — single-survey mode)",
+      previousLasPath ? `Previous LAS: ${previousLasPath.split(/[\\/]/).pop() ?? previousLasPath}` : "",
       `Reference elevation: ${referenceElevation} m`,
       `Cell size: ${cellSize} m  ·  Bench interval: ${benchInterval} m`,
       "",
@@ -221,18 +218,15 @@ export function EomAuditorDialog({ open, onClose }: Props) {
       `Cut  volume: ${result.volumes.cut_volume.toFixed(1)} m³`,
       `Net  volume: ${result.volumes.net_volume.toFixed(1)} m³`,
       "",
-      `Current point count: ${result.current_point_count.toLocaleString()}`,
-      `Ground points: ${result.current_ground_count.toLocaleString()} (${(
-        (result.current_ground_count / Math.max(1, result.current_point_count)) *
+      `Points read: ${result.points_read.toLocaleString()}`,
+      `Ground points: ${result.ground_points.toLocaleString()} (${(
+        (result.ground_points / Math.max(1, result.points_read)) *
         100
       ).toFixed(1)}%)`,
-      `DEM dims: ${result.current_dem.cols} × ${result.current_dem.rows} (NODATA: ${result.current_dem.nodata_count})`,
+      `DEM dims: ${result.dem_cols} × ${result.dem_rows} (cell: ${result.dem_cell_size}m)`,
       `Processing time: ${(result.processing_time_ms / 1000).toFixed(2)} s`,
       "",
-      `SHA-256 (current):  ${result.current_file_hash}`,
-      result.previous_file_hash
-        ? `SHA-256 (previous): ${result.previous_file_hash}`
-        : "",
+      `Audit hash:  ${result.audit_hash}`,
     ];
     await navigator.clipboard.writeText(lines.filter(Boolean).join("\n"));
     setCopied(true);
@@ -244,18 +238,14 @@ export function EomAuditorDialog({ open, onClose }: Props) {
     setGenerating(true);
     setError(null);
     try {
-      const report: ReportDataRpc = {
-        eom_output: result,
-        customer: customer || "(unspecified)",
-        site: site || "(unspecified)",
-        surveyor: surveyor || "(unspecified)",
-        report_date: new Date().toISOString(),
-        software_version: APP_VERSION,
-        signed: false,
-      };
-      await generateEomReport(report, reportPath);
-      // Consume a report credit (Trial/Active tiers decrement; Exhausted
-      // surfaces an error which we display).
+      await generateEomReport(
+        result,
+        customer || "(unspecified)",
+        site || "(unspecified)",
+        surveyor || "(unspecified)",
+        reportPath,
+        true,
+      );
       const next = await consumeReport(null);
       setLicense(next);
       setReportGenerated(true);
@@ -388,7 +378,6 @@ export function EomAuditorDialog({ open, onClose }: Props) {
                 onDropdownChange={setCurrentLasPath}
               />
 
-              {/* Previous LAS/LAZ (optional 4D diff) */}
               <PathField
                 label="Previous Survey (optional — for 4D diff)"
                 value={previousLasPath}
@@ -732,7 +721,7 @@ function ResultPanel({
 }) {
   const v = result.volumes;
   const groundPct =
-    (result.current_ground_count / Math.max(1, result.current_point_count)) * 100;
+    (result.ground_points / Math.max(1, result.points_read)) * 100;
 
   return (
     <div className="space-y-3">
@@ -773,22 +762,22 @@ function ResultPanel({
           <MetaRow
             icon={<Database className="h-3 w-3" />}
             label="Point count"
-            value={result.current_point_count.toLocaleString()}
+            value={result.points_read.toLocaleString()}
           />
           <MetaRow
             icon={<Layers className="h-3 w-3" />}
             label="Ground %"
-            value={`${groundPct.toFixed(1)}% (${result.current_ground_count.toLocaleString()})`}
+            value={`${groundPct.toFixed(1)}% (${result.ground_points.toLocaleString()})`}
           />
           <MetaRow
             icon={<Grid3x3 className="h-3 w-3" />}
             label="DEM dims"
-            value={`${result.current_dem.cols} × ${result.current_dem.rows}`}
+            value={`${result.dem_cols} × ${result.dem_rows}`}
           />
           <MetaRow
             icon={<Grid3x3 className="h-3 w-3" />}
-            label="NODATA count"
-            value={result.current_dem.nodata_count.toLocaleString()}
+            label="Cell size"
+            value={result.dem_cell_size.toFixed(2)}
           />
         </div>
       </div>
@@ -798,10 +787,7 @@ function ResultPanel({
         <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
           <Hash className="h-3 w-3" /> Audit Trail · SHA-256
         </div>
-        <HashRow label="Current LAS" hash={result.current_file_hash} />
-        {result.previous_file_hash && (
-          <HashRow label="Previous LAS" hash={result.previous_file_hash} />
-        )}
+        <HashRow label="Audit Hash" hash={result.audit_hash} />
         <div className="mt-1.5 font-mono text-[10px] text-steel-gray">
           Processing time: {(result.processing_time_ms / 1000).toFixed(2)} s
         </div>
