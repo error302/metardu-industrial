@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * 4D Monitoring Dialog — Phase 3.
  *
@@ -32,6 +33,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
   const [result, setResult] = useState<EpochDiff | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canCompute = prevPath && currPath && prevPath !== currPath;

@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * License Manager Dialog — Sprint 7.
  *
@@ -73,6 +74,7 @@ export function LicenseManagerDialog({ open, onClose }: Props) {
     }
   }, [open]);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleActivate() {

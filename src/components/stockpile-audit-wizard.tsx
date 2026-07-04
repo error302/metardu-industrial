@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Stockpile Inventory Audit Wizard — Sprint 4 Revenue Feature #4.
  *
@@ -64,6 +65,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canNext =

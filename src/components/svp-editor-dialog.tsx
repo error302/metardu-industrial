@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * SVP Editor — Sprint 3 Priority #3.
  *
@@ -56,6 +57,7 @@ export function SvpEditorDialog({ open, onClose }: Props) {
     }).join(" ");
   }, [profile, speedRange, depthRange]);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleLoad() {

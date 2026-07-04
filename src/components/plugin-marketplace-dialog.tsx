@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Plugin Marketplace Dialog — Sprint 8.
  *
@@ -35,6 +36,7 @@ export function PluginMarketplaceDialog({ open, onClose }: Props) {
     }
   }, [open]);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function refreshInstalled() {

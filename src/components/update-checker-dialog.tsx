@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Update Checker Dialog — Sprint 8.
  *
@@ -26,6 +27,7 @@ export function UpdateCheckerDialog({ open, onClose }: Props) {
   const [currentVer, setCurrentVer] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleCheck() {

@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Settings Dialog — workspace defaults, CRS library, accessibility, about.
  *
@@ -72,6 +73,7 @@ export function SettingsDialog({ open, onClose }: Props) {
     );
   }, [crsSearch]);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const dirty =

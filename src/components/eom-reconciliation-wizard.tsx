@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * EoM Reconciliation — single-screen practical tool.
  *
@@ -41,6 +42,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canCompute = prevPath && currPath;

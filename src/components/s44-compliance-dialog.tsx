@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * S-44 Compliance Dialog — Phase 2 Marine MVP.
  *
@@ -45,6 +46,7 @@ export function S44ComplianceDialog({ open, onClose }: Props) {
   const [result, setResult] = useState<S44ComplianceResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleCheck() {

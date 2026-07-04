@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * ODM Pipeline Dialog — Phase 1.
  *
@@ -54,6 +55,7 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
   const addFileFromPath = useSurveyStore((s) => s.addFileFromPath);
 
   // Subscribe to ODM progress events
+  useEscapeKey(onClose, open);
   useEffect(() => {
     if (!open) return;
     const unlisten = listen<OdmRunStatus>("odm://progress", (event) => {

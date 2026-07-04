@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Cross-Section Profiler Wizard — Sprint 5 Revenue Feature #8.
  *
@@ -62,6 +63,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canNext =

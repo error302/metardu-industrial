@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Telemetry Dialog — Sprint 7.
  *
@@ -49,6 +50,7 @@ export function TelemetryDialog({ open, onClose }: Props) {
     }
   }, [open]);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function refresh() {

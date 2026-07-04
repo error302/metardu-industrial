@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * CUBE Hypothesis Disambiguation — Sprint 3 Priority #6.
  *
@@ -23,6 +24,7 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
   const [selectedCell, setSelectedCell] = useState<number | null>(null);
   const [resolvedCells, setResolvedCells] = useState<Set<number>>(new Set());
 
+  useEscapeKey(onClose, open);
   if (!open || !surface) return null;
 
   // Find ambiguous cells (hypothesis_count > 1)

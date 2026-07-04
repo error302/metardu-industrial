@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * ML Classification Dialog — Phase 3.
  *
@@ -25,6 +26,7 @@ type Tab = "habitat" | "fragmentation";
 export function MlClassificationDialog({ open, onClose }: Props) {
   const [tab, setTab] = useState<Tab>("habitat");
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   return (

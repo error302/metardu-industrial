@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * S-44 Compliance Certificate — Sprint 2 Revenue Feature #3.
  *
@@ -55,6 +56,7 @@ export function S44CertificateDialog({ open, onClose }: Props) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleCheck() {

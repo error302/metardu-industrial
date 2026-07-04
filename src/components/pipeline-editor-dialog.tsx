@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Pipeline Editor Dialog — Phase 3 Automation.
  *
@@ -86,6 +87,7 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
   const [newJobInterval, setNewJobInterval] = useState(86400);
 
   // Subscribe to pipeline progress events
+  useEscapeKey(onClose, open);
   useEffect(() => {
     if (!open) return;
     const unlisten = listen<{ step_id: string; action: string; status: string; log_lines?: string[]; error?: string }>(

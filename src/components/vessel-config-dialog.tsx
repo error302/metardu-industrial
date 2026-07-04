@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Vessel Lever-Arm Configuration — Sprint 3 Priority #5.
  *
@@ -58,6 +59,7 @@ export function VesselConfigDialog({ open, onClose }: Props) {
   const [config, setConfig] = useState<VesselConfig>(DEFAULT_CONFIG);
   const [saved, setSaved] = useState(false);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   function update(field: keyof VesselConfig, value: string | number) {

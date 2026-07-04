@@ -520,3 +520,30 @@ body.has-open-dialog {
     display: none !important;
   }
 }
+
+/* ── Density: compact mode ── */
+:root[data-density="compact"] {
+  font-size: 12px;
+}
+:root[data-density="compact"] .sidebar-item {
+  font-size: 11px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+:root[data-density="compact"] .title-bar {
+  height: 36px;
+}
+:root[data-density="compact"] .new-survey-btn {
+  font-size: 11px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* ── Reduced motion ── */
+:root[data-reduced-motion="true"] *,
+:root[data-reduced-motion="true"] *::before,
+:root[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

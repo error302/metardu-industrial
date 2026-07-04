@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * CUBE Surface Dialog — Phase 2 Marine MVP.
  *
@@ -64,6 +65,7 @@ export function CubeSurfaceDialog({ open, onClose, onSurfaceGenerated }: Props) 
   const [result, setResult] = useState<CubeSurfaceRpc | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleGenerate() {

@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * CSF Classification Dialog — Phase 1.
  *
@@ -47,6 +48,7 @@ export function CsfClassificationDialog({ open, onClose, onClassified }: Props) 
   const [result, setResult] = useState<CsfResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canRun = lasPath !== "" && !loading;

@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * S-57 Export Dialog — Phase 2 Marine MVP.
  *
@@ -58,6 +59,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   function addFeature() {

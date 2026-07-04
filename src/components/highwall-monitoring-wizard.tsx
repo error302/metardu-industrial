@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Highwall Monitoring Wizard — Sprint 5 Revenue Feature #6.
  *
@@ -92,6 +93,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(1);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const validEpochs = epochs.filter((e) => e.path && e.date);

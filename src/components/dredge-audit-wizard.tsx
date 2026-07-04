@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Dredge Audit Wizard — Sprint 4 Revenue Feature #2.
  *
@@ -87,6 +88,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canNext =

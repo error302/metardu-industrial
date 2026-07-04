@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Volume Calculator — Production version.
  *
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
-  computeVolumes, generateReport,
+  computeVolumes, generateReport, importDxfSurface,
   type VolumeResultRpc, type ReportSpec, type ReportTable, type ReportStat,
 } from "@/lib/tauri-ipc";
 import { pickFile } from "@/lib/file-picker";
@@ -45,10 +46,13 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
 
   const [currentPath, setCurrentPath] = useState("");
   const [currentName, setCurrentName] = useState("");
-  const [referenceMode, setReferenceMode] = useState<"file" | "flat">("flat");
+  const [referenceMode, setReferenceMode] = useState<"file" | "flat" | "dxf">("flat");
   const [referencePath, setReferencePath] = useState("");
   const [referenceName, setReferenceName] = useState("");
   const [flatElevation, setFlatElevation] = useState(0);
+  const [dxfPath, setDxfPath] = useState("");
+  const [dxfName, setDxfName] = useState("");
+  const [dxfLoading, setDxfLoading] = useState(false);
   const [benchInterval, setBenchInterval] = useState(5);
   const [density, setDensity] = useState(2.7);
   const [densityPreset, setDensityPreset] = useState("Iron Ore");
@@ -84,16 +88,50 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
     }
   }, []);
 
+  const handleBrowseDxf = useCallback(async () => {
+    const path = await pickFile({
+      extensions: ["dxf"],
+      filterName: "DXF Design Surface",
+      title: "Select DXF design surface (TIN from Surpac/Datamine)",
+    });
+    if (!path) return;
+    setDxfPath(path);
+    setDxfName(path.split(/[\\/]/).pop() ?? path);
+    setDxfLoading(true);
+    setError(null);
+    try {
+      const _dem = await importDxfSurface(path, 0.5);
+      if (_dem) {
+        setReferenceName(path.split(/[\\/]/).pop() ?? path);
+      } else {
+        setError("Browser mode — DXF import requires the native Tauri shell");
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDxfLoading(false);
+    }
+  }, []);
+
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
-  const canCompute = currentPath !== "" && (referenceMode === "flat" || referencePath !== "");
+  const canCompute = currentPath !== "" && (
+    referenceMode === "flat" ||
+    (referenceMode === "file" && referencePath !== "") ||
+    (referenceMode === "dxf" && dxfPath !== "" && !dxfLoading)
+  );
 
   const handleCompute = async () => {
     setLoading(true);
     setError(null);
     setResult(null);
     setReportGenerated(false);
-    const refPath = referenceMode === "flat" ? `flat:${flatElevation}` : referencePath;
+    const refPath = referenceMode === "flat"
+      ? `flat:${flatElevation}`
+      : referenceMode === "dxf"
+        ? `dxf:${dxfPath}`
+        : referencePath;
     try {
       const r = await computeVolumes(currentPath, refPath, benchInterval);
       if (r) {
@@ -113,7 +151,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
     const lines = [
       "MetaRDU Industrial — Volume Calculation Results",
       `Current: ${currentName}`,
-      `Reference: ${referenceMode === "flat" ? `Flat ${flatElevation}m` : referenceName}`,
+      `Reference: ${referenceMode === "flat" ? `Flat ${flatElevation}m` : referenceMode === "dxf" ? `Design: ${dxfName}` : referenceName}`,
       `Density: ${density} t/m³`,
       `Bench interval: ${benchInterval}m`,
       "",
@@ -165,7 +203,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
         subtitle: new Date().toLocaleDateString(),
         metadata: {
           "Current Survey": currentName,
-          "Reference": referenceMode === "flat" ? `Flat ${flatElevation}m` : referenceName,
+          "Reference": referenceMode === "flat" ? `Flat ${flatElevation}m` : referenceMode === "dxf" ? `Design: ${dxfName}` : referenceName,
           "Density": `${density} t/m³`,
           "Bench Interval": `${benchInterval} m`,
         },
@@ -255,7 +293,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                 <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                   Reference Surface
                 </label>
-                <div className="mb-2 grid grid-cols-2 gap-1">
+                <div className="mb-2 grid grid-cols-3 gap-1">
                   <button
                     onClick={() => setReferenceMode("flat")}
                     className="rounded-md border px-2 py-1 text-xs font-medium transition-colors"
@@ -278,6 +316,17 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                   >
                     Previous survey
                   </button>
+                  <button
+                    onClick={() => setReferenceMode("dxf")}
+                    className="rounded-md border px-2 py-1 text-xs font-medium transition-colors"
+                    style={{
+                      borderColor: referenceMode === "dxf" ? colors.industrialOrange : colors.navyBorder,
+                      background: referenceMode === "dxf" ? `${colors.industrialOrange}15` : colors.navyBase,
+                      color: referenceMode === "dxf" ? colors.white : colors.steelLight,
+                    }}
+                  >
+                    Design (DXF)
+                  </button>
                 </div>
                 {referenceMode === "flat" ? (
                   <div className="flex items-center gap-2">
@@ -288,6 +337,40 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                     />
                     <span className="text-xs text-steel-gray">m elevation</span>
                   </div>
+                ) : referenceMode === "dxf" ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleBrowseDxf}
+                        disabled={dxfLoading}
+                        className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-1.5 text-xs text-white hover:bg-navy-elevated disabled:opacity-50"
+                      >
+                        {dxfLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Layers className="h-3.5 w-3.5" />
+                        )}
+                        Browse DXF
+                      </button>
+                      <input
+                        type="text"
+                        value={dxfPath}
+                        onChange={(e) => setDxfPath(e.target.value)}
+                        placeholder="/path/to/design_surface.dxf"
+                        className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:outline-none"
+                      />
+                    </div>
+                    {dxfName && !dxfLoading && (
+                      <div className="mt-1 truncate font-mono text-[10px] text-steel-light">
+                        ✓ {dxfName} — design surface loaded
+                      </div>
+                    )}
+                    {dxfLoading && (
+                      <div className="mt-1 text-[10px] text-steel-gray">
+                        Importing DXF TIN and rasterizing to DEM…
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <>
                     <div className="flex items-center gap-2">

@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Survey Deliverable Package Wizard — Sprint 5 Revenue Feature #7.
  *
@@ -74,6 +75,7 @@ export function DeliverablePackageWizard({ open, onClose }: Props) {
   const [result, setResult] = useState<DeliverablePackageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const metadataValid = vessel && sonar && surveyArea && surveyDate && epsg && clientName && surveyorName;

@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Project Manager Dialog — Sprint 8.
  *
@@ -34,6 +35,7 @@ export function ProjectManagerDialog({ open, onClose, currentProject, onProjectL
   const [newEpsg, setNewEpsg] = useState("EPSG:4326");
   const [newDomain, setNewDomain] = useState("both");
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleSave() {

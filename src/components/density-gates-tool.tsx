@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Density Gates Tool — drag a folder → instant coverage heatmap.
  *
@@ -69,6 +70,7 @@ export function DensityGatesTool({ open, onClose }: Props) {
     }
   }, [folderPath, targetOrder]);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   return (

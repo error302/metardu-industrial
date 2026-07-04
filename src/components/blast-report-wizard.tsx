@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Blast Fragmentation Report Wizard — Sprint 4 Revenue Feature #5.
  *
@@ -92,6 +93,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const canNext =

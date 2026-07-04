@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Tidal Spline Interpolator — drop sonar + tide CSV → corrected depths.
  *
@@ -28,6 +29,7 @@ export function TidalSplineTool({ open, onClose }: Props) {
   const [result, setResult] = useState<TidalCorrectionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleRun() {

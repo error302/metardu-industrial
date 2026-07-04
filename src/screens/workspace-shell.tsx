@@ -742,6 +742,7 @@ function LeftSidebar({
           <button
             title="New Survey"
             aria-label="New Survey"
+            onClick={onOpenProject}
             className="flex h-8 w-8 items-center justify-center rounded-md transition-colors flex-shrink-0"
             style={{ background: accent, color: colors.navyBase }}
           >
@@ -749,6 +750,7 @@ function LeftSidebar({
           </button>
         ) : (
           <button
+            onClick={onOpenProject}
             className="new-survey-btn flex flex-1 items-center justify-center gap-2 rounded-md py-2.5 transition-colors"
             style={{ background: accent, color: colors.navyBase }}
           >
@@ -775,17 +777,17 @@ function LeftSidebar({
             label="Project Manager"
             onClick={onOpenProject}
           />
-          <SidebarItem icon={<Layers className="h-3 w-3" />} label="Layers" indent />
-          <SidebarItem icon={<Database className="h-3 w-3" />} label="Data sources" indent />
+          <SidebarItem icon={<Layers className="h-3 w-3" />} label="Layers" indent onClick={onOpenProject} />
+          <SidebarItem icon={<Database className="h-3 w-3" />} label="Data sources" indent onClick={onOpenProject} />
         </SidebarSection>
 
         {domain !== "marine" && (
           <SidebarSection title="Mining" icon={<Activity className="h-3 w-3" />}>
-            <SidebarItem label="UAV Surveys" indent />
-            <SidebarItem label="TLS Stations" indent />
-            <SidebarItem label="Stockpiles" indent />
-            <SidebarItem label="Blast Designs" indent />
-            <SidebarItem label="4D Monitoring" indent />
+            <SidebarItem label="UAV Surveys" indent onClick={onOpenOdm} />
+            <SidebarItem label="TLS Stations" indent onClick={onOpenCsf} />
+            <SidebarItem label="Stockpiles" indent onClick={onOpenStockpileAudit} />
+            <SidebarItem label="Blast Designs" indent onClick={onOpenBlastReport} />
+            <SidebarItem label="4D Monitoring" indent onClick={onOpenMonitoring} />
             <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
               icon={<Terminal className="h-3 w-3" />}
@@ -844,9 +846,9 @@ function LeftSidebar({
 
         {domain !== "mining" && (
           <SidebarSection title="Marine" icon={<Activity className="h-3 w-3" />}>
-            <SidebarItem label="Survey Lines" indent />
-            <SidebarItem label="SVP Casts" indent />
-            <SidebarItem label="Tide Gauges" indent />
+            <SidebarItem label="Survey Lines" indent onClick={onOpenCube} />
+            <SidebarItem label="SVP Casts" indent onClick={onOpenSvp} />
+            <SidebarItem label="Tide Gauges" indent onClick={onOpenTidalSpline} />
             <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
               icon={<Waves className="h-3 w-3" />}
@@ -982,7 +984,7 @@ function LeftSidebar({
           label="Settings"
           onClick={onOpenSettings}
         />
-        <SidebarItem icon={<HelpCircle className="h-3 w-3" />} label="Help & Docs" />
+        <SidebarItem icon={<HelpCircle className="h-3 w-3" />} label="Help & Docs" onClick={onOpenSettings} />
       </div>
     </aside>
   );

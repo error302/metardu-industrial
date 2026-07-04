@@ -1,3 +1,4 @@
+import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Performance Benchmark Dialog — Sprint 7.
  *
@@ -28,6 +29,7 @@ export function BenchmarkDialog({ open, onClose }: Props) {
   const [result, setResult] = useState<BenchmarkSuiteResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(onClose, open);
   if (!open) return null;
 
   async function handleRun() {

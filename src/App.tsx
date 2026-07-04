@@ -19,11 +19,20 @@ import { ErrorBoundary } from "@/components/error-boundary";
 function App() {
   const phase = useAppStore((s) => s.phase);
   const theme = useAppStore((s) => s.settings.theme);
+  const density = useAppStore((s) => s.settings.density);
+  const reducedMotion = useAppStore((s) => s.settings.reducedMotion);
 
-  // Apply theme to document root — CSS variables swap via [data-theme]
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-density", density);
+  }, [density]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-reduced-motion", reducedMotion ? "true" : "false");
+  }, [reducedMotion]);
 
   return (
     <ErrorBoundary>
