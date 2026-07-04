@@ -133,6 +133,7 @@ export function DensityGatesTool({ open, onClose }: Props) {
                 onChange={(e) => setTargetOrder(e.target.value)}
                 className="rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none"
               >
+                <option value="exclusive">Exclusive (critical under-keel)</option>
                 <option value="special">Special (harbors)</option>
                 <option value="order_1a">Order 1a (approaches)</option>
                 <option value="order_1b">Order 1b (coastal)</option>

@@ -24,6 +24,7 @@ interface Props {
 }
 
 const ORDER_LABELS: Record<S44Order, string> = {
+  exclusive: "Exclusive Order (critical under-keel clearance, ≥6.1.0)",
   special: "Special Order (harbors, berthing)",
   order_1a: "Order 1a (harbor approaches)",
   order_1b: "Order 1b (coastal routes)",

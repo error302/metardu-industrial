@@ -529,7 +529,7 @@ export interface TpuResult {
   horizontal_contributions: TpuContributions;
 }
 
-export type S44Order = "special" | "order_1a" | "order_1b" | "order_2";
+export type S44Order = "exclusive" | "special" | "order_1a" | "order_1b" | "order_2";
 
 export interface S44CheckInput {
   depth: number;
@@ -2391,6 +2391,13 @@ export interface NtripStatusRpc {
   last_message_type: number | null;
   last_error: string | null;
   uptime_secs: number;
+  /** Epoch ms (Unix) of the last successfully parsed RTCM frame.
+   *  Used to compute "correction age" — the #1 field-crew metric. */
+  last_message_epoch_ms: number | null;
+  /** Number of reconnect attempts since the last successful RTCM frame. */
+  reconnect_attempts: number;
+  /** True while the background thread is sleeping in backoff before retrying. */
+  reconnecting: boolean;
 }
 
 /** Start NTRIP client — connects to caster and begins streaming RTCM corrections. */
@@ -2416,6 +2423,9 @@ export async function getNtripStatus(): Promise<NtripStatusRpc | null> {
       last_message_type: null,
       last_error: null,
       uptime_secs: 0,
+      last_message_epoch_ms: null,
+      reconnect_attempts: 0,
+      reconnecting: false,
     };
   }
   return invoke<NtripStatusRpc>("get_ntrip_status_cmd");

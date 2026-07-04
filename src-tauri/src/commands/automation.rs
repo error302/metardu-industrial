@@ -469,6 +469,7 @@ async fn execute_step(
             };
             let order_str = param_str(params, "order").unwrap_or_else(|_| "order_1a".into());
             let order = match order_str.as_str() {
+                "exclusive" => S44Order::Exclusive,
                 "special" => S44Order::Special,
                 "order_1a" => S44Order::Order1a,
                 "order_1b" => S44Order::Order1b,

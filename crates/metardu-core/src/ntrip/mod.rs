@@ -59,6 +59,20 @@ pub struct NtripStatus {
     pub last_message_type: Option<u16>,
     pub last_error: Option<String>,
     pub uptime_secs: u64,
+    /// Epoch milliseconds (Unix) of the last successfully parsed RTCM
+    /// message. The UI uses this to compute "correction age" — the
+    /// single most-watched number for field crews, since anything
+    /// older than ~10s means RTK fix is degraded or lost.
+    pub last_message_epoch_ms: Option<u64>,
+    /// Number of reconnect attempts since the last successful message.
+    /// Resets to 0 on any successful RTCM frame. Lets the UI show
+    /// "reconnecting… (attempt N)" so the surveyor knows the client
+    /// is recovering rather than dead.
+    pub reconnect_attempts: u32,
+    /// True while the client is in a backoff sleep between reconnect
+    /// attempts. Distinct from `connected` so the UI can show
+    /// "Reconnecting in 4s…" instead of just "Disconnected".
+    pub reconnecting: bool,
 }
 
 /// RTCM v3 message types we care about (subset).
@@ -108,6 +122,13 @@ pub struct NtripClient {
 impl NtripClient {
     /// Start the NTRIP client — connects to the caster, requests the mountpoint,
     /// and begins streaming RTCM messages in a background thread.
+    ///
+    /// If the initial connection succeeds, the client is "live". If the
+    /// connection drops later, the background thread will automatically
+    /// retry with exponential backoff (1s → 2s → 4s → … → 30s cap) until
+    /// `stop()` is called. This is critical for field reliability — a
+    /// 5-second cell dropout should NOT require the surveyor to manually
+    /// reconnect.
     pub fn start(config: NtripConfig) -> Result<Self, NtripError> {
         let running = Arc::new(AtomicBool::new(true));
         let status = Arc::new(std::sync::Mutex::new(NtripStatus {
@@ -118,6 +139,9 @@ impl NtripClient {
             last_message_type: None,
             last_error: None,
             uptime_secs: 0,
+            last_message_epoch_ms: None,
+            reconnect_attempts: 0,
+            reconnecting: false,
         }));
 
         let client = Self {
@@ -147,6 +171,7 @@ impl NtripClient {
     }
 
     /// Connect to the NTRIP caster and request the mountpoint.
+    /// Public so the reconnect loop in `start_streaming` can call it.
     fn connect(&self) -> Result<TcpStream, NtripError> {
         let addr = format!("{}:{}", self.config.host, self.config.port);
         let stream = TcpStream::connect_timeout(
@@ -216,79 +241,186 @@ impl NtripClient {
             let mut s = self.status.lock().unwrap();
             s.connected = true;
             s.last_error = None;
+            s.reconnecting = false;
         }
 
         Ok(stream)
     }
 
-    /// Start the background RTCM streaming thread.
+    /// Start the background RTCM streaming thread with auto-reconnect.
+    ///
+    /// The thread runs an outer loop that:
+    ///   1. Reads from the current TCP stream until it drops.
+    ///   2. Marks the connection as down.
+    ///   3. Sleeps for an exponentially-growing backoff (1s → 30s cap).
+    ///   4. Reconnects. On success, resets the backoff and continues.
+    ///   5. Repeats until `running` is false.
+    ///
+    /// This is the difference between "demo" and "field tool" — a 5s
+    /// cell dropout on a mine site must NOT force the surveyor to
+    /// manually click Reconnect.
     fn start_streaming(
         &self,
         mut stream: TcpStream,
         running: Arc<AtomicBool>,
         status: Arc<std::sync::Mutex<NtripStatus>>,
     ) {
-        let mountpoint = self.config.mountpoint.clone();
+        let config = self.config.clone();
         std::thread::spawn(move || {
             let mut buf = [0u8; 4096];
             let mut rtcm_buffer: Vec<u8> = Vec::with_capacity(1024);
 
-            while running.load(Ordering::SeqCst) {
-                match stream.read(&mut buf) {
-                    Ok(0) => {
-                        // Connection closed by caster
-                        let mut s = status.lock().unwrap();
-                        s.connected = false;
-                        s.last_error = Some("connection closed by caster".to_string());
-                        break;
-                    }
-                    Ok(n) => {
-                        rtcm_buffer.extend_from_slice(&buf[..n]);
+            // Backoff schedule: 1, 2, 4, 8, 16, 30, 30, 30, …
+            // Capped at 30s so a long outage doesn't make the surveyor
+            // wait minutes between attempts. Reset to 1s on any
+            // successful RTCM frame.
+            let backoff_steps: &[u64] = &[1, 2, 4, 8, 16, 30];
+            let mut backoff_idx: usize = 0;
 
-                        // Parse RTCM v3 messages from the buffer
-                        loop {
-                            match parse_rtcm_message(&rtcm_buffer) {
-                                Ok(Some((msg_type, consumed))) => {
-                                    rtcm_buffer.drain(..consumed);
-                                    let mut s = status.lock().unwrap();
-                                    s.messages_received += 1;
-                                    s.bytes_received += consumed as u64;
-                                    s.last_message_type = Some(msg_type);
-                                }
-                                Ok(None) => break, // Need more data
-                                Err(_) => {
-                                    // Corrupt data — drain one byte and resync
-                                    rtcm_buffer.remove(0);
+            // Outer reconnect loop
+            'reconnect: while running.load(Ordering::SeqCst) {
+                // Inner read loop — drains the current connection until it drops.
+                loop {
+                    if !running.load(Ordering::SeqCst) {
+                        break 'reconnect;
+                    }
+                    match stream.read(&mut buf) {
+                        Ok(0) => {
+                            // Connection closed by caster — fall through to reconnect.
+                            {
+                                let mut s = status.lock().unwrap();
+                                s.connected = false;
+                                s.last_error = Some("connection closed by caster".to_string());
+                            }
+                            break;
+                        }
+                        Ok(n) => {
+                            rtcm_buffer.extend_from_slice(&buf[..n]);
+
+                            // Parse RTCM v3 messages from the buffer
+                            let mut parsed_any = false;
+                            loop {
+                                match parse_rtcm_message(&rtcm_buffer) {
+                                    Ok(Some((msg_type, consumed))) => {
+                                        rtcm_buffer.drain(..consumed);
+                                        let mut s = status.lock().unwrap();
+                                        s.messages_received += 1;
+                                        s.bytes_received += consumed as u64;
+                                        s.last_message_type = Some(msg_type);
+                                        s.last_message_epoch_ms = Some(now_epoch_ms());
+                                        // Successful frame — reset backoff so the
+                                        // next outage starts at 1s again.
+                                        backoff_idx = 0;
+                                        s.reconnect_attempts = 0;
+                                        s.reconnecting = false;
+                                        parsed_any = true;
+                                    }
+                                    Ok(None) => break, // Need more data
+                                    Err(_) => {
+                                        // Corrupt data — drain one byte and resync
+                                        if !rtcm_buffer.is_empty() {
+                                            rtcm_buffer.remove(0);
+                                        }
+                                    }
                                 }
                             }
-                        }
 
-                        // Update bytes received even for incomplete messages
-                        let mut s = status.lock().unwrap();
-                        s.bytes_received += n as u64;
+                            // Update bytes received even for incomplete messages
+                            {
+                                let mut s = status.lock().unwrap();
+                                s.bytes_received += n as u64;
+                                let _ = parsed_any; // already handled above
+                            }
+                        }
+                        Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                            // Timeout — just continue polling
+                            continue;
+                        }
+                        Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                            continue;
+                        }
+                        Err(e) => {
+                            let mut s = status.lock().unwrap();
+                            s.connected = false;
+                            s.last_error = Some(format!("read error: {}", e));
+                            break;
+                        }
                     }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        // Timeout — just continue polling
-                        continue;
+                }
+
+                // ─── Reconnect phase ────────────────────────────────────
+                if !running.load(Ordering::SeqCst) {
+                    break 'reconnect;
+                }
+
+                let attempt_num = {
+                    let mut s = status.lock().unwrap();
+                    s.reconnect_attempts = s.reconnect_attempts.saturating_add(1);
+                    s.reconnecting = true;
+                    s.reconnect_attempts
+                };
+
+                let wait_secs = backoff_steps
+                    .get(backoff_idx)
+                    .copied()
+                    .unwrap_or(30);
+                backoff_idx = (backoff_idx + 1).min(backoff_steps.len().saturating_sub(1));
+
+                // Sleep in 100ms chunks so we can exit promptly when stop() is called.
+                let total_ms = wait_secs * 1000;
+                let mut slept_ms: u64 = 0;
+                while slept_ms < total_ms {
+                    if !running.load(Ordering::SeqCst) {
+                        break 'reconnect;
                     }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                        continue;
+                    std::thread::sleep(Duration::from_millis(100));
+                    slept_ms += 100;
+                }
+
+                // Attempt reconnect
+                let reconnect_client = NtripClient {
+                    config: config.clone(),
+                    running: running.clone(),
+                    status: status.clone(),
+                    start_time: std::time::Instant::now(),
+                };
+                match reconnect_client.connect() {
+                    Ok(new_stream) => {
+                        // Success — back to the read loop with a fresh stream.
+                        stream = new_stream;
+                        rtcm_buffer.clear();
+                        // (reconnect_attempts is reset on the next successful
+                        // RTCM frame inside the read loop.)
                     }
                     Err(e) => {
+                        // Reconnect failed — record the error and try again
+                        // after another backoff.
                         let mut s = status.lock().unwrap();
-                        s.connected = false;
-                        s.last_error = Some(format!("read error: {}", e));
-                        break;
+                        s.last_error = Some(format!(
+                            "reconnect attempt #{} failed: {}",
+                            attempt_num, e
+                        ));
+                        // Loop continues → next backoff + retry.
                     }
                 }
             }
 
-            // Clean up
-            let mut s = status.lock().unwrap();
-            s.connected = false;
-            let _ = mountpoint;
+            // Clean up on exit
+            {
+                let mut s = status.lock().unwrap();
+                s.connected = false;
+                s.reconnecting = false;
+            }
         });
     }
+}
+
+/// Current Unix epoch time in milliseconds.
+fn now_epoch_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 /// Parse a single RTCM v3 message from the buffer.
@@ -450,5 +582,60 @@ mod tests {
         assert_eq!(parsed.host, "ntrip.example.com");
         assert_eq!(parsed.port, 2101);
         assert_eq!(parsed.mountpoint, "RTCM3GG");
+    }
+
+    #[test]
+    fn test_ntrip_status_has_correction_age_fields() {
+        // Regression guard: the surveyor-facing UI depends on these
+        // three new fields existing on NtripStatus. If someone removes
+        // them in a refactor, this test will fail and force the change
+        // to be deliberate.
+        let status = NtripStatus {
+            connected: false,
+            mountpoint: "RTCM3GG".to_string(),
+            messages_received: 0,
+            bytes_received: 0,
+            last_message_type: None,
+            last_error: None,
+            uptime_secs: 0,
+            last_message_epoch_ms: None,
+            reconnect_attempts: 0,
+            reconnecting: false,
+        };
+        // Round-trip through JSON to make sure the new fields serialize
+        // correctly (the IPC bridge depends on this).
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(json.contains("last_message_epoch_ms"), "missing last_message_epoch_ms in {json}");
+        assert!(json.contains("reconnect_attempts"), "missing reconnect_attempts in {json}");
+        assert!(json.contains("reconnecting"), "missing reconnecting in {json}");
+    }
+
+    #[test]
+    fn test_ntrip_status_with_active_reconnect() {
+        // Simulate the state when the connection has dropped and the
+        // background thread is mid-backoff. The UI should be able to
+        // render "Reconnecting… (attempt 3)" from this.
+        let status = NtripStatus {
+            connected: false,
+            mountpoint: "RTCM3GG".to_string(),
+            messages_received: 1284,
+            bytes_received: 51200,
+            last_message_type: Some(1075),
+            last_error: Some("connection closed by caster".to_string()),
+            uptime_secs: 95,
+            last_message_epoch_ms: Some(now_epoch_ms().saturating_sub(15_000)), // 15s ago
+            reconnect_attempts: 3,
+            reconnecting: true,
+        };
+        // NtripStatus is Serialize-only (it's an output type, not an input),
+        // so we verify by inspecting the JSON it produces — which is exactly
+        // what the Tauri IPC bridge will hand to the TypeScript side.
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(json.contains("\"reconnect_attempts\":3"), "json: {json}");
+        assert!(json.contains("\"reconnecting\":true"), "json: {json}");
+        assert!(json.contains("\"last_message_epoch_ms\":"), "json: {json}");
+        // Correction age should be ~15s old → UI will flag it as stale.
+        let age_ms = now_epoch_ms().saturating_sub(status.last_message_epoch_ms.unwrap());
+        assert!(age_ms >= 14_000 && age_ms <= 20_000, "correction age {age_ms}ms");
     }
 }
