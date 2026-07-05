@@ -32,6 +32,7 @@ metardu-core = { path = "../crates/metardu-core" }
 sha2 = "0.10"
 base64 = "0.22"
 rayon = "1"
+rsa = "0.9"
 
 # Geospatial core — opt-in via the 'geo' feature flag.
 # These crates require system libs (libproj-dev, libgdal-dev) that aren't

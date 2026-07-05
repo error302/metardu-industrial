@@ -8,11 +8,11 @@ use metardu_core::mining::csf::CsfParams;
 use metardu_core::mining::dem::DemParams;
 use metardu_core::mining::dxf_import::{import_dxf_surface, rasterize_dxf_to_dem, DesignDem};
 use metardu_core::mining::eom::{
-    run_eom_pipeline, EomInput, EomOutput, EomPipelineError, EomProgress,
+    run_eom_pipeline, EomInput, EomOutput, EomProgress,
 };
 use metardu_core::mining::license::{
     check_status, compute_machine_fingerprint, generate_license_keypair, import_public_key_pem,
-    sign_license, verify_license, LicenseClaims, LicenseFile, LicenseStatus, RsaPubKey,
+    sign_license, verify_license, LicenseClaims, LicenseFile, RsaPubKey,
 };
 use metardu_core::mining::report::{generate_pdf_report, ReportData};
 use std::path::PathBuf;

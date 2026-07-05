@@ -147,7 +147,10 @@ pub async fn check_for_updates(app: &AppHandle) -> Result<UpdateInfo, UpdateErro
         Some(update) => {
             // An update is available
             let latest_version = update.version.clone();
-            let release_date = update.date.clone().unwrap_or_default();
+            let release_date = update
+                .date
+                .map(|d| d.to_string())
+                .unwrap_or_default();
             let release_notes = update.body.clone().unwrap_or_default();
 
             // The download URL and signature are internal to the plugin;
@@ -197,21 +200,15 @@ pub async fn download_and_install_update(app: &AppHandle) -> Result<(), UpdateEr
         .map_err(|e| UpdateError::Network(e.to_string()))?
         .ok_or(UpdateError::NoUpdate)?;
 
-    // Download and install. The closure receives download progress
-    // events; we could emit Tauri events for the frontend to show
-    // a progress bar, but for now we just let it run to completion.
+    // Download and install. The closure receives a DownloadEvent
+    // (Started, Fetch, Progress, Downloaded, Installed).
     // The plugin verifies the Ed25519 signature before installing.
     update
-        .download_and_install(
-            |_event| {
-                // UpdateEvent::Started | Fetch(content_length) | Downloaded | Installed
-                // We could emit Tauri events here for a progress bar.
-            },
-            || {
-                // Download progress callback (0-100)
-                // We could emit a Tauri event here too.
-            },
-        )
+        .download_and_install(|_event, _progress| {
+            // DownloadEvent::Started | Fetch(content_length) |
+            // Progress(progress) | Downloaded | Installed
+            // We could emit Tauri events here for a progress bar.
+        }, true)
         .await
         .map_err(|e| {
             let msg = e.to_string();

@@ -259,7 +259,7 @@ pub async fn read_las_points_streaming_cmd(
         .map_err(|e| ctx!("validating path for read_las_points_streaming", path, e))?;
 
     let label = path.clone();
-    tokio::task::spawn_blocking(move || {
+    let result: Result<u64, String> = tokio::task::spawn_blocking(move || {
         use metardu_core::mining::las;
 
         // Read the header first to get the total point count
@@ -283,7 +283,9 @@ pub async fn read_las_points_streaming_cmd(
         Ok(total_read)
     })
     .await
-    .map_err(|e| format!("task join error: {e}"))?
+    .map_err(|e| format!("task join error: {e}"))?;
+
+    result
 }
 
 // ──────────────────────────────────────────────────────────────────
