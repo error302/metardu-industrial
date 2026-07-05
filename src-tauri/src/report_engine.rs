@@ -25,6 +25,26 @@ pub struct ReportSpec {
     #[serde(default)]
     pub provenance_hash: Option<String>,
     pub output_path: String,
+    /// Datum + epoch note shown in the report footer, e.g.
+    /// "Datum: GDA2020 / Epoch 2020.0" or "Datum: WGS 84".
+    /// For survey plans this is a legal compliance field — many
+    /// jurisdictions (AU, US, EU) require the datum to be stated
+    /// explicitly on every plan. Frontend is responsible for
+    /// formatting via `formatDatumNote()` in src/lib/crs-quickpicks.ts.
+    #[serde(default)]
+    pub datum_note: Option<String>,
+    /// CRIRSCO-aligned reporting code the plan references, if any.
+    /// One of: JORC (Australia), SAMREC (South Africa), CIM (Canada),
+    /// SME (US), PERC (Europe), or None. Stored as a free string so
+    /// future codes don't require a Rust change. The frontend should
+    /// constrain to the known set via a dropdown.
+    #[serde(default)]
+    pub reporting_code: Option<String>,
+    /// Jurisdiction tag for the report footer, e.g. "Australia — NSW"
+    /// or "South Africa — offshore". Used by compliance reviewers to
+    /// route the plan to the right regulator checklist.
+    #[serde(default)]
+    pub jurisdiction: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -129,6 +149,11 @@ fn render_html(spec: &ReportSpec) -> String {
         .mi{{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:4px;padding:8px 12px}}\
         .ml{{font-size:8pt;color:#64748B;text-transform:uppercase;letter-spacing:0.5px}}\
         .mv{{font-size:11pt;font-weight:600}}\
+        .comp{{display:flex;flex-wrap:wrap;gap:0;margin-bottom:20px;border:1px solid {a};border-radius:4px;overflow:hidden;background:{a}08}}\
+        .cmp-i{{flex:1 1 33%;padding:8px 12px;border-right:1px solid {a}40;min-width:140px}}\
+        .cmp-i:last-child{{border-right:0}}\
+        .cmp-l{{display:block;font-size:7pt;color:{a};font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px}}\
+        .cmp-v{{display:block;font-size:11pt;font-weight:600;color:#0A192F}}\
         .stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}}\
         .sc{{border-radius:6px;padding:12px;text-align:center}}\
         .sl{{font-size:8pt;text-transform:uppercase;letter-spacing:0.5px}}\
@@ -162,6 +187,37 @@ fn render_html(spec: &ReportSpec) -> String {
                 "<div class='mi'><div class='ml'>{}</div><div class='mv'>{}</div></div>",
                 esc(k),
                 esc(v)
+            ));
+        }
+        h.push_str("</div>");
+    }
+
+    // ── Compliance strip ─────────────────────────────────────────────
+    // A single colored bar showing datum + reporting code + jurisdiction.
+    // This is the field a compliance reviewer scans first when validating
+    // a plan — burying it in metadata would be a real audit friction point.
+    // Only render if at least one of the three fields is set.
+    let has_compliance = spec.datum_note.is_some()
+        || spec.reporting_code.is_some()
+        || spec.jurisdiction.is_some();
+    if has_compliance {
+        h.push_str("<div class='comp'>");
+        if let Some(d) = &spec.datum_note {
+            h.push_str(&format!(
+                "<div class='cmp-i'><span class='cmp-l'>DATUM</span><span class='cmp-v'>{}</span></div>",
+                esc(d)
+            ));
+        }
+        if let Some(rc) = &spec.reporting_code {
+            h.push_str(&format!(
+                "<div class='cmp-i'><span class='cmp-l'>REPORTING CODE</span><span class='cmp-v'>{}</span></div>",
+                esc(rc)
+            ));
+        }
+        if let Some(j) = &spec.jurisdiction {
+            h.push_str(&format!(
+                "<div class='cmp-i'><span class='cmp-l'>JURISDICTION</span><span class='cmp-v'>{}</span></div>",
+                esc(j)
             ));
         }
         h.push_str("</div>");
@@ -254,10 +310,99 @@ mod tests {
             map_screenshot: None,
             provenance_hash: Some("abc123".into()),
             output_path: "/tmp/test_report.html".into(),
+            datum_note: None,
+            reporting_code: None,
+            jurisdiction: None,
         };
         generate_report(&spec).unwrap();
         let content = std::fs::read_to_string("/tmp/test_report.html").unwrap();
         assert!(content.contains("Test Report"));
         assert!(content.contains("abc123"));
+    }
+
+    #[test]
+    fn test_compliance_strip_renders_all_three_fields() {
+        // Verify that a report with all 3 compliance fields set renders
+        // them in the colored strip near the top of the report. This is
+        // the field a compliance reviewer scans first when validating
+        // a plan — it MUST be visible without scrolling.
+        let spec = ReportSpec {
+            report_type: ReportType::EomReconciliation,
+            title: "June 2026 EOM Reconciliation".into(),
+            subtitle: "Test Mine — Pit A".into(),
+            client: "Test Mine Pty Ltd".into(),
+            metadata: HashMap::new(),
+            tables: vec![],
+            summary: vec![],
+            map_screenshot: None,
+            provenance_hash: None,
+            output_path: "/tmp/test_compliance.html".into(),
+            datum_note: Some("Datum: GDA2020 / Epoch 2020.0".into()),
+            reporting_code: Some("JORC 2012 Edition".into()),
+            jurisdiction: Some("Australia — NSW".into()),
+        };
+        generate_report(&spec).unwrap();
+        let content = std::fs::read_to_string("/tmp/test_compliance.html").unwrap();
+        // The compliance strip wrapper div must be present.
+        assert!(content.contains("class='comp'"), "missing compliance strip");
+        // All three labels + values must render.
+        assert!(content.contains("DATUM"), "missing DATUM label");
+        assert!(content.contains("Datum: GDA2020 / Epoch 2020.0"), "missing datum note value");
+        assert!(content.contains("REPORTING CODE"), "missing REPORTING CODE label");
+        assert!(content.contains("JORC 2012 Edition"), "missing reporting code value");
+        assert!(content.contains("JURISDICTION"), "missing JURISDICTION label");
+        assert!(content.contains("Australia — NSW"), "missing jurisdiction value");
+    }
+
+    #[test]
+    fn test_compliance_strip_skipped_when_all_fields_none() {
+        // If no compliance fields are set, the strip must not render at
+        // all — otherwise we'd show an empty colored box.
+        let spec = ReportSpec {
+            report_type: ReportType::Generic,
+            title: "Plain Report".into(),
+            subtitle: "".into(),
+            client: "".into(),
+            metadata: HashMap::new(),
+            tables: vec![],
+            summary: vec![],
+            map_screenshot: None,
+            provenance_hash: None,
+            output_path: "/tmp/test_no_compliance.html".into(),
+            datum_note: None,
+            reporting_code: None,
+            jurisdiction: None,
+        };
+        generate_report(&spec).unwrap();
+        let content = std::fs::read_to_string("/tmp/test_no_compliance.html").unwrap();
+        assert!(!content.contains("class='comp'"), "compliance strip should not render");
+        assert!(!content.contains("DATUM"), "DATUM label should not render");
+    }
+
+    #[test]
+    fn test_compliance_strip_renders_partial_fields() {
+        // If only datum is set, only the DATUM cell renders — no empty
+        // REPORTING CODE or JURISDICTION cells.
+        let spec = ReportSpec {
+            report_type: ReportType::Generic,
+            title: "Partial Compliance Report".into(),
+            subtitle: "".into(),
+            client: "".into(),
+            metadata: HashMap::new(),
+            tables: vec![],
+            summary: vec![],
+            map_screenshot: None,
+            provenance_hash: None,
+            output_path: "/tmp/test_partial_compliance.html".into(),
+            datum_note: Some("Datum: WGS 84".into()),
+            reporting_code: None,
+            jurisdiction: None,
+        };
+        generate_report(&spec).unwrap();
+        let content = std::fs::read_to_string("/tmp/test_partial_compliance.html").unwrap();
+        assert!(content.contains("class='comp'"));
+        assert!(content.contains("Datum: WGS 84"));
+        assert!(!content.contains("REPORTING CODE"));
+        assert!(!content.contains("JURISDICTION"));
     }
 }

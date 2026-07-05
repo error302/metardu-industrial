@@ -4,10 +4,33 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  *
  * Compare two GeoTIFF DEMs from different survey epochs, compute
  * elevation differences, and show fill/cut/hotspot statistics.
+ *
+ * Anomaly detector (added per "game-changing features" review):
+ *   The 4D diff alone tells you what changed. The anomaly detector
+ *   tells you what changed that DOESN'T match the work log. Three
+ *   patterns surface as warnings:
+ *
+ *     1. UNEXPECTED VOLUME LOSS — net volume is significantly negative
+ *        (material disappeared) but cut_cells is small relative to
+ *        total cells (no large-scale excavation). Possible theft,
+ *        spillage, or undocumented removal.
+ *
+ *     2. UNEXPECTED VOLUME GAIN — net volume is significantly positive
+ *        but fill_cells is small. Possible undocumented dumping or
+ *        external deposition. Often a regulatory issue (illegal
+ *        dumping on a lease = environmental liability).
+ *
+ *     3. EXCESSIVE HOTSPOT CONCENTRATION — hotspots > X% of active
+ *        cells. Indicates localized failures (slope creep, collapse)
+ *        rather than uniform extraction.
+ *
+ *   These are heuristics, not proof. The point is to give the
+ *   surveyor the sentence "this caught a problem before it became
+ *   expensive" — the sentence that gets budget approved.
  */
 
 import { useState } from "react";
-import { X, TrendingUp, Loader2, Activity, AlertTriangle } from "lucide-react";
+import { X, TrendingUp, Loader2, Activity, AlertTriangle, ShieldAlert } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
   computeEpochDiff,
@@ -19,6 +42,96 @@ import { useSurveyStore } from "@/stores/survey-store";
 interface Props {
   open: boolean;
   onClose: () => void;
+}
+
+interface AnomalyAlert {
+  kind: "loss" | "gain" | "hotspot_concentration";
+  severity: "warning" | "critical";
+  title: string;
+  detail: string;
+}
+
+/** Run the anomaly heuristics against a finished 4D diff result. */
+function detectAnomalies(result: EpochDiff, hotspotThreshold: number): AnomalyAlert[] {
+  const alerts: AnomalyAlert[] = [];
+  const s = result.summary;
+  const totalActive = s.fill_cells + s.cut_cells;
+  const totalCells = totalActive + s.stable_cells + s.nodata_cells;
+
+  // 1. UNEXPECTED VOLUME LOSS — material disappeared without obvious
+  //    excavation. Heuristic: net volume < -5% of (|fill| + |cut|),
+  //    AND cut_cells < 10% of active cells. The 5% threshold catches
+  //    genuine losses; the 10% cut-cell threshold rules out "we just
+  //    dug a big hole."
+  if (totalActive > 0) {
+    const cutCellFraction = s.cut_cells / totalActive;
+    const totalMovement = Math.abs(s.total_fill_volume) + Math.abs(s.total_cut_volume);
+    if (totalMovement > 0) {
+      const netFraction = s.net_volume / totalMovement;
+      if (netFraction < -0.05 && cutCellFraction < 0.10) {
+        alerts.push({
+          kind: "loss",
+          severity: "critical",
+          title: "Unexpected volume loss — possible theft or spillage",
+          detail:
+            `Net volume is ${s.net_volume.toFixed(0)} m³ but only ` +
+            `${(cutCellFraction * 100).toFixed(1)}% of active cells show cut. ` +
+            `Material disappeared without matching excavation activity. ` +
+            `Verify against the work log — investigate unauthorized removal, ` +
+            `spillage, or sensor calibration drift.`,
+        });
+      }
+    }
+  }
+
+  // 2. UNEXPECTED VOLUME GAIN — material appeared without obvious
+  //    deposition. Same heuristic, mirrored.
+  if (totalActive > 0) {
+    const fillCellFraction = s.fill_cells / totalActive;
+    const totalMovement = Math.abs(s.total_fill_volume) + Math.abs(s.total_cut_volume);
+    if (totalMovement > 0) {
+      const netFraction = s.net_volume / totalMovement;
+      if (netFraction > 0.05 && fillCellFraction < 0.10) {
+        alerts.push({
+          kind: "gain",
+          severity: "warning",
+          title: "Unexpected volume gain — possible undocumented dumping",
+          detail:
+            `Net volume is +${s.net_volume.toFixed(0)} m³ but only ` +
+            `${(fillCellFraction * 100).toFixed(1)}% of active cells show fill. ` +
+            `Material appeared without matching deposition activity. ` +
+            `Could indicate illegal dumping on the lease — an environmental ` +
+            `liability that needs documentation.`,
+        });
+      }
+    }
+  }
+
+  // 3. EXCESSIVE HOTSPOT CONCENTRATION — if >25% of active cells are
+  //    hotspots, the change isn't uniform extraction but localized
+  //    failures. Often an early-warning sign of slope creep or
+  //    structural issues.
+  if (totalActive > 0 && result.hotspots.length > 0) {
+    const hotspotFraction = result.hotspots.length / totalActive;
+    if (hotspotFraction > 0.25) {
+      alerts.push({
+        kind: "hotspot_concentration",
+        severity: "warning",
+        title: "Excessive hotspot concentration — possible structural failure",
+        detail:
+          `${(hotspotFraction * 100).toFixed(1)}% of active cells exceed the ` +
+          `±${hotspotThreshold}m threshold. Localized failures (slope creep, ` +
+          `wall collapse) rather than uniform extraction. Recommend geotechnical ` +
+          `review of the high-concentration zone before next survey.`,
+      });
+    }
+  }
+
+  // Suppress anomaly if total cells is too small to be meaningful
+  // (avoids false positives on tiny test datasets).
+  if (totalCells < 100) return [];
+
+  return alerts;
 }
 
 export function Monitoring4DDialog({ open, onClose }: Props) {
@@ -63,6 +176,11 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
   }
 
   const s = result?.summary;
+  // Run anomaly detection whenever we have a fresh result. Computed
+  // inline (not memoized) because result + hotspotThreshold together
+  // are cheap to recompute and we want the warnings to update if the
+  // user changes the threshold without recomputing.
+  const anomalies = result ? detectAnomalies(result, hotspotThreshold) : [];
 
   return (
     <div
@@ -181,6 +299,65 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
                 <div className="flex items-center gap-2 rounded-md border p-2 text-[10px]" style={{ borderColor: `${colors.investigate}40`, background: `${colors.investigate}10`, color: colors.investigate }}>
                   <AlertTriangle className="h-3 w-3" />
                   {result.hotspots.length} hotspot cells exceed ±{hotspotThreshold}m threshold
+                </div>
+              )}
+
+              {/* ─── Anomaly Detector ─────────────────────────────────── */}
+              {/* Surfaces patterns that don't match expected mining activity.
+                  These are the "this caught a problem before it became
+                  expensive" sentences that get budget approved. */}
+              {anomalies.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: colors.industrialOrange }}>
+                    <ShieldAlert className="h-3 w-3" />
+                    Anomaly Detector
+                  </div>
+                  {anomalies.map((a, i) => {
+                    const isCritical = a.severity === "critical";
+                    return (
+                      <div
+                        key={i}
+                        className="rounded-md border p-3"
+                        style={{
+                          borderColor: isCritical ? `${colors.fail}60` : `${colors.industrialOrange}60`,
+                          background: isCritical ? `${colors.fail}08` : `${colors.industrialOrange}08`,
+                        }}
+                      >
+                        <div className="flex items-start gap-2">
+                          <ShieldAlert
+                            className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+                            style={{ color: isCritical ? colors.fail : colors.industrialOrange }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className="text-[12px] font-semibold"
+                              style={{ color: isCritical ? colors.fail : colors.industrialOrange }}
+                            >
+                              {a.title}
+                            </div>
+                            <div className="mt-1 text-[10px] leading-relaxed text-steel-light">
+                              {a.detail}
+                            </div>
+                          </div>
+                          <span
+                            className="flex-shrink-0 rounded-sm px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider"
+                            style={{
+                              background: isCritical ? `${colors.fail}20` : `${colors.industrialOrange}20`,
+                              color: isCritical ? colors.fail : colors.industrialOrange,
+                            }}
+                          >
+                            {a.severity}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {anomalies.length === 0 && result && s && (s.fill_cells + s.cut_cells + s.stable_cells + s.nodata_cells) >= 100 && (
+                <div className="flex items-center gap-2 rounded-md border border-navy-border bg-navy-base p-2 text-[10px] text-steel-light">
+                  <span style={{ color: colors.pass }}>✓</span>
+                  No anomalies detected — change pattern matches expected mining activity.
                 </div>
               )}
             </div>

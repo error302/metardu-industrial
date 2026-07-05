@@ -17,19 +17,7 @@ import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore } from "@/stores/app-store";
 import { useViewport } from "@/lib/use-viewport";
 
-// Common mining/marine CRS quick-picks
-const CRS_QUICKPICKS = [
-  { code: "EPSG:4326", label: "WGS 84 (geographic)" },
-  { code: "EPSG:3857", label: "Web Mercator" },
-  { code: "EPSG:28354", label: "MGA Zone 54 (Australia)" },
-  { code: "EPSG:28355", label: "MGA Zone 55 (Australia)" },
-  { code: "EPSG:28356", label: "MGA Zone 56 (Australia)" },
-  { code: "EPSG:32733", label: "UTM Zone 33S" },
-  { code: "EPSG:32734", label: "UTM Zone 34S" },
-  { code: "EPSG:32633", label: "UTM Zone 33N" },
-  { code: "EPSG:4269", label: "NAD83 (North America)" },
-  { code: "EPSG:2154", label: "RGF93 / Lambert-93 (France)" },
-];
+import { CRS_QUICKPICKS } from "@/lib/crs-quickpicks";
 
 export function OnboardingScreen() {
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
@@ -41,7 +29,9 @@ export function OnboardingScreen() {
   const filteredCrs = CRS_QUICKPICKS.filter(
     (c) =>
       c.code.toLowerCase().includes(search.toLowerCase()) ||
-      c.label.toLowerCase().includes(search.toLowerCase()),
+      c.label.toLowerCase().includes(search.toLowerCase()) ||
+      c.datum.toLowerCase().includes(search.toLowerCase()) ||
+      c.region.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (

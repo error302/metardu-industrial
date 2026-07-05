@@ -1214,6 +1214,19 @@ export interface ReportSpec {
   subtitle?: string;
   client?: string;
   metadata?: Record<string, string>;
+  /**
+   * Datum + epoch note shown in the report footer + a prominent compliance
+   * strip near the top. For survey plans this is a legal compliance field.
+   * Format with `formatDatumNote(epsg)` from `src/lib/crs-quickpicks.ts`.
+   */
+  datum_note?: string;
+  /**
+   * CRIRSCO-aligned reporting code: "JORC" (AU), "SAMREC" (ZA),
+   * "CIM" (CA), "SME" (US), "PERC" (EU), or a custom string.
+   */
+  reporting_code?: string;
+  /** Jurisdiction tag, e.g. "Australia — NSW" or "South Africa — offshore". */
+  jurisdiction?: string;
   tables?: ReportTable[];
   summary?: ReportStat[];
   map_screenshot?: string;

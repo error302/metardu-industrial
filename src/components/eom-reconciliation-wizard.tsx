@@ -20,12 +20,18 @@ import {
 } from "@/lib/tauri-ipc";
 import { pickFile, pickSaveFile } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
+import { useAppStore } from "@/stores/app-store";
+import { formatDatumNote } from "@/lib/crs-quickpicks";
 
 interface Props { open: boolean; onClose: () => void; }
 
 export function EomReconciliationWizard({ open, onClose }: Props) {
   const files = useSurveyStore((s) => s.files);
   const geotiffFiles = files.filter((f) => f.kind === "geotiff" && f.status === "loaded");
+  // Pull the user's default CRS so we can stamp the report with the correct
+  // datum + epoch. This is a legal compliance field — many jurisdictions
+  // (AU, US, EU) require the datum to be stated explicitly on every plan.
+  const defaultEpsg = useAppStore((s) => s.settings.defaultEpsg);
 
   const [prevPath, setPrevPath] = useState("");
   const [currPath, setCurrPath] = useState("");
@@ -87,11 +93,16 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
         title: "End-of-Month Production Reconciliation",
         subtitle: siteName || new Date().toLocaleDateString(),
         client: clientName,
+        // Stamp the report with the user's default CRS datum + epoch.
+        // For Australian GDA2020 plans this is the difference between
+        // a legally-compliant plan and one that gets bounced back.
+        datum_note: formatDatumNote(defaultEpsg),
         metadata: {
           "Previous Survey": prevPath.split(/[\\/]/).pop() ?? prevPath,
           "Current Survey": currPath.split(/[\\/]/).pop() ?? currPath,
           "Rock Density": `${density} t/m³`,
           "Bench Interval": `${benchInterval} m`,
+          "Coordinate System": defaultEpsg,
         },
         tables: [benches],
         summary,
