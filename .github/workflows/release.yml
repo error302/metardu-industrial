@@ -129,6 +129,16 @@ jobs:
       - name: List artifacts
         run: find artifacts/ -type f | xargs -I{} ls -la {}
 
+      - name: Generate SBOM for release
+        # Generate CycloneDX SBOMs and attach them to the GitHub Release.
+        # Required for IHO S-44 / JORC compliance customers.
+        run: |
+          cargo install cargo-cyclonedx --locked || true
+          cargo cyclonedx --format json --format xml -v --output-pattern package
+          mkdir -p sbom
+          cp *.cdx.json sbom/ 2>/dev/null || true
+          cp *.cdx.xml sbom/ 2>/dev/null || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -143,3 +153,5 @@ jobs:
             artifacts/**/*.deb
             artifacts/**/*.AppImage
             artifacts/**/*.rpm
+            sbom/*.cdx.json
+            sbom/*.cdx.xml

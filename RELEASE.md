@@ -130,13 +130,18 @@ workflow):
       - Run metardu-verify on the generated PDF — verifies OK
       - Open Settings → change theme → persists across restart
       - Open each of the 33 dialogs — no crash, Escape closes
-- [ ] **Verify the auto-updater is OFF** (it's a stub — see
-      `src-tauri/src/updater.rs`). The "Check for updates" button
-      should return "up to date" silently.
+- [ ] **Verify the auto-updater** — if a signing keypair was
+      configured (see "Auto-updater setup" above), test the full
+      update flow: install old version → publish new version →
+      check for updates → download & install → restart. If not
+      configured, the dialog should show "auto-update not available".
 - [ ] **Verify the license system** — generate a trial license
       with `metardu-eom-cli sign-license`, install it, confirm
       the app shows "Active" status. Tamper with the license
       file, confirm the app shows "Invalid".
+- [ ] **Verify SBOM** — check that `sbom/*.cdx.json` files were
+      generated and attached to the release. Compliance customers
+      will ask for these.
 
 ---
 

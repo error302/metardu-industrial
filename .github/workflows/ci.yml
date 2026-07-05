@@ -105,6 +105,39 @@ jobs:
         working-directory: crates/metardu-core
         run: cargo deny check licenses bans sources
 
+      - name: Install cargo-cyclonedx
+        # Generates a CycloneDX SBOM (Software Bill of Materials) for
+        # each crate. Required for IHO S-44 / JORC compliance customers.
+        run: cargo install cargo-cyclonedx --locked || true
+
+      - name: Generate SBOM (metardu-core)
+        # Produces bom.json + bom.xml in crates/metardu-core/
+        working-directory: crates/metardu-core
+        run: cargo cyclonedx --format json --format xml -v
+
+      - name: Generate SBOM (src-tauri)
+        working-directory: src-tauri
+        run: cargo cyclonedx --format json --format xml -v
+
+      - name: Generate SBOM (metardu-eom-cli)
+        working-directory: metardu-eom-cli
+        run: cargo cyclonedx --format json --format xml -v
+
+      - name: Generate SBOM (metardu-verify)
+        working-directory: metardu-verify
+        run: cargo cyclonedx --format json --format xml -v
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: |
+            crates/metardu-core/bom.*
+            src-tauri/bom.*
+            metardu-eom-cli/bom.*
+            metardu-verify/bom.*
+          retention-days: 30
+
   # ───────────────────────────────────────────────────────────────
   # Fuzz testing — bounded runs on every push to catch parser crashes
   # ───────────────────────────────────────────────────────────────
