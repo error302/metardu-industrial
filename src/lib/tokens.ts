@@ -2,18 +2,18 @@
  * MetaRDU Industrial — Design Tokens
  * Single source of truth for brand colors, extracted from the logo.
  *
- * IMPORTANT: Two sets of colors are provided:
- *   - `colors` — CSS variable references (var(--color-*)) for HTML
- *     inline styles. These respect the theme override in index.css.
- *   - `rawColors` — raw hex values for Canvas/SVG contexts (OpenLayers,
- *     Deck.gl, SVG attributes) where CSS variables don't work.
+ * Colors are raw hex values. Theme switching is handled via CSS
+ * classes (data-theme attribute + CSS variable overrides in index.css).
+ * Components that need theme-aware colors should use Tailwind classes
+ * (bg-navy-base, text-white, etc.) which respect the CSS overrides.
  *
- * Use `colors` for React inline styles (style={{ background: colors.navyBase }}).
- * Use `rawColors` for OpenLayers/Canvas/SVG (new Stroke({ color: rawColors.miningYellow })).
+ * Inline styles using `colors.*` use raw hex — these do NOT change
+ * with the theme. This is intentional: Canvas/SVG/OL contexts need
+ * raw hex, and the `${colors.industrialOrange}40` alpha-append
+ * pattern only works with raw hex, not CSS variables.
  */
 
-/** Raw hex values — for Canvas/SVG/OpenLayers/Deck.gl contexts. */
-export const rawColors = {
+export const colors = {
   navyBase: "#0A192F",
   navyPanel: "#0F1F3A",
   navyElevated: "#142A4A",
@@ -43,41 +43,12 @@ export const rawColors = {
   info: "#3B82F6",
 } as const;
 
-/** CSS variable references — for React inline styles. These respect
- * the light/dark theme override in index.css. */
-export const colors = {
-  navyBase: "var(--color-navy-base)",
-  navyPanel: "var(--color-navy-panel)",
-  navyElevated: "var(--color-navy-elevated)",
-  navyBorder: "var(--color-navy-border)",
-
-  industrialOrange: "var(--color-industrial-orange)",
-  industrialOrangeDim: "var(--color-industrial-orange-dim)",
-
-  white: "var(--color-white)",
-  steelGray: "var(--color-steel-gray)",
-  steelLight: "var(--color-steel-light)",
-
-  // Mining mode
-  miningYellow: "var(--color-mining-yellow)",
-  miningBurnt: "var(--color-mining-burnt)",
-  miningTerrain: "var(--color-mining-terrain)",
-
-  // Marine mode
-  marineDeep: "var(--color-marine-deep)",
-  marineTurquoise: "var(--color-marine-turquoise)",
-  marineCyan: "var(--color-marine-cyan)",
-
-  // Semantic
-  pass: "var(--color-pass)",
-  investigate: "var(--color-investigate)",
-  fail: "var(--color-fail)",
-  info: "var(--color-info)",
-} as const;
+/** Alias for rawColors — same values. Kept for backward compat
+ * with components that already import rawColors. */
+export const rawColors = colors;
 
 export type DomainMode = "mining" | "marine" | "both";
 
-/** CSS-variable-based accent (for HTML inline styles). */
 export const domainAccent: Record<
   DomainMode,
   { primary: string; secondary: string; label: string }
@@ -99,27 +70,8 @@ export const domainAccent: Record<
   },
 };
 
-/** Raw-hex-based accent (for Canvas/SVG/OpenLayers). */
-export const rawDomainAccent: Record<
-  DomainMode,
-  { primary: string; secondary: string; label: string }
-> = {
-  mining: {
-    primary: rawColors.miningYellow,
-    secondary: rawColors.miningBurnt,
-    label: "Mining",
-  },
-  marine: {
-    primary: rawColors.marineTurquoise,
-    secondary: rawColors.marineCyan,
-    label: "Marine",
-  },
-  both: {
-    primary: rawColors.industrialOrange,
-    secondary: rawColors.miningBurnt,
-    label: "Mining & Marine",
-  },
-};
+/** Alias — same as domainAccent. Kept for backward compat. */
+export const rawDomainAccent = domainAccent;
 
 export const APP_VERSION = "0.1.0";
 export const APP_BUILD = "2026.07.02";
