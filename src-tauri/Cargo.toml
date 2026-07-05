@@ -45,7 +45,7 @@ rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
 tracing = { version = "0.1", optional = true }
 tracing-subscriber = { version = "0.3", optional = true }
 arrow = { version = "52", optional = true }
-parquet = { version = "52", optional = true }
+parquet = { version = "59", optional = true }
 # WASM runtime for pipeline script sandbox (behind 'wasm' feature flag)
 wasmtime = { version = "21", optional = true, default-features = false, features = ["cranelift", "runtime"] }
 # ZIP archive creation for Survey Deliverable Package (Sprint 5)
