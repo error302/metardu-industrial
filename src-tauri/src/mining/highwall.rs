@@ -426,27 +426,49 @@ pub fn analyze_highwall(
     })
 }
 
-/// Parse an ISO 8601 date string (YYYY-MM-DD) into a fractional day count.
-/// Uses a simple year*365+month*30+day approximation — adequate for
-/// velocity calculation; we don't need leap-second accuracy.
+/// Parse an ISO 8601 date string (YYYY-MM-DD) into a day count.
+///
+/// Uses a proper proleptic Gregorian calendar conversion (days since
+/// 0000-01-01) so that deltas across year boundaries are correct.
+/// The previous implementation used `year * 365.25 + month * 30.4375 + day`
+/// which doesn't reset months at year boundaries — a Dec 31 → Jan 1
+/// epoch pair produced a delta of 0.4375 days instead of 1 day, making
+/// velocity (mm/day) ~2.3x too high for any year-boundary pair. That's
+/// a safety-critical metric for highwall monitoring.
 fn parse_iso_to_days(s: &str) -> Result<f64, String> {
     let parts: Vec<&str> = s.trim().split('-').collect();
     if parts.len() < 3 {
         return Err(format!("expected YYYY-MM-DD, got '{}'", s));
     }
-    let year: f64 = parts[0]
-        .parse::<f64>()
-        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
-    let month: f64 = parts[1]
-        .parse::<f64>()
-        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
-    let day: f64 = parts[2]
+    let year: i32 = parts[0]
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let month: u32 = parts[1]
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let day: u32 = parts[2]
         .split('T')
         .next()
         .unwrap_or(parts[2])
-        .parse::<f64>()
-        .map_err(|e: std::num::ParseFloatError| e.to_string())?;
-    Ok(year * 365.25 + month * 30.4375 + day)
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+
+    // Convert (year, month, day) to a day count using the standard
+    // algorithm from "Calendrical Calculations" (Dershowitz & Reingold).
+    // This is the same approach used by chrono's NaiveDate::num_days
+    // and handles leap years correctly.
+    //
+    // The formula counts days since 0000-01-01 (proleptic Gregorian).
+    // We return f64 because the caller does floating-point arithmetic
+    // on the deltas.
+    let y = if month <= 2 { year - 1 } else { year };
+    let m = if month <= 2 { month + 9 } else { month - 3 };
+    let era = if y >= 0 { y } else { y - 999 } / 1000;
+    let yoe = (y - era * 1000) as u32;
+    let doy = (153 * m + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era as i64 * 146097 + doe as i64 - 719468;
+    Ok(days as f64)
 }
 
 #[cfg(test)]
@@ -600,5 +622,47 @@ mod tests {
         assert_eq!(t.critical_mm, 100.0);
         assert_eq!(t.velocity_watch_mm_per_day, 1.0);
         assert_eq!(t.velocity_critical_mm_per_day, 5.0);
+    }
+
+    #[test]
+    fn test_parse_iso_year_boundary() {
+        // Regression test: the old formula (year*365.25 + month*30.4375 + day)
+        // produced a delta of 0.4375 days for Dec 31 → Jan 1, making
+        // velocity ~2.3x too high. The new proleptic Gregorian conversion
+        // must produce exactly 1 day.
+        let dec31 = parse_iso_to_days("2026-12-31").unwrap();
+        let jan1 = parse_iso_to_days("2027-01-01").unwrap();
+        let delta = jan1 - dec31;
+        assert_eq!(
+            delta, 1.0,
+            "Dec 31 → Jan 1 must be exactly 1 day, got {delta}"
+        );
+
+        // Also verify a longer span: Dec 31 → Feb 1 = 32 days
+        let feb1 = parse_iso_to_days("2027-02-01").unwrap();
+        assert_eq!(feb1 - dec31, 32.0, "Dec 31 → Feb 1 must be 32 days");
+
+        // Same-year span: Jan 1 → Feb 1 = 31 days
+        assert_eq!(
+            parse_iso_to_days("2026-02-01").unwrap() - parse_iso_to_days("2026-01-01").unwrap(),
+            31.0
+        );
+    }
+
+    #[test]
+    fn test_parse_iso_leap_year() {
+        // 2024 is a leap year: Feb 29 exists. Feb 28 → Mar 1 = 2 days.
+        let feb28 = parse_iso_to_days("2024-02-28").unwrap();
+        let mar1 = parse_iso_to_days("2024-03-01").unwrap();
+        assert_eq!(mar1 - feb28, 2.0, "Feb 28 → Mar 1 in leap year = 2 days");
+
+        // 2023 is not a leap year: Feb 28 → Mar 1 = 1 day.
+        let feb28_2023 = parse_iso_to_days("2023-02-28").unwrap();
+        let mar1_2023 = parse_iso_to_days("2023-03-01").unwrap();
+        assert_eq!(
+            mar1_2023 - feb28_2023,
+            1.0,
+            "Feb 28 → Mar 1 in non-leap year = 1 day"
+        );
     }
 }

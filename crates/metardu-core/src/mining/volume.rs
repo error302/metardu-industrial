@@ -286,7 +286,13 @@ fn build_bench_breakpoints(z_min: f64, z_max: f64, interval: f64) -> Vec<(f64, f
     }
     let mut result = Vec::new();
     let mut lo = (z_min / interval).floor() * interval;
-    while lo < z_max {
+    // Use `<=` so the last bench is included when z_max aligns exactly
+    // to the interval grid. The previous `<` skipped the final bench in
+    // that case, leaving cells at exactly z_max assigned to no bench.
+    // The rayon fold uses `.min(n_benches - 1)` to clamp the index, so
+    // an extra bench at the top is harmless — it just catches the
+    // boundary cells that were previously lost.
+    while lo <= z_max {
         let hi = lo + interval;
         result.push((lo, hi));
         lo = hi;

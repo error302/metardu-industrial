@@ -215,24 +215,29 @@ pub async fn sign_eom_license_cmd(claims: LicenseClaims) -> Result<LicenseFile, 
 #[tauri::command]
 pub async fn check_license_status_cmd(
     license: Option<LicenseFile>,
-) -> Result<LicenseStatus, String> {
+) -> Result<LicenseStatusAdapter, String> {
     let pub_key = bundled_public_key()?;
     let machine_id = get_machine_id();
     tokio::task::spawn_blocking(move || {
-        Ok(check_status(license.as_ref(), &pub_key, &machine_id, "", 3))
+        let status = check_status(license.as_ref(), &pub_key, &machine_id, "", 3);
+        Ok(LicenseStatusAdapter::from_core(status, license.as_ref()))
     })
     .await
     .map_err(|e| format!("task join error: {e}"))?
 }
 
 #[tauri::command]
-pub async fn consume_report_cmd(_license: Option<LicenseFile>) -> Result<LicenseStatus, String> {
-    // Simplified: just check status (the ReportCounter lives in the core module)
+pub async fn consume_report_cmd(
+    license: Option<LicenseFile>,
+) -> Result<LicenseStatusAdapter, String> {
     let pub_key = bundled_public_key()?;
     let machine_id = get_machine_id();
-    tokio::task::spawn_blocking(move || Ok(check_status(None, &pub_key, &machine_id, "", 3)))
-        .await
-        .map_err(|e| format!("task join error: {e}"))?
+    tokio::task::spawn_blocking(move || {
+        let status = check_status(license.as_ref(), &pub_key, &machine_id, "", 3);
+        Ok(LicenseStatusAdapter::from_core(status, license.as_ref()))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
 }
 
 #[tauri::command]
@@ -496,6 +501,87 @@ fn scan_dir(
 // ── Adapter types — translate between frontend expectations and core API ──
 
 use serde::{Deserialize, Serialize};
+
+/// Adapter that serializes LicenseStatus as a tagged union matching
+/// the TypeScript contract in src/lib/tauri-ipc.ts.
+///
+/// The core crate's `LicenseStatus` is a bare unit enum that serializes
+/// as `"Trial"` (a JSON string). The TS frontend expects a tagged union:
+///   `{ state: "Trial", trial_reports_remaining: number }`
+///   `{ state: "Active", customer, license_id, tier, expires_at, reports_remaining }`
+///   `{ state: "Invalid", reason }`
+///   `{ state: "Exhausted", customer, license_id }`
+///   `{ state: "Expired", customer, expired_at }`
+///
+/// This adapter converts the core enum into the tagged-union form. The
+/// extra fields (customer, license_id, etc.) are populated from the
+/// license file when present, or set to empty strings when not.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "PascalCase")]
+pub enum LicenseStatusAdapter {
+    Trial {
+        trial_reports_remaining: u32,
+    },
+    Active {
+        customer: String,
+        license_id: String,
+        tier: String,
+        expires_at: String,
+        reports_remaining: Option<u32>,
+    },
+    Invalid {
+        reason: String,
+    },
+    Exhausted {
+        customer: String,
+        license_id: String,
+    },
+    Expired {
+        customer: String,
+        expired_at: String,
+    },
+}
+
+impl LicenseStatusAdapter {
+    /// Convert from the core crate's LicenseStatus + an optional license
+    /// file (for populating customer/license_id/tier fields).
+    fn from_core(
+        status: metardu_core::mining::license::LicenseStatus,
+        license: Option<&LicenseFile>,
+    ) -> Self {
+        use metardu_core::mining::license::LicenseStatus;
+        let claims = license.map(|l| &l.claims);
+        match status {
+            LicenseStatus::Trial => LicenseStatusAdapter::Trial {
+                trial_reports_remaining: 3, // matches DEFAULT_TRIAL_QUOTA
+            },
+            LicenseStatus::Active => LicenseStatusAdapter::Active {
+                customer: claims.map(|c| c.customer.clone()).unwrap_or_default(),
+                license_id: claims.map(|c| c.license_id.clone()).unwrap_or_default(),
+                tier: "pro".to_string(), // EOM Auditor is the Pro tier
+                expires_at: claims
+                    .and_then(|c| c.expires_at)
+                    .map(|t| t.to_string())
+                    .unwrap_or_default(),
+                reports_remaining: claims.and_then(|c| c.reports_remaining),
+            },
+            LicenseStatus::Invalid => LicenseStatusAdapter::Invalid {
+                reason: "license signature invalid or machine fingerprint mismatch".to_string(),
+            },
+            LicenseStatus::Exhausted => LicenseStatusAdapter::Exhausted {
+                customer: claims.map(|c| c.customer.clone()).unwrap_or_default(),
+                license_id: claims.map(|c| c.license_id.clone()).unwrap_or_default(),
+            },
+            LicenseStatus::Expired => LicenseStatusAdapter::Expired {
+                customer: claims.map(|c| c.customer.clone()).unwrap_or_default(),
+                expired_at: claims
+                    .and_then(|c| c.expires_at)
+                    .map(|t| t.to_string())
+                    .unwrap_or_default(),
+            },
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EomInputAdapter {
