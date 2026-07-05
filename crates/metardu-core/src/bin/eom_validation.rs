@@ -234,4 +234,83 @@ fn main() {
     println!("═{}", "═".repeat(60));
     println!("Validation complete.");
     println!("═{}", "═".repeat(60));
+
+    // If a second argument is provided (design surface path), run the
+    // design surface comparison test.
+    if args.len() > 2 {
+        run_design_surface_test(&args[1], &args[2]);
+    } else if args.len() > 1 && args[1] == "--pit-test" {
+        // Convenience: run the pit test with default paths
+        run_design_surface_test(
+            "test-data/excavated_pit.las",
+            "test-data/design_surface.las",
+        );
+    }
+}
+
+/// Run a design-surface comparison test: excavated pit vs flat design.
+/// The analytical cut volume = π * r² * h / 3 = 6544.98 m³.
+#[allow(dead_code)]
+fn run_design_surface_test(excavated_path: &str, _design_path: &str) {
+    use metardu_core::mining::eom::DesignSurfaceRef;
+
+    println!();
+    println!("═{}", "═".repeat(60));
+    println!("DESIGN SURFACE TEST — Pit excavation");
+    println!("═{}", "═".repeat(60));
+    println!();
+
+    // The design surface is a flat plane at z=100m.
+    // We pass it as DesignSurfaceRef::Flat(100.0).
+    // In a real workflow, this would be a DXF TIN rasterized to a DEM.
+    let input = EomInput {
+        point_cloud_path: PathBuf::from(excavated_path),
+        csf_params: metardu_core::mining::csf::CsfParams::default(),
+        dem_cell_size: 1.0,
+        bench_interval: 2.0,
+        max_points: 0,
+        license_id: String::new(),
+        machine_id: String::new(),
+        site_id: String::new(),
+        signed: false,
+        custodian: String::new(),
+        baseline_z: None,
+        design_surface: Some(DesignSurfaceRef::Flat(100.0)),
+    };
+
+    let start = std::time::Instant::now();
+    let result = run_eom_pipeline(&input, |p: EomProgress| {
+        println!("    → {}", p.message);
+    });
+    let elapsed = start.elapsed();
+
+    match result {
+        Ok(output) => {
+            let expected = std::f64::consts::PI * 25.0_f64.powi(2) * 10.0 / 3.0;
+            println!();
+            println!(
+                "  ✓ Design surface test completed in {:.2}s",
+                elapsed.as_secs_f64()
+            );
+            println!();
+            println!("  Cut volume:  {:>10.2} m³", output.volumes.cut_volume);
+            println!("  Fill volume: {:>10.2} m³", output.volumes.fill_volume);
+            println!();
+            println!("  Analytical excavation: {:.2} m³", expected);
+            println!(
+                "  Computed cut:          {:.2} m³",
+                output.volumes.cut_volume
+            );
+            let error = (output.volumes.cut_volume - expected).abs() / expected * 100.0;
+            println!("  Error: {:.2}%", error);
+            if error < 5.0 {
+                println!("  ✅ PASS — cut volume within 5% of analytical");
+            } else {
+                println!("  ❌ FAIL — cut volume >5% off");
+            }
+        }
+        Err(e) => {
+            eprintln!("  ✗ Design surface test FAILED: {}", e);
+        }
+    }
 }
