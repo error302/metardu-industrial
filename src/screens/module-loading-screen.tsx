@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, AlertCircle, Loader2, FileText, ChevronRight } from "lucide-react";
-import { colors, APP_NAME, APP_VERSION } from "@/lib/tokens";
+import { colors, rawColors, APP_NAME, APP_VERSION } from "@/lib/tokens";
 import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore } from "@/stores/app-store";
 import { useViewport } from "@/lib/use-viewport";
@@ -465,7 +465,7 @@ function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={colors.navyBorder}
+          stroke={rawColors.navyBorder}
           strokeWidth={stroke}
         />
         {/* Progress arc */}
@@ -474,7 +474,7 @@ function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={colors.industrialOrange}
+          stroke={rawColors.industrialOrange}
           strokeWidth={stroke}
           strokeDasharray={circumference}
           strokeDashoffset={offset}

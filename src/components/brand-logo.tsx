@@ -22,7 +22,7 @@
  *   - Steel: #64748B (secondary text)
  */
 
-import { colors } from "@/lib/tokens";
+import { colors, rawColors } from "@/lib/tokens";
 
 interface BrandLogoProps {
   size?: number;
@@ -37,11 +37,12 @@ export function BrandLogo({
   animated = false,
   className = "",
 }: BrandLogoProps) {
-  const orange = colors.industrialOrange;
-  const gold = "#FFC107";
-  const navy = colors.navyBase;
-  const white = colors.white;
-  const steel = colors.steelGray;
+  // Use RAW hex for SVG attributes — CSS variables don't work in SVG fill/stroke
+  const orange = rawColors.industrialOrange;
+  const gold = rawColors.miningYellow;
+  const navy = rawColors.navyBase;
+  const white = rawColors.white;
+  const steel = rawColors.steelGray;
 
   return (
     <div className={`flex flex-col items-center ${className}`}>

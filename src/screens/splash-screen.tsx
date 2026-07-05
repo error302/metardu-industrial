@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { colors, APP_VERSION, APP_BUILD, APP_NAME } from "@/lib/tokens";
+import { colors, rawColors, APP_VERSION, APP_BUILD, APP_NAME } from "@/lib/tokens";
 import { useAppStore } from "@/stores/app-store";
 import { useViewport } from "@/lib/use-viewport";
 
@@ -269,10 +269,11 @@ export function SplashScreen() {
  * clearly survey-related without being cartoonish.
  */
 function TheodoliteReticle({ size }: { size: number }) {
-  const stroke = colors.industrialOrange;
-  const strokeDim = `${colors.industrialOrange}40`;
-  const miningStroke = colors.miningYellow;
-  const marineStroke = colors.marineTurquoise;
+  // Use RAW hex for SVG attributes — CSS variables don't work in SVG
+  const stroke = rawColors.industrialOrange;
+  const strokeDim = `${rawColors.industrialOrange}40`;
+  const miningStroke = rawColors.miningYellow;
+  const marineStroke = rawColors.marineTurquoise;
 
   return (
     <div
@@ -369,7 +370,7 @@ function TheodoliteReticle({ size }: { size: number }) {
           cx="100"
           cy="8"
           r="2"
-          fill={colors.pass}
+          fill={rawColors.pass}
           style={{ animation: "splash-blink 1.5s ease-in-out infinite" }}
         />
       </svg>

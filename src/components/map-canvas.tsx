@@ -30,7 +30,7 @@ import Feature from "ol/Feature";
 import Polygon from "ol/geom/Polygon";
 import "ol/ol.css";
 
-import { colors, domainAccent, type DomainMode } from "@/lib/tokens";
+import { colors, rawColors, domainAccent, rawDomainAccent, type DomainMode } from "@/lib/tokens";
 import { registerEpsg, getOlProjection } from "@/lib/crs-registry";
 import { useSurveyStore } from "@/stores/survey-store";
 import { renderDem } from "@/lib/tauri-ipc";
@@ -51,7 +51,9 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const accent = domainAccent[domain].primary;
+    // Use RAW hex colors for OpenLayers — CSS variables don't work
+    // in Canvas/SVG contexts (Stroke, Fill).
+    const accent = rawDomainAccent[domain].primary;
 
     // Empty vector layer — future home of survey features
     const surveySource = new VectorSource();
@@ -206,7 +208,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
     source.clear();
     if (files.length === 0) return;
 
-    const accent = domainAccent[domain].primary;
+    const accent = rawDomainAccent[domain].primary;
     files.forEach((f, idx) => {
       let coords: [number, number][] | null = null;
 
@@ -259,8 +261,8 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
           text: new TextStyle({
             text: label,
             font: "11px JetBrains Mono, monospace",
-            fill: new Fill({ color: colors.white }),
-            stroke: new Stroke({ color: colors.navyBase, width: 3 }),
+            fill: new Fill({ color: rawColors.white }),
+            stroke: new Stroke({ color: rawColors.navyBase, width: 3 }),
             offsetY: -12,
           }),
         }),

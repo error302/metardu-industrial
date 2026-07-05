@@ -11,7 +11,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState, useMemo } from "react";
 import { X, Waves, AlertTriangle, Check, ChevronRight } from "lucide-react";
-import { colors } from "@/lib/tokens";
+import { colors, rawColors } from "@/lib/tokens";
 import type { CubeSurfaceRpc } from "@/lib/tauri-ipc";
 
 interface Props {
@@ -144,12 +144,12 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
                   )}
 
                   {/* Legend */}
-                  <rect x={20} y={gridH + 28} width={12} height={12} fill={colors.marineTurquoise} opacity={0.7} />
-                  <text x={36} y={38 + gridH} fill={colors.steelGray} fontSize="9" fontFamily="JetBrains Mono">1 hypothesis</text>
-                  <rect x={120} y={gridH + 28} width={12} height={12} fill={colors.investigate} opacity={0.7} />
-                  <text x={136} y={38 + gridH} fill={colors.steelGray} fontSize="9" fontFamily="JetBrains Mono">ambiguous</text>
-                  <rect x={220} y={gridH + 28} width={12} height={12} fill={colors.pass} opacity={0.7} />
-                  <text x={236} y={38 + gridH} fill={colors.steelGray} fontSize="9" fontFamily="JetBrains Mono">resolved</text>
+                  <rect x={20} y={gridH + 28} width={12} height={12} fill={rawColors.marineTurquoise} opacity={0.7} />
+                  <text x={36} y={38 + gridH} fill={rawColors.steelGray} fontSize="9" fontFamily="JetBrains Mono">1 hypothesis</text>
+                  <rect x={120} y={gridH + 28} width={12} height={12} fill={rawColors.investigate} opacity={0.7} />
+                  <text x={136} y={38 + gridH} fill={rawColors.steelGray} fontSize="9" fontFamily="JetBrains Mono">ambiguous</text>
+                  <rect x={220} y={gridH + 28} width={12} height={12} fill={rawColors.pass} opacity={0.7} />
+                  <text x={236} y={38 + gridH} fill={rawColors.steelGray} fontSize="9" fontFamily="JetBrains Mono">resolved</text>
                 </svg>
               </div>
             </div>

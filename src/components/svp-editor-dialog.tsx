@@ -12,7 +12,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 import { useState, useMemo } from "react";
 import { X, Waves, Upload, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { colors } from "@/lib/tokens";
+import { colors, rawColors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
 
 interface SvpPoint {
@@ -159,46 +159,46 @@ export function SvpEditorDialog({ open, onClose }: Props) {
                 {/* Grid */}
                 {[0.25, 0.5, 0.75].map((t) => (
                   <g key={t}>
-                    <line x1={pad} y1={pad + t * (H - 2 * pad)} x2={W - pad} y2={pad + t * (H - 2 * pad)} stroke={colors.navyBorder} strokeWidth="0.5" />
-                    <line x1={pad + t * (W - 2 * pad)} y1={pad} x2={pad + t * (W - 2 * pad)} y2={H - pad} stroke={colors.navyBorder} strokeWidth="0.5" />
+                    <line x1={pad} y1={pad + t * (H - 2 * pad)} x2={W - pad} y2={pad + t * (H - 2 * pad)} stroke={rawColors.navyBorder} strokeWidth="0.5" />
+                    <line x1={pad + t * (W - 2 * pad)} y1={pad} x2={pad + t * (W - 2 * pad)} y2={H - pad} stroke={rawColors.navyBorder} strokeWidth="0.5" />
                   </g>
                 ))}
 
                 {/* Axes */}
-                <line x1={pad} y1={pad} x2={pad} y2={H - pad} stroke={colors.steelGray} strokeWidth="1" />
-                <line x1={pad} y1={H - pad} x2={W - pad} y2={H - pad} stroke={colors.steelGray} strokeWidth="1" />
+                <line x1={pad} y1={pad} x2={pad} y2={H - pad} stroke={rawColors.steelGray} strokeWidth="1" />
+                <line x1={pad} y1={H - pad} x2={W - pad} y2={H - pad} stroke={rawColors.steelGray} strokeWidth="1" />
 
                 {/* Axis labels */}
-                <text x={W / 2} y={H - 5} textAnchor="middle" fill={colors.steelGray} fontSize="10" fontFamily="JetBrains Mono">
+                <text x={W / 2} y={H - 5} textAnchor="middle" fill={rawColors.steelGray} fontSize="10" fontFamily="JetBrains Mono">
                   Speed (m/s)
                 </text>
-                <text x={12} y={H / 2} textAnchor="middle" fill={colors.steelGray} fontSize="10" fontFamily="JetBrains Mono"
+                <text x={12} y={H / 2} textAnchor="middle" fill={rawColors.steelGray} fontSize="10" fontFamily="JetBrains Mono"
                   transform={`rotate(-90, 12, ${H / 2})`}>
                   Depth (m)
                 </text>
 
                 {/* Tick labels */}
-                <text x={pad} y={H - pad + 12} textAnchor="middle" fill={colors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
+                <text x={pad} y={H - pad + 12} textAnchor="middle" fill={rawColors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
                   {profile.min_speed.toFixed(0)}
                 </text>
-                <text x={W - pad} y={H - pad + 12} textAnchor="middle" fill={colors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
+                <text x={W - pad} y={H - pad + 12} textAnchor="middle" fill={rawColors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
                   {profile.max_speed.toFixed(0)}
                 </text>
-                <text x={pad - 5} y={H - pad + 3} textAnchor="end" fill={colors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
+                <text x={pad - 5} y={H - pad + 3} textAnchor="end" fill={rawColors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
                   {profile.min_depth.toFixed(0)}
                 </text>
-                <text x={pad - 5} y={pad + 3} textAnchor="end" fill={colors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
+                <text x={pad - 5} y={pad + 3} textAnchor="end" fill={rawColors.steelGray} fontSize="8" fontFamily="JetBrains Mono">
                   {profile.max_depth.toFixed(0)}
                 </text>
 
                 {/* SVP curve */}
-                <path d={pathD} fill="none" stroke={colors.marineTurquoise} strokeWidth="2" />
+                <path d={pathD} fill="none" stroke={rawColors.marineTurquoise} strokeWidth="2" />
 
                 {/* Data points */}
                 {profile.points.map((p, i) => {
                   const x = pad + ((p.speed - profile.min_speed) / (speedRange || 1)) * (W - 2 * pad);
                   const y = pad + ((p.depth - profile.min_depth) / (depthRange || 1)) * (H - 2 * pad);
-                  return <circle key={i} cx={x} cy={y} r="2" fill={colors.marineCyan} />;
+                  return <circle key={i} cx={x} cy={y} r="2" fill={rawColors.marineCyan} />;
                 })}
               </svg>
             </div>

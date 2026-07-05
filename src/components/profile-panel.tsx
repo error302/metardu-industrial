@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Activity, Database, Sparkles } from "lucide-react";
-import { colors, domainAccent, type DomainMode } from "@/lib/tokens";
+import { colors, rawColors, domainAccent, type DomainMode } from "@/lib/tokens";
 import { sampleProfile, type ProfileSampleResult } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
 
@@ -187,7 +187,7 @@ export function ProfilePanel({ domain, line }: Props) {
               y1={h * t}
               x2={w}
               y2={h * t}
-              stroke={colors.navyBorder}
+              stroke={rawColors.navyBorder}
               strokeWidth="0.2"
             />
           ))}
@@ -198,7 +198,7 @@ export function ProfilePanel({ domain, line }: Props) {
               y1="0"
               x2={w * t}
               y2={h}
-              stroke={colors.navyBorder}
+              stroke={rawColors.navyBorder}
               strokeWidth="0.2"
             />
           ))}

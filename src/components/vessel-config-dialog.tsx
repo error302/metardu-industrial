@@ -11,7 +11,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState } from "react";
 import { X, Ship, Save } from "lucide-react";
-import { colors } from "@/lib/tokens";
+import { colors, rawColors } from "@/lib/tokens";
 
 interface Props {
   open: boolean;
@@ -96,46 +96,46 @@ export function VesselConfigDialog({ open, onClose }: Props) {
             </div>
             <svg viewBox="0 0 400 200" className="w-full" style={{ maxHeight: "180px" }}>
               {/* Vessel hull */}
-              <ellipse cx="200" cy="100" rx="120" ry="35" fill="none" stroke={colors.steelGray} strokeWidth="1.5" />
-              <text x="200" y="105" textAnchor="middle" fill={colors.steelGray} fontSize="9" fontFamily="JetBrains Mono">HULL</text>
+              <ellipse cx="200" cy="100" rx="120" ry="35" fill="none" stroke={rawColors.steelGray} strokeWidth="1.5" />
+              <text x="200" y="105" textAnchor="middle" fill={rawColors.steelGray} fontSize="9" fontFamily="JetBrains Mono">HULL</text>
 
               {/* Bow direction */}
-              <path d="M 320 100 L 340 95 L 340 105 Z" fill={colors.steelGray} />
-              <text x="345" y="103" fill={colors.steelGray} fontSize="8">FWD</text>
+              <path d="M 320 100 L 340 95 L 340 105 Z" fill={rawColors.steelGray} />
+              <text x="345" y="103" fill={rawColors.steelGray} fontSize="8">FWD</text>
 
               {/* IMU (origin) */}
-              <circle cx="200" cy="100" r="5" fill={colors.industrialOrange} />
-              <text x="200" y="118" textAnchor="middle" fill={colors.industrialOrange} fontSize="8" fontWeight="bold">IMU</text>
+              <circle cx="200" cy="100" r="5" fill={rawColors.industrialOrange} />
+              <text x="200" y="118" textAnchor="middle" fill={rawColors.industrialOrange} fontSize="8" fontWeight="bold">IMU</text>
 
               {/* Transducer */}
               <circle
                 cx={200 + config.transducer_x * 20}
                 cy={100 + config.transducer_y * 20}
-                r="5" fill={colors.marineTurquoise}
+                r="5" fill={rawColors.marineTurquoise}
               />
               <text
                 x={200 + config.transducer_x * 20}
                 y={100 + config.transducer_y * 20 - 10}
-                textAnchor="middle" fill={colors.marineTurquoise} fontSize="8" fontWeight="bold"
+                textAnchor="middle" fill={rawColors.marineTurquoise} fontSize="8" fontWeight="bold"
               >TXD</text>
 
               {/* GNSS */}
               <circle
                 cx={200 + config.gnss_x * 20}
                 cy={100 + config.gnss_y * 20}
-                r="5" fill={colors.pass}
+                r="5" fill={rawColors.pass}
               />
               <text
                 x={200 + config.gnss_x * 20}
                 y={100 + config.gnss_y * 20 - 10}
-                textAnchor="middle" fill={colors.pass} fontSize="8" fontWeight="bold"
+                textAnchor="middle" fill={rawColors.pass} fontSize="8" fontWeight="bold"
               >GNSS</text>
 
               {/* Lever-arm lines */}
               <line x1="200" y1="100" x2={200 + config.transducer_x * 20} y2={100 + config.transducer_y * 20}
-                stroke={colors.marineTurquoise} strokeWidth="1" strokeDasharray="3,2" />
+                stroke={rawColors.marineTurquoise} strokeWidth="1" strokeDasharray="3,2" />
               <line x1="200" y1="100" x2={200 + config.gnss_x * 20} y2={100 + config.gnss_y * 20}
-                stroke={colors.pass} strokeWidth="1" strokeDasharray="3,2" />
+                stroke={rawColors.pass} strokeWidth="1" strokeDasharray="3,2" />
             </svg>
           </div>
 
