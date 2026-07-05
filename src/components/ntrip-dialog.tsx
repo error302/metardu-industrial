@@ -53,6 +53,7 @@ export function NtripDialog({ open, onClose }: Props) {
   const [mountpoint, setMountpoint] = useState("RTCM3GG");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [useTls, setUseTls] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [status, setStatus] = useState<NtripStatusRpc | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +93,7 @@ export function NtripDialog({ open, onClose }: Props) {
         username: username || null,
         password: password || null,
         timeout_secs: 10,
+        use_tls: useTls,
       };
       const s = await startNtrip(config);
       if (s) {
@@ -340,6 +342,24 @@ export function NtripDialog({ open, onClose }: Props) {
                 className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
               />
             </div>
+          </div>
+
+          {/* TLS toggle */}
+          <div className="flex items-center gap-2 rounded-md border border-navy-border bg-navy-base px-3 py-2">
+            <input
+              type="checkbox"
+              id="useTls"
+              checked={useTls}
+              onChange={(e) => setUseTls(e.target.checked)}
+              disabled={isConnected || connecting}
+              className="h-3.5 w-3.5"
+            />
+            <label htmlFor="useTls" className="text-xs text-white cursor-pointer select-none">
+              Use TLS (ntrips://)
+            </label>
+            <span className="text-[9px] text-steel-gray ml-auto">
+              {useTls ? "Encrypted" : "Unencrypted — use only on trusted networks"}
+            </span>
           </div>
 
           {/* Connect/Disconnect button */}

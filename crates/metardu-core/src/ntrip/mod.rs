@@ -23,17 +23,28 @@
 // Message reference:  RTCM 10403.2 (RTCM v3.2)
 
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+/// A trait that combines Read + Write + Send, so we can abstract over
+/// TCP and TLS streams. Both `TcpStream` and `rustls::Stream` implement
+/// `Read + Write + Send`.
+trait ReadWrite: Read + Write + Send {}
+impl<T: Read + Write + Send> ReadWrite for T {}
+
+/// The boxed stream type used throughout the NTRIP client. Can be
+/// either a raw `TcpStream` (for `ntrip://`) or a `rustls::Stream`
+/// wrapping a `TcpStream` (for `ntrips://`).
+type BoxStream = Box<dyn ReadWrite>;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NtripConfig {
     /// NTRIP caster hostname or IP
     pub host: String,
-    /// NTRIP caster port (usually 2101)
+    /// NTRIP caster port (usually 2101 for TCP, 2102 for TLS)
     pub port: u16,
     /// Mountpoint name (e.g., "RTCM3GG")
     pub mountpoint: String,
@@ -44,6 +55,13 @@ pub struct NtripConfig {
     /// Connection timeout in seconds
     #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
+    /// Use TLS (ntrips://). When true, the TCP connection is wrapped
+    /// in a TLS session using rustls with the system root CA store.
+    /// Defaults to false for backward compatibility — existing
+    /// configurations use raw TCP. Set to true for casters that
+    /// support `ntrips://` to prevent MITM attacks on public networks.
+    #[serde(default)]
+    pub use_tls: bool,
 }
 
 fn default_timeout() -> u64 {
@@ -172,9 +190,14 @@ impl NtripClient {
 
     /// Connect to the NTRIP caster and request the mountpoint.
     /// Public so the reconnect loop in `start_streaming` can call it.
-    fn connect(&self) -> Result<TcpStream, NtripError> {
+    ///
+    /// Returns a boxed stream that is either a raw `TcpStream` (when
+    /// `config.use_tls` is false) or a `rustls::Stream` wrapping a
+    /// `TcpStream` (when `config.use_tls` is true). The caller doesn't
+    /// need to know which — both implement `Read + Write`.
+    fn connect(&self) -> Result<BoxStream, NtripError> {
         let addr = format!("{}:{}", self.config.host, self.config.port);
-        let stream = TcpStream::connect_timeout(
+        let tcp_stream = TcpStream::connect_timeout(
             &addr.parse().map_err(|_| {
                 NtripError::ConnectionRefused(self.config.host.clone(), self.config.port)
             })?,
@@ -182,8 +205,19 @@ impl NtripClient {
         )
         .map_err(|_| NtripError::ConnectionRefused(self.config.host.clone(), self.config.port))?;
 
-        stream.set_read_timeout(Some(Duration::from_secs(30))).ok();
-        stream.set_nonblocking(false).ok();
+        tcp_stream
+            .set_read_timeout(Some(Duration::from_secs(30)))
+            .ok();
+        tcp_stream.set_nonblocking(false).ok();
+
+        // Wrap in TLS if configured. The TLS handshake happens here,
+        // before we send the HTTP request — so the entire NTRIP
+        // session (including credentials) is encrypted.
+        let stream: BoxStream = if self.config.use_tls {
+            self.wrap_tls(tcp_stream)?
+        } else {
+            Box::new(tcp_stream)
+        };
 
         // Build the NTRIP HTTP request
         let auth_header =
@@ -206,40 +240,49 @@ impl NtripClient {
         let mut stream = stream;
         stream.write_all(request.as_bytes())?;
 
-        // Read the HTTP response headers
-        let mut reader = BufReader::new(stream.try_clone()?);
-        let mut status_line = String::new();
-        reader.read_line(&mut status_line)?;
+        // Read the HTTP response headers. We read directly from the
+        // stream byte-by-byte until we see \r\n\r\n, then return the
+        // stream. This avoids the BufReader data-loss problem: if we
+        // used BufReader, it might buffer RTCM data along with the
+        // headers, and we'd lose that data when we discard the reader.
+        let mut header_buf = Vec::with_capacity(1024);
+        let mut byte = [0u8; 1];
+        loop {
+            stream.read_exact(&mut byte)?;
+            header_buf.push(byte[0]);
+            // Check for \r\n\r\n (end of HTTP headers)
+            if header_buf.len() >= 4 && &header_buf[header_buf.len() - 4..] == b"\r\n\r\n" {
+                break;
+            }
+            if header_buf.len() > 8192 {
+                return Err(NtripError::Io(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "HTTP response headers too long (>8KB)",
+                )));
+            }
+        }
+
+        let status_line = String::from_utf8_lossy(&header_buf);
+        let first_line = status_line.lines().next().unwrap_or("");
 
         // Check for auth required / failed / mountpoint not found
-        if status_line.contains("401") {
+        if first_line.contains("401") {
             return if self.config.username.is_none() {
                 Err(NtripError::AuthRequired)
             } else {
                 Err(NtripError::AuthFailed)
             };
         }
-        if status_line.contains("404") {
+        if first_line.contains("404") {
             return Err(NtripError::MountpointNotFound(
                 self.config.mountpoint.clone(),
             ));
         }
-        if !status_line.contains("200") {
+        if !first_line.contains("200") {
             return Err(NtripError::Io(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                format!("caster returned: {}", status_line.trim()),
+                format!("caster returned: {}", first_line.trim()),
             )));
-        }
-
-        // Read and discard remaining headers until blank line
-        loop {
-            let mut line = String::new();
-            if reader.read_line(&mut line)? == 0 {
-                break;
-            }
-            if line.trim().is_empty() {
-                break;
-            }
         }
 
         // Mark as connected
@@ -251,6 +294,47 @@ impl NtripClient {
         }
 
         Ok(stream)
+    }
+
+    /// Wrap a TcpStream in a TLS session using rustls with the system
+    /// root CA store. Uses SNI (Server Name Indication) so the caster
+    /// can serve the right certificate.
+    fn wrap_tls(&self, tcp_stream: TcpStream) -> Result<BoxStream, NtripError> {
+        use std::sync::Arc;
+
+        // Build the rustls client config with the system root CA store.
+        // `webpki_roots::TLS_SERVER_ROOTS` contains the Mozilla root
+        // CAs — the same set used by Firefox and curl.
+        let mut root_store = rustls::RootCertStore::empty();
+        root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+
+        let config = rustls::ClientConfig::builder()
+            .with_root_certificates(root_store)
+            .with_no_client_auth();
+
+        // SNI: use the hostname (not IP) as the server name.
+        // Pass an owned String so the ServerName is 'static
+        // (ClientConnection::new requires ServerName<'static>).
+        let server_name = rustls::pki_types::ServerName::try_from(self.config.host.clone())
+            .map_err(|e| {
+                NtripError::Io(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("invalid TLS server name '{}': {}", self.config.host, e),
+                ))
+            })?;
+
+        let conn = rustls::ClientConnection::new(Arc::new(config), server_name).map_err(|e| {
+            NtripError::Io(std::io::Error::new(
+                std::io::ErrorKind::ConnectionAborted,
+                format!("TLS connection init failed: {}", e),
+            ))
+        })?;
+
+        // StreamOwned takes ownership of both the connection and the
+        // TCP stream, implementing Read + Write + Send.
+        let tls_stream = rustls::StreamOwned::new(conn, tcp_stream);
+
+        Ok(Box::new(tls_stream))
     }
 
     /// Start the background RTCM streaming thread with auto-reconnect.
@@ -267,7 +351,7 @@ impl NtripClient {
     /// manually click Reconnect.
     fn start_streaming(
         &self,
-        mut stream: TcpStream,
+        mut stream: BoxStream,
         running: Arc<AtomicBool>,
         status: Arc<std::sync::Mutex<NtripStatus>>,
     ) {
@@ -695,6 +779,7 @@ mod tests {
             username: Some("user".to_string()),
             password: Some("pass".to_string()),
             timeout_secs: 10,
+            use_tls: false,
         };
         let json = serde_json::to_string(&config).unwrap();
         let parsed: NtripConfig = serde_json::from_str(&json).unwrap();

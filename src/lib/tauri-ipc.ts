@@ -2444,6 +2444,9 @@ export interface NtripConfigRpc {
   username: string | null;
   password: string | null;
   timeout_secs: number;
+  /** Use TLS (ntrips://). Encrypts the entire session including
+   *  credentials. Set to true for casters that support TLS. */
+  use_tls: boolean;
 }
 
 export interface NtripStatusRpc {
