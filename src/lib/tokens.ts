@@ -2,36 +2,43 @@
  * MetaRDU Industrial — Design Tokens
  * Single source of truth for brand colors, extracted from the logo.
  * Used by Tailwind via @theme in index.css and directly in components.
+ *
+ * IMPORTANT: Colors use CSS variable references (var(--color-*)) so
+ * they respect the theme override in index.css (:root[data-theme="light"]).
+ * This means inline styles like `style={{ background: colors.navyBase }}`
+ * will automatically switch to the light-theme values when the user
+ * toggles to daylight mode. Previously these were hardcoded hex values
+ * which ignored the theme override.
  */
 
 export const colors = {
-  navyBase: "#0A192F",
-  navyPanel: "#0F1F3A",
-  navyElevated: "#142A4A",
-  navyBorder: "#1E2A3F",
+  navyBase: "var(--color-navy-base)",
+  navyPanel: "var(--color-navy-panel)",
+  navyElevated: "var(--color-navy-elevated)",
+  navyBorder: "var(--color-navy-border)",
 
-  industrialOrange: "#FFA500",
-  industrialOrangeDim: "#B8771A",
+  industrialOrange: "var(--color-industrial-orange)",
+  industrialOrangeDim: "var(--color-industrial-orange-dim)",
 
-  white: "#FFFFFF",
-  steelGray: "#6B7280",
-  steelLight: "#9CA3AF",
+  white: "var(--color-white)",
+  steelGray: "var(--color-steel-gray)",
+  steelLight: "var(--color-steel-light)",
 
   // Mining mode
-  miningYellow: "#FFC107",
-  miningBurnt: "#FFB347",
-  miningTerrain: "#8B4513",
+  miningYellow: "var(--color-mining-yellow)",
+  miningBurnt: "var(--color-mining-burnt)",
+  miningTerrain: "var(--color-mining-terrain)",
 
   // Marine mode
-  marineDeep: "#1E3A8A",
-  marineTurquoise: "#20B2AA",
-  marineCyan: "#06B6D4",
+  marineDeep: "var(--color-marine-deep)",
+  marineTurquoise: "var(--color-marine-turquoise)",
+  marineCyan: "var(--color-marine-cyan)",
 
   // Semantic
-  pass: "#10B981",
-  investigate: "#F59E0B",
-  fail: "#EF4444",
-  info: "#3B82F6",
+  pass: "var(--color-pass)",
+  investigate: "var(--color-investigate)",
+  fail: "var(--color-fail)",
+  info: "var(--color-info)",
 } as const;
 
 export type DomainMode = "mining" | "marine" | "both";

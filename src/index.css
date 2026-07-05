@@ -72,26 +72,31 @@
   --color-navy-elevated: #E2E8F0;
   --color-navy-border: #CBD5E1;
 
-  /* Override text colors for dark-on-light */
+  /* Override text colors for dark-on-light.
+   * --color-white is used as "primary text" throughout the app —
+   * in light mode it becomes dark navy so all text-white/text-*
+   * utilities and inline styles switch correctly. */
   --color-white: #0A192F;
   --color-steel-gray: #475569;
   --color-steel-light: #334155;
 
-  /* Keep orange but darken for contrast */
-  --color-industrial-orange: #D97706;
-  --color-industrial-orange-dim: #B45309;
+  /* Keep orange but darken for WCAG AA contrast on white (4.5:1) */
+  --color-industrial-orange: #C2410C;
+  --color-industrial-orange-dim: #9A3412;
 
-  /* Domain accents stay but darken */
-  --color-mining-yellow: #CA8A04;
+  /* Domain accents — darkened for contrast on light backgrounds */
+  --color-mining-yellow: #A16207;
   --color-mining-burnt: #C2410C;
+  --color-mining-terrain: #78350F;
   --color-marine-deep: #1E40AF;
   --color-marine-turquoise: #0F766E;
   --color-marine-cyan: #0E7490;
 
-  /* Semantic — keep pass/fail but darken */
+  /* Semantic — darkened for contrast on light backgrounds */
   --color-pass: #15803D;
   --color-fail: #DC2626;
   --color-investigate: #B45309;
+  --color-info: #1D4ED8;
 
   /* Survey grid — darker on light bg */
   --color-survey-grid: #CBD5E1;
