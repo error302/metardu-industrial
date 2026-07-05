@@ -3,10 +3,11 @@
 > Specialised desktop application for **mining and marine survey workflows, automation, and QA/QC**.
 > Built with Tauri 2.0 (Rust core) + React 19 + OpenLayers 10. 100% open-source stack, no subscriptions, no API keys.
 
+[![CI](https://github.com/error302/metardu-industrial/actions/workflows/ci.yml/badge.svg)](https://github.com/error302/metardu-industrial/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Architecture](https://img.shields.io/badge/architecture-v1.0-orange)](./docs/ARCHITECTURE.md)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-blue)](https://tauri.app)
 [![OpenLayers](https://img.shields.io/badge/OpenLayers-10-green)](https://openlayers.org)
-[![License](https://img.shields.io/badge/license-TBD-lightgrey)](#license)
 
 ---
 
@@ -86,8 +87,8 @@ This repository contains a production-ready surveying application with:
 
 ### Prerequisites
 
-- **Node.js** 20+ and npm
-- **Rust** 1.77+ (install via [rustup](https://rustup.rs))
+- **Node.js** 22+ and npm
+- **Rust** 1.87+ (install via [rustup](https://rustup.rs))
 - **Tauri 2.0 system deps** for your OS — see [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)
 
 #### Linux (Debian/Ubuntu)
@@ -217,11 +218,15 @@ See [`docs/ARCHITECTURE.md` §10](./docs/ARCHITECTURE.md#10-development-roadmap)
 
 ## Contributing
 
-TBD — contributing guidelines will be added once Phase 0 is complete. For now, open an issue or PR against the `main` branch.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, how to add
+new IPC commands, and how to run the test suite.
 
 ## License
 
-TBD — likely **open core** (processing engine open-source under MIT/Apache-2.0, UI and pro plugins commercial). Final decision before Phase 1.
+**MIT** — see [LICENSE](./LICENSE). The processing engine, frontend, and
+standalone binaries (`metardu-eom-cli`, `metardu-verify`) are all MIT.
+The EOM Volumetric Auditor's signed-report feature is gated by a license
+check (open-core model) but the source code is fully open.
 
 ## Credits
 

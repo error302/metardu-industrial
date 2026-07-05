@@ -3,6 +3,7 @@ name = "metardu-eom-cli"
 version = "0.1.0"
 edition = "2021"
 description = "MetaRDU Industrial EOM pipeline demo + RSA license signing/verifying tooling"
+license = "MIT"
 
 [[bin]]
 name = "metardu-eom-cli"

@@ -3,6 +3,7 @@ name = "metardu-verify"
 version = "0.1.0"
 edition = "2021"
 description = "Standalone open-source verifier for MetaRDU Industrial chain-of-custody PDFs"
+license = "MIT"
 
 [[bin]]
 name = "metardu-verify"

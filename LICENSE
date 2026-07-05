@@ -1,27 +1,40 @@
-MetaRDU Industrial
+MIT License
+
 Copyright (c) 2026 error302
 
-All rights reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-LICENSE NOTICE
-==============
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-This repository is currently in Phase 0 (Foundation) development. The
-final license has not yet been determined. The intent, per
-docs/ARCHITECTURE.md §1.4, is an "open core" model:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-  - Processing engine (Rust core, src-tauri/src/): MIT or Apache-2.0
-  - Frontend UI (src/): to be determined, likely MIT or Apache-2.0
-  - Pro plugins and commercial extensions: proprietary
+---
 
-Until the license is finalized:
+COMMERCIAL MODULES NOTICE
+=========================
 
-  - You may read, fork, and study the source for evaluation purposes.
-  - You may NOT redistribute, modify, or incorporate this code into
-    other products without explicit written permission from the author.
-  - Contributions accepted via PR are accepted under the same tentative
-    terms — by submitting a PR you agree to license your contribution
-    under whatever final license MetaRDU Industrial adopts.
+The EOM Volumetric Auditor (src-tauri/src/commands/eom.rs and related
+modules) is a commercial module that requires a license key for signed
+report generation. The source code is open under the MIT license above,
+but generating signed EOM audit reports requires a valid license issued
+by the maintainer. See SECURITY.md and src-tauri/src/mining/license.rs
+for the license verification scheme.
 
-Contact: open an issue at https://github.com/error302/metardu-industrial/issues
-for licensing questions.
+This "open core" model means:
+  - The processing engine, frontend, and standalone binaries are free
+    to use, modify, and redistribute under MIT.
+  - The EOM Auditor's signed-report feature is gated by a license check.
+    Unsigned reports can be generated without a license for evaluation.
+  - Future Pro plugins and commercial extensions will be proprietary.

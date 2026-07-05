@@ -3,6 +3,7 @@ name = "metardu-industrial"
 version = "0.1.0"
 description = "Specialised desktop app for mining and marine survey workflows"
 authors = ["error302"]
+license = "MIT"
 edition = "2021"
 rust-version = "1.87"
 default-run = "metardu-industrial"

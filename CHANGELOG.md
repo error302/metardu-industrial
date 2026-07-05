@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Security & Correctness Hardening
+
+#### Security Fixes
+- **License signing upgraded from RSA-PKCS#1v1.5 to RSA-PSS (PS256).**
+  PSS is probabilistic and not vulnerable to Bleichenbacher padding-
+  oracle attacks. Old RS256 licenses still verify (backward-compat
+  path) so existing customers don't get locked out. 4 new security
+  tests: PSS round-trip, legacy round-trip, cross-scheme tamper
+  rejection, unknown-algorithm rejection.
+- **Content Security Policy set in tauri.conf.json** (was `null`).
+  `default-src 'self'` with controlled exceptions. No `unsafe-eval`.
+- **Plugin loading now requires RSA-PSS signature verification.**
+  Every `.so`/`.dll`/`.dylib` must be accompanied by a `.sig` sidecar
+  containing a base64-encoded signature over the plugin's SHA-256
+  hash. Unsigned plugins are refused. Prevents malicious file drop
+  → native code execution on next launch.
+- **Arbitrary shell execution removed from pipeline runner.**
+  `PipelineAction::ShellCommand` used to run `sh -c <command>` with
+  no allowlist. Now refuses with an error pointing to SECURITY.md.
+- **License forge oracles removed from IPC.** `generate_license_cmd`
+  (HMAC system) and `sign_eom_license_cmd` (RSA system) are no
+  longer exposed via `invoke()` — they were signing oracles that
+  would let any frontend code mint an Enterprise license. Functions
+  kept as library fns for the standalone CLI tools.
+- **HTML injection fixed in report engine + deliverable manifest.**
+  `provenance_hash`, `src.description`, and `filename` were
+  interpolated into HTML without escaping. All user-controlled
+  fields now go through `esc()`/`esc_html()`.
+- **Telemetry mutex poisoning recovery.** A single panic no longer
+  permanently disables all telemetry for the session. Same fix for
+  the EOM watcher's `seen` set.
+- **SECURITY.md added** — threat model, vulnerability reporting
+  policy, known gaps, pre-1.0 hardening checklist.
+- **RELEASE.md added** — pre-flight checklist, build/sign/distribute
+  steps, emergency hotfix procedure.
+
+#### Correctness Fixes
+- **NTRIP RTCM3 CRC-24Q verification implemented.** The parser
+  previously trusted every byte from the caster — a single corrupted
+  byte would silently produce wrong message types. Now verifies
+  CRC-24Q (poly `0x1864CFB`) on every frame; corrupt frames are
+  dropped and the parser resyncs on the next 0xD3 preamble.
+- **Volume calculator NODATA handling fixed.** Both `compute_volumes`
+  copies (core crate + src-tauri local) were silently inflating cut
+  volume by ~10⁴ m³ per NODATA pixel. Now skip NODATA cells and
+  expose a `nodata_cells` field for QC.
+- **EOM audit `processing_time_ms` no longer hardcoded 0.** Stamped
+  with real wall-clock time measured around the pipeline call.
+- **`FileProbeResult` GeoTIFF kind tag fixed.** Rust serialized as
+  `"geotiff"` but TS checked for `"geo-tiff"` — dropped GeoTIFFs got
+  no bounds/epsg/dimensions. Fixed with `#[serde(rename = "geo-tiff")]`.
+- **`max_points=0` now means "read all" in LAS reader.** Previously
+  `header.num_point_records.min(0)` returned 0, silently reading
+  zero points and breaking the EOM watch folder, slice editor, and
+  CSF classifier. Regression test added.
+- **NTRIP `bytes_received` double-counting fixed.** The streaming
+  loop added consumed bytes per parsed frame AND raw bytes per socket
+  read. Displayed stat was ~2x reality.
+- **`NtripStatus` compile error fixed.** The `None` arm of
+  `get_ntrip_status_cmd` was missing 3 fields added in commit eaaaecb.
+  Hard compile error — CI would have failed.
+- **React rules-of-hooks crashes fixed** in cube-disambiguation-dialog
+  and triage-dialog (useMemo/useCallback called after early return).
+- **SSS waterfall viewer stale closure fixed.** `computeHeight` was
+  not in `handleCanvasClick`'s dep array — could compute heights
+  against the wrong ping.
+
+#### Performance Fixes
+- **Volume calculator parallelized with rayon.** Single-threaded →
+  `par_iter().fold().reduce()` across cores. 4-8x speedup on 8-core
+  machines. Bench-assignment inner loop changed from O(n_benches)
+  linear scan to O(1) index computation.
+- **OpenLayers Map no longer rebuilt on domain change.** Toggling
+  mining/marine/both used to destroy the entire map (OSM tiles,
+  graticule, controls, view state) and rebuild it. Changed dep
+  array to `[]`. Saves 200-500ms flicker + tile re-fetch.
+- **DEM render effect no longer re-runs on every files change.**
+  Adding a CSV while a 25M-cell DEM was rendered re-ran the entire
+  Rust render + IPC + canvas rebuild (3-10s freeze). Now depends on
+  a derived `loadedGeotiffPath` string — only re-runs when the
+  actual GeoTIFF changes.
+
+#### CI Enhancements
+- **`core-test` job** runs `cargo test` on `metardu-core` (no system
+  deps) on every push — 97 tests in <1 min.
+- **`cargo-audit`** runs on every push to catch CVEs in dependencies.
+- **`oxlint`** runs before tsc/vite in the frontend-check job.
+- **Integration tests** (`crates/metardu-core/tests/integration.rs`)
+  run as a separate CI step — guards NODATA + CRC fixes.
+- **`rustfmt` violations fixed** across ~30 files so `cargo fmt
+  --check` actually passes.
+
+#### Documentation
+- **License standardized to MIT** across LICENSE, README, ROADMAP,
+  CONTRIBUTING, and all 5 package manifests (package.json + 4
+  Cargo.tomls). Previously 4 docs gave 4 different answers.
+- **ARCHITECTURE.md §12 repository structure** updated to match the
+  actual flat layout (was describing a nonexistent `apps/desktop/`
+  + `packages/` + `crates/metardu-{geodesy,formats,pipelines,provenance}`
+  monorepo). React version corrected from 18 to 19.
+- **README badges** now include a live CI status badge and a MIT
+  license badge (was a static "TBD" badge).
+- **README Node/Rust version requirements** corrected to match CI
+  (Node 22+, Rust 1.87+).
+
 ### Added — Sprint 9: Commercial Module + Field Tools
 
 #### EOM Volumetric Auditor (Commercial Module)

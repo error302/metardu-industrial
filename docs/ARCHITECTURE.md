@@ -79,7 +79,7 @@ Tauri 2.0 is the application shell. The Rust core handles all heavy processing, 
 
 | Library | Purpose | Version |
 |---|---|---|
-| React 18 + TypeScript | UI framework | 18.3+ |
+| React 19 + TypeScript | UI framework | 19.2+ |
 | Vite | Build tooling, HMR | 5+ |
 | Zustand | State management | 4+ |
 | OpenLayers 10 | **Primary 2D map canvas** | 10+ |
@@ -652,55 +652,70 @@ An iPad companion app (separate binary, syncs with the desktop app) for stakeout
 metardu-industrial/
 ├── .github/
 │   └── workflows/
-│       ├── build.yml              # Cross-platform build matrix
-│       ├── release.yml            # Signed release artifacts
-│       └── docs.yml               # Documentation deploy
-├── apps/
-│   └── desktop/                   # Main Tauri application
-│       ├── src/                   # React frontend
-│       │   ├── workspaces/
-│       │   │   ├── mining/
-│       │   │   ├── marine/
-│       │   │   └── pipelines/
-│       │   ├── components/
-│       │   ├── map/               # OpenLayers integration
-│       │   ├── three-d/           # CesiumJS integration
-│       │   ├── stores/            # Zustand stores
-│       │   └── styles/            # Tailwind + design tokens
-│       ├── src-tauri/             # Rust core
-│       │   ├── src/
-│       │   │   ├── geodesy/
-│       │   │   ├── pointcloud/
-│       │   │   ├── mining/
-│       │   │   ├── marine/
-│       │   │   ├── pipelines/
-│       │   │   ├── provenance/
-│       │   │   └── storage/
-│       │   └── Cargo.toml
-│       └── package.json
-├── crates/                        # Shared Rust crates
-│   ├── metardu-core/              # Core types, error handling
-│   ├── metardu-geodesy/           # PROJ wrappers, CRS management
-│   ├── metardu-formats/           # File format readers/writers
-│   ├── metardu-pipelines/         # Pipeline orchestrator
-│   └── metardu-provenance/        # Provenance DAG
-├── packages/                      # Shared TypeScript packages
-│   ├── ui-components/             # Design system components
-│   ├── map-extensions/            # OpenLayers custom layers
-│   └── pipeline-editor/           # Monaco-based YAML editor
-├── plugins/                       # Plugin SDK examples
-│   └── example-sonar-reader/
-├── docs/                          # Documentation
-│   ├── architecture/
-│   ├── user-guide/
-│   ├── plugin-sdk/
-│   └── api/
-├── scripts/                       # Build and release scripts
-├── Cargo.toml                     # Workspace manifest
-├── package.json                   # npm workspace manifest
-├── rust-toolchain.toml
+│       ├── ci.yml                # Frontend check + core test + rust check + build matrix
+│       └── release.yml           # Tagged-release artifact builder
+├── src/                          # React 19 frontend (TypeScript + Vite)
+│   ├── components/               # 33 dialogs + map canvas + point cloud layer
+│   ├── screens/                  # Splash, module loading, onboarding, workspace shell
+│   ├── stores/                   # Zustand stores (app-store, survey-store)
+│   ├── lib/                      # Tauri IPC wrapper, CRS registry, hooks, tokens
+│   └── App.tsx                   # Root: splash → modules → onboarding → workspace
+├── src-tauri/                    # Tauri 2.0 shell (Rust)
+│   ├── src/
+│   │   ├── commands/             # IPC command modules (108 commands across 10 files)
+│   │   ├── marine/               # Dredge, density gates, cross section, tidal spline, SVP
+│   │   ├── mining/               # CSF, volume, machine control, highwall, 4D monitoring, drone ingest
+│   │   ├── formats/              # LAS, GeoTIFF, Kongsberg .all, Reson .s7k, SSS XTF
+│   │   ├── geodesy/              # Pure-Rust UTM transform + optional PROJ/GDAL bindings
+│   │   ├── pipelines/            # ODM (OpenDroneMap) Docker shell-out
+│   │   ├── plugins/              # Dynamic plugin loader (signature-gated) + registry
+│   │   ├── automation/           # Pipeline orchestrator, watch folders, scheduler
+│   │   ├── distributed/          # Distributed CUBE coordinator (TCP)
+│   │   ├── streaming.rs          # Live sonar stream listener (UDP)
+│   │   ├── telemetry.rs          # Opt-in telemetry + crash dump capture
+│   │   ├── license.rs            # HMAC license system (Pro/Enterprise)
+│   │   ├── updater.rs            # Auto-updater (STUB — see RELEASE.md)
+│   │   └── lib.rs                # Tauri entry point + invoke_handler registration
+│   ├── keys/
+│   │   └── license_pub.pem       # Bundled RSA-2048 public key (for license + plugin verification)
+│   └── Cargo.toml
+├── crates/
+│   └── metardu-core/             # Shared pure-Rust processing core (no system deps)
+│       ├── src/
+│       │   ├── marine/           # CUBE, S-44, S-57, SVP, TPU
+│       │   ├── mining/           # LAS, CSF, DEM, DXF, EOM pipeline, volume, license, report
+│       │   ├── ntrip/            # NTRIP/RTCM3 client with CRC-24Q verification
+│       │   └── triage/           # Field data triage (EXIF, RINEX, NMEA, LAS headers)
+│       └── tests/
+│           └── integration.rs    # Cross-module integration tests
+├── metardu-eom-cli/              # Standalone CLI: EOM pipeline + license signing
+├── metardu-verify/               # Standalone CLI: PDF chain-of-custody verifier (free, open-source)
+├── docs/
+│   ├── ARCHITECTURE.md           # This file
+│   ├── ROADMAP.md                # Sprint-by-sprint status
+│   ├── manual/
+│   │   ├── USER_MANUAL.md
+│   │   ├── IPC_REFERENCE.md
+│   │   └── PIPELINE_REFERENCE.md
+│   ├── SECURITY.md               # Threat model, vulnerability reporting, known gaps
+│   └── RELEASE.md                # Pre-flight checklist, build/sign/distribute steps
+├── SECURITY.md                   # Security policy (root-level for GitHub detection)
+├── RELEASE.md                    # Release checklist (root-level for discoverability)
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── LICENSE                       # MIT
+├── package.json                  # Frontend deps + scripts
 └── README.md
 ```
+
+> **Note:** The repository is a flat single-workspace layout, not the
+> multi-workspace `apps/` + `packages/` + `crates/` monorepo originally
+> envisioned in the Phase 0 architecture. The flat layout was chosen
+> for simplicity during solo development — the `metardu-core` crate
+> is the only shared Rust library, and the frontend is a single Vite
+> app rather than a multi-package npm workspace. The `apps/desktop/`
+> structure may be adopted if a second app (e.g. a field-data uploader)
+> is added later.
 
 ---
 
