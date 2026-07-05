@@ -446,7 +446,12 @@ fn scan_dir(
         Err(_) => return new_files,
     };
     let now = std::time::SystemTime::now();
-    let mut s = seen.lock().unwrap();
+    // Recover from mutex poisoning: if a previous watcher iteration
+    // panicked mid-update, the `seen` set may be inconsistent but we'd
+    // still rather track *future* new files than bail entirely.
+    // Re-processing a file the watcher already saw is harmless (the
+    // EOM pipeline is idempotent); skipping the watcher entirely is not.
+    let mut s = seen.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     for entry in entries.flatten() {
         let ep = entry.path();
         if !ep.is_file() {

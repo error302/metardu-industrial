@@ -434,10 +434,13 @@ fn analyze_rinex(
         }
     };
 
-    // RINEX header contains approximate position in the "APPROX POSITION XYZ" line
+    // RINEX header contains approximate position in the "APPROX POSITION XYZ" line.
+    // We only need bounds, not the intermediate lat/lon values — so compute
+    // them inside the branch and assign directly to `bounds`. This avoids
+    // the unused-assignment warning that the previous `let mut lat = 0.0`
+    // pattern triggered (the initial 0.0 was immediately overwritten before
+    // ever being read).
     let mut bounds = None;
-    let mut lat = 0.0f64;
-    let mut lon = 0.0f64;
 
     for line in content.lines() {
         if line.contains("APPROX POSITION XYZ") {
@@ -452,8 +455,8 @@ fn analyze_rinex(
                     // Convert ECEF to lat/lon (simplified)
                     let r = (x * x + y * y + z * z).sqrt();
                     if r > 0.0 {
-                        lat = (z / r).asin().to_degrees();
-                        lon = y.atan2(x).to_degrees();
+                        let lat = (z / r).asin().to_degrees();
+                        let lon = y.atan2(x).to_degrees();
                         bounds = Some((lon, lat, lon, lat));
                     }
                 }

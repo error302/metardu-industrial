@@ -54,7 +54,7 @@ jobs:
   # Test the metardu-core crate (no system deps, runs on every push)
   # ───────────────────────────────────────────────────────────────
   core-test:
-    name: Core crate test
+    name: Core crate test + audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,25 @@ jobs:
         # verification, NODATA handling, license sign/verify round-
         # trip, triage parsing, etc. ~90 tests, sub-minute runtime.
         working-directory: crates/metardu-core
-        run: cargo test --lib --verbose
+        run: cargo test --verbose
+
+      - name: Cargo test (metardu-core integration)
+        # Integration tests in tests/ — exercises the public API
+        # across module boundaries. Catches accidental reliance on
+        # internal types that unit tests miss.
+        working-directory: crates/metardu-core
+        run: cargo test --test integration --verbose
+
+      - name: Install cargo-audit
+        # Scans Cargo.lock for known CVEs in dependencies. Fails the
+        # build if any advisory applies. Run on every push so a new
+        # advisory is caught within hours of publication, not at the
+        # next release.
+        run: cargo install cargo-audit --locked || true
+
+      - name: Cargo audit (metardu-core)
+        working-directory: crates/metardu-core
+        run: cargo audit --deny warnings
 
   # ───────────────────────────────────────────────────────────────
   # Rust formatting + clippy (fast, runs on every push)

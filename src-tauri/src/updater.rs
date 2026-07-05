@@ -1,13 +1,38 @@
 // Auto-Updater — Sprint 8 Production Distribution.
 //
-// Checks for app updates from a configurable endpoint, downloads the
-// update, verifies its signature, and installs it on next restart.
+// ⚠️  NOT PRODUCTION-READY — see RELEASE.md §"Auto-updater" for the
+// full migration plan. As of this commit, this module is a stub:
+//   - `check_for_updates` always returns "up to date" (no real HTTP)
+//   - `download_update` returns a temp path without downloading
+//   - `install_update` is a no-op
+//   - `tauri.conf.json` has no `plugins.updater` config
+//   - No signing key is configured
+//
+// This means **there is currently no way to deliver security patches
+// to installed clients**. Any customer who installs this build will
+// be stuck on it forever unless they manually re-download.
+//
+// To make this production-ready:
+//   1. Add `tauri-plugin-updater` to Cargo.toml
+//   2. Configure `plugins.updater` in tauri.conf.json with:
+//      - pubkey (generate with `tauri signer generate`)
+//      - endpoints (your update manifest URL)
+//   3. Generate a signing keypair and store the private key in CI
+//      secrets (NEVER in the repo)
+//   4. Wire `check_for_updates_cmd` to `tauri_plugin_updater::Updater`
+//   5. Publish a `latest.json` manifest to your endpoint on each
+//      release with the signed bundle URL + signature
+//   6. Test the full update flow on Windows + macOS + Linux
+//
+// Until that's done, do NOT ship this to customers in a way that
+// prevents manual re-install. The auto-updater UI exists to show
+// "no update available" today; calling it an "updater" is generous.
 //
 // Uses Tauri's built-in updater plugin under the hood (configured in
 // tauri.conf.json). This module provides the IPC surface for the
 // frontend to trigger checks + display status.
 //
-// Update flow:
+// Update flow (when fully wired):
 //   1. Frontend calls check_for_updates_cmd on startup + manual trigger
 //   2. Backend fetches the update manifest from the endpoint
 //   3. If a newer version exists, returns UpdateInfo

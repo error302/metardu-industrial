@@ -12,16 +12,29 @@
 //      to determine whether to run in Trial, Active, Invalid, Exhausted,
 //      or Expired mode.
 //
-// The signature scheme is RSASSA-PKCS1-v1_5 over SHA-256 (RFC 8017 §8.2),
-// implemented via `rsa::pkcs1v15::SigningKey` / `VerifyingKey`. Keys are
-// exchanged as PKCS#8 PEM strings.
+// Signature scheme (current):
+//   - **RSASSA-PSS over SHA-256** (RFC 8017 §8.1, algorithm tag "PS256").
+//     PSS is the modern recommendation — PKCS#1v1.5 is vulnerable to
+//     Bleichenbacher-style padding-oracle attacks when the verifier
+//     leaks information about *why* a signature failed. PSS is
+//     probabilistic and not known to have comparable weaknesses.
+//
+// Backward compatibility:
+//   - Licenses signed with the legacy PKCS#1v1.5 scheme (algorithm tag
+//     "RS256") are still accepted by `verify_license` so existing
+//     customers don't get locked out by an upgrade. New licenses are
+//     always signed with PSS.
+//   - Once all customers have migrated, `verify_license_legacy` can
+//     be removed and the `algorithm` field collapsed to a constant.
+//   - See SECURITY.md for the full migration timeline.
 
 use std::path::Path;
 
 use rand::rngs::OsRng;
 use rsa::{
-    pkcs1v15::{Signature, SigningKey, VerifyingKey},
+    pkcs1v15,
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding},
+    pss::{Signature, SigningKey, VerifyingKey},
     RsaPrivateKey, RsaPublicKey,
 };
 use serde::{Deserialize, Serialize};
@@ -171,7 +184,16 @@ pub fn canonical_claims_bytes(claims: &LicenseClaims) -> Result<Vec<u8>, License
 }
 
 /// Sign `claims` with `priv_key`, producing a `LicenseFile` carrying an
-/// RSASSA-PKCS1-v1_5-SHA256 signature.
+/// **RSASSA-PSS-SHA256** signature (algorithm tag "PS256").
+///
+/// PSS is preferred over the legacy PKCS#1v1.5 scheme because it is
+/// probabilistic and not known to be vulnerable to padding-oracle
+/// attacks. The signature carries a salt the length of the hash
+/// (32 bytes for SHA-256), which is the RFC 8017 recommended minimum.
+///
+/// To sign a license with the *legacy* PKCS#1v1.5 scheme (e.g. for
+/// an old customer whose verifier hasn't been upgraded yet), use
+/// `sign_license_legacy`.
 pub fn sign_license(
     claims: &LicenseClaims,
     priv_key: &RsaPrivateKey,
@@ -184,25 +206,88 @@ pub fn sign_license(
     Ok(LicenseFile {
         claims: claims.clone(),
         signature: sig_bytes,
+        algorithm: "PS256".to_string(),
+    })
+}
+
+/// Sign `claims` with the legacy RSASSA-PKCS1-v1_5-SHA256 scheme
+/// (algorithm tag "RS256"). Use only when you need to issue a license
+/// that an older client build can verify. New licenses should use
+/// `sign_license` (PSS).
+pub fn sign_license_legacy(
+    claims: &LicenseClaims,
+    priv_key: &RsaPrivateKey,
+) -> Result<LicenseFile, LicenseError> {
+    use rsa::signature::{SignatureEncoding, Signer};
+    let payload = canonical_claims_bytes(claims)?;
+    let signing_key = pkcs1v15::SigningKey::<Sha256>::new(priv_key.clone());
+    let sig: pkcs1v15::Signature = signing_key.sign(&payload);
+    let sig_bytes: Vec<u8> = sig.to_bytes().as_ref().to_vec();
+    Ok(LicenseFile {
+        claims: claims.clone(),
+        signature: sig_bytes,
         algorithm: "RS256".to_string(),
     })
 }
 
 /// Verify the signature on `license` using `pub_key`. On success, returns
 /// a clone of the inner claims.
+///
+/// Dispatches on `license.algorithm`:
+///   - "PS256" → RSASSA-PSS-SHA256 (current scheme)
+///   - "RS256" → RSASSA-PKCS1-v1_5-SHA256 (legacy, still accepted)
+///   - anything else → `InvalidSignature` (refuse unknown algorithms)
+///
+/// Both schemes verify against the same canonical claims bytes, so a
+/// license signed with one scheme verifies with the corresponding
+/// verifier only — no cross-scheme confusion.
 pub fn verify_license(
     license: &LicenseFile,
     pub_key: &RsaPublicKey,
 ) -> Result<LicenseClaims, LicenseError> {
-    use rsa::signature::Verifier;
     let payload = canonical_claims_bytes(&license.claims)?;
+    let ok = match license.algorithm.as_str() {
+        "PS256" => verify_signature_pss(&payload, &license.signature, pub_key),
+        "RS256" => verify_signature_legacy(&payload, &license.signature, pub_key),
+        // Unknown algorithm tag — refuse to verify rather than guessing.
+        // The caller can include the algorithm string in a higher-level
+        // error message if needed; here we just signal "invalid".
+        _ => false,
+    };
+    if ok {
+        Ok(license.claims.clone())
+    } else {
+        Err(LicenseError::InvalidSignature)
+    }
+}
+
+/// PSS verification. Salt length = hash length (32 bytes for SHA-256),
+/// matching what `sign_license` produces. Returns true on success,
+/// false on any verification failure (we deliberately collapse all
+/// failure modes to a single boolean to avoid leaking information
+/// about *why* the signature failed — relevant for padding-oracle
+/// resistance on the legacy path).
+fn verify_signature_pss(payload: &[u8], signature: &[u8], pub_key: &RsaPublicKey) -> bool {
+    use rsa::signature::Verifier;
     let verifying_key = VerifyingKey::<Sha256>::new(pub_key.clone());
-    let sig = Signature::try_from(license.signature.as_slice())
-        .map_err(|_| LicenseError::InvalidSignature)?;
-    verifying_key
-        .verify(&payload, &sig)
-        .map_err(|_| LicenseError::InvalidSignature)?;
-    Ok(license.claims.clone())
+    let sig = match Signature::try_from(signature) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    verifying_key.verify(payload, &sig).is_ok()
+}
+
+/// Legacy PKCS#1v1.5 verification. Kept so existing customer licenses
+/// signed before the PSS migration still verify. Remove once all
+/// customers have been re-issued PSS-signed licenses.
+fn verify_signature_legacy(payload: &[u8], signature: &[u8], pub_key: &RsaPublicKey) -> bool {
+    use rsa::signature::Verifier;
+    let verifying_key = pkcs1v15::VerifyingKey::<Sha256>::new(pub_key.clone());
+    let sig = match pkcs1v15::Signature::try_from(signature) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    verifying_key.verify(payload, &sig).is_ok()
 }
 
 /// High-level license status check used by the application bootstrap.
@@ -357,11 +442,70 @@ mod tests {
         let (priv_key, pub_key) = generate_license_keypair().unwrap();
         let claims = sample_claims();
         let license = sign_license(&claims, &priv_key).unwrap();
-        assert_eq!(license.algorithm, "RS256");
+        assert_eq!(license.algorithm, "PS256", "new licenses must use PSS");
         assert!(!license.signature.is_empty());
         let verified = verify_license(&license, &pub_key).unwrap();
         assert_eq!(verified.license_id, claims.license_id);
         assert_eq!(verified.reports_remaining, Some(10));
+    }
+
+    #[test]
+    fn test_legacy_sign_and_verify_round_trip() {
+        // A license signed with the legacy PKCS#1v1.5 scheme must
+        // still verify with the current verifier. This is the
+        // backward-compat path that lets us upgrade existing
+        // customers without re-issuing licenses.
+        let (priv_key, pub_key) = generate_license_keypair().unwrap();
+        let claims = sample_claims();
+        let license = sign_license_legacy(&claims, &priv_key).unwrap();
+        assert_eq!(license.algorithm, "RS256");
+        let verified = verify_license(&license, &pub_key).unwrap();
+        assert_eq!(verified.license_id, claims.license_id);
+    }
+
+    #[test]
+    fn test_pss_and_legacy_signatures_differ() {
+        // The same claims signed with PSS and PKCS#1v1.5 must
+        // produce different signature bytes (PSS is probabilistic,
+        // so even signing twice with PSS produces different bytes).
+        // And each scheme's signature must NOT verify against the
+        // other scheme's verifier — no cross-scheme confusion.
+        let (priv_key, pub_key) = generate_license_keypair().unwrap();
+        let claims = sample_claims();
+        let pss_license = sign_license(&claims, &priv_key).unwrap();
+        let legacy_license = sign_license_legacy(&claims, &priv_key).unwrap();
+        assert_ne!(pss_license.signature, legacy_license.signature);
+        // Both verify against their own algorithm tag.
+        assert!(verify_license(&pss_license, &pub_key).is_ok());
+        assert!(verify_license(&legacy_license, &pub_key).is_ok());
+        // Tampering with the algorithm tag must fail — a PSS
+        // signature can't be verified as if it were PKCS#1v1.5.
+        let mut mismatched = pss_license.clone();
+        mismatched.algorithm = "RS256".to_string();
+        assert!(matches!(
+            verify_license(&mismatched, &pub_key),
+            Err(LicenseError::InvalidSignature)
+        ));
+    }
+
+    #[test]
+    fn test_unknown_algorithm_rejected() {
+        // A license with an unrecognized algorithm tag must not
+        // verify, even if the signature bytes happen to be valid
+        // for some scheme. This prevents an attacker from injecting
+        // a "none" algorithm or a future unsupported scheme.
+        let (priv_key, pub_key) = generate_license_keypair().unwrap();
+        let mut license = sign_license(&sample_claims(), &priv_key).unwrap();
+        license.algorithm = "none".to_string();
+        assert!(matches!(
+            verify_license(&license, &pub_key),
+            Err(LicenseError::InvalidSignature)
+        ));
+        license.algorithm = "ES256".to_string(); // ECDSA, not supported
+        assert!(matches!(
+            verify_license(&license, &pub_key),
+            Err(LicenseError::InvalidSignature)
+        ));
     }
 
     #[test]

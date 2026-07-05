@@ -156,9 +156,33 @@ impl TelemetryState {
     }
 }
 
+/// Acquire the telemetry mutex, recovering from poisoning.
+///
+/// A `Mutex` becomes "poisoned" when a thread panics while holding the
+/// lock — the runtime assumes the protected state may be inconsistent
+/// and refuses to hand out the lock to subsequent callers, instead
+/// returning `Err(PoisonError)`. Without recovery, a single panic in
+/// any telemetry call would permanently disable all telemetry for the
+/// rest of the session.
+///
+/// For telemetry that's the wrong trade-off: the data is best-effort
+/// diagnostics, not safety-critical state. We'd rather have slightly
+/// inconsistent telemetry than no telemetry at all. So we recover by
+/// extracting the inner guard from the `PoisonError` and continuing.
+///
+/// The recovered state may genuinely be inconsistent (the panic happened
+/// mid-update), but every operation on `TelemetryState` is idempotent
+/// and uses replacing writes, not read-modify-write races — so the
+/// worst case is a single garbled event, not corrupted state.
+fn lock_telemetry() -> std::sync::MutexGuard<'static, Option<TelemetryState>> {
+    TELEMETRY_STATE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 /// Initialize the telemetry state. Called once at app startup.
 pub fn init_telemetry(config: TelemetryConfig) {
-    let mut state = TELEMETRY_STATE.lock().unwrap();
+    let mut state = lock_telemetry();
     if state.is_none() {
         let mut s = TelemetryState::new();
         s.config = config;
@@ -173,7 +197,7 @@ pub fn init_telemetry(config: TelemetryConfig) {
 
 /// Update the telemetry config (called when user toggles opt-in)
 pub fn update_config(config: TelemetryConfig) {
-    let mut state = TELEMETRY_STATE.lock().unwrap();
+    let mut state = lock_telemetry();
     if state.is_none() {
         let mut s = TelemetryState::new();
         s.config = config;
@@ -185,7 +209,7 @@ pub fn update_config(config: TelemetryConfig) {
 
 /// Get the current telemetry config
 pub fn get_config() -> TelemetryConfig {
-    let mut state = TELEMETRY_STATE.lock().unwrap();
+    let mut state = lock_telemetry();
     if state.is_none() {
         let s = TelemetryState::new();
         let config = s.config.clone();
@@ -207,7 +231,7 @@ pub fn record_event(
     error: Option<&str>,
     license_tier: &str,
 ) {
-    let mut state = TELEMETRY_STATE.lock().unwrap();
+    let mut state = lock_telemetry();
     if state.is_none() {
         *state = Some(TelemetryState::new());
     }
@@ -259,7 +283,7 @@ pub fn record_event(
 /// Called from panic handlers and IPC error paths. The crash is stored
 /// locally and (if auto-submit is enabled) queued for submission.
 pub fn record_crash(command: &str, message: &str, stack_trace: &str, license_tier: &str) -> String {
-    let mut state = TELEMETRY_STATE.lock().unwrap();
+    let mut state = lock_telemetry();
     if state.is_none() {
         *state = Some(TelemetryState::new());
     }
@@ -294,7 +318,7 @@ pub fn record_crash(command: &str, message: &str, stack_trace: &str, license_tie
 
 /// Get all pending (unsubmitted) crash dumps
 pub fn get_pending_crash_dumps() -> Vec<CrashDump> {
-    let state = TELEMETRY_STATE.lock().unwrap();
+    let state = lock_telemetry();
     match state.as_ref() {
         Some(s) => s.crashes.iter().filter(|c| !c.submitted).cloned().collect(),
         None => Vec::new(),
@@ -303,7 +327,7 @@ pub fn get_pending_crash_dumps() -> Vec<CrashDump> {
 
 /// Mark a crash dump as submitted (after successful upload)
 pub fn mark_crash_submitted(crash_id: &str) {
-    let mut state = TELEMETRY_STATE.lock().unwrap();
+    let mut state = lock_telemetry();
     if let Some(s) = state.as_mut() {
         for crash in s.crashes.iter_mut() {
             if crash.crash_id == crash_id {
@@ -316,7 +340,7 @@ pub fn mark_crash_submitted(crash_id: &str) {
 
 /// Get aggregated telemetry stats for the Settings UI
 pub fn get_stats() -> TelemetryStats {
-    let state = TELEMETRY_STATE.lock().unwrap();
+    let state = lock_telemetry();
     let s = match state.as_ref() {
         Some(s) => s,
         None => {
@@ -381,7 +405,7 @@ pub fn get_stats() -> TelemetryStats {
 
 /// Get recent events (for the Settings UI diagnostic panel)
 pub fn get_recent_events(limit: usize) -> Vec<TelemetryEvent> {
-    let state = TELEMETRY_STATE.lock().unwrap();
+    let state = lock_telemetry();
     match state.as_ref() {
         Some(s) => s.events.iter().rev().take(limit).cloned().collect(),
         None => Vec::new(),
