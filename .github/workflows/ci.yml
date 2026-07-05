@@ -106,6 +106,62 @@ jobs:
         run: cargo deny check licenses bans sources
 
   # ───────────────────────────────────────────────────────────────
+  # Fuzz testing — bounded runs on every push to catch parser crashes
+  # ───────────────────────────────────────────────────────────────
+  fuzz:
+    name: Fuzz parsers (bounded)
+    runs-on: ubuntu-latest
+    # Fuzzing is intensive — only run on main pushes and PRs, not
+    # every branch push. Set continue-on-error so a crash discovery
+    # doesn't block the build — the crashes are reported as artifacts.
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust nightly (cargo-fuzz requires nightly)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked || true
+
+      - name: Cargo cache (fuzz workspace)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/metardu-core/fuzz"
+
+      - name: Fuzz LAS header parser (60s)
+        # Bounded to 60s — enough to find obvious crashes without
+        # blocking CI. Full fuzzing campaigns run locally overnight.
+        working-directory: crates/metardu-core
+        run: timeout 90 cargo fuzz run fuzz_las_header -- -max_total_time=60 -max_len=4096 || true
+
+      - name: Fuzz LAS point reader (60s)
+        working-directory: crates/metardu-core
+        run: timeout 90 cargo fuzz run fuzz_las_points -- -max_total_time=60 -max_len=4096 || true
+
+      - name: Fuzz RTCM parser (60s)
+        working-directory: crates/metardu-core
+        run: timeout 90 cargo fuzz run fuzz_rtcm_parse -- -max_total_time=60 -max_len=4096 || true
+
+      - name: Fuzz NTRIP base64 encoder (30s)
+        working-directory: crates/metardu-core
+        run: timeout 60 cargo fuzz run fuzz_ntrip_base64 -- -max_total_time=30 -max_len=1024 || true
+
+      - name: Upload crash artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashes
+          path: |
+            crates/metardu-core/fuzz/artifacts/*/crash-*
+            crates/metardu-core/fuzz/artifacts/*/oom-*
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # ───────────────────────────────────────────────────────────────
   # Build + test the standalone CLI binaries (no system deps needed)
   # ───────────────────────────────────────────────────────────────
   standalone-binaries:

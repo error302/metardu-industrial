@@ -1,0 +1,44 @@
+[package]
+name = "metardu-core-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+metardu-core = { path = ".." }
+tempfile = "3"
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_las_header"
+path = "fuzz_targets/fuzz_las_header.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_las_points"
+path = "fuzz_targets/fuzz_las_points.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_rtcm_parse"
+path = "fuzz_targets/fuzz_rtcm_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_ntrip_base64"
+path = "fuzz_targets/fuzz_ntrip_base64.rs"
+test = false
+doc = false
+
+[profile.release]
+debug = true

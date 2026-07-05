@@ -534,7 +534,10 @@ fn now_epoch_ms() -> u64 {
 /// Returns (message_type, total_bytes_consumed) if a complete message was parsed.
 /// Returns Ok(None) if the buffer doesn't have a complete message yet.
 /// Returns Err if the data is corrupt (bad preamble or CRC).
-fn parse_rtcm_message(buf: &[u8]) -> Result<Option<(u16, usize)>, NtripError> {
+/// Parse a single RTCM v3 message from the buffer.
+///
+/// Public so fuzz targets can call it directly.
+pub fn parse_rtcm_message(buf: &[u8]) -> Result<Option<(u16, usize)>, NtripError> {
     if buf.len() < 6 {
         return Ok(None);
     }
@@ -620,7 +623,9 @@ fn crc24q(data: &[u8]) -> u32 {
 }
 
 /// Simple base64 encoder (avoids pulling in the base64 crate just for this).
-fn base64_encode(input: &str) -> String {
+///
+/// Public so fuzz targets can call it directly.
+pub fn base64_encode(input: &str) -> String {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let bytes = input.as_bytes();
     let mut result = String::with_capacity((bytes.len() + 2) / 3 * 4);
