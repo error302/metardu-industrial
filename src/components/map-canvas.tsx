@@ -12,7 +12,7 @@
  *   - Survey layer rendering dropped-file bounds as vector rectangles
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Map from "ol/Map";
 import View from "ol/View";
 import TileLayer from "ol/layer/Tile";
@@ -119,7 +119,20 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
       mapInstanceRef.current = null;
       surveySourceRef.current = null;
     };
-  }, [domain]);
+    // ⚠️ This effect intentionally has an EMPTY dependency array. The
+    // previous code had [domain] here, which destroyed and rebuilt the
+    // entire OpenLayers Map instance (OSM tile layer, graticule, vector
+    // source, all controls, view center/zoom) every time the user
+    // toggled mining↔marine↔both. The only thing that actually depends
+    // on `domain` is the accent color, which is handled by the
+    // separate effect below that updates styles in place. Tearing down
+    // the map lost the user's pan/zoom state and re-fetched OSM tiles
+    // from the network on every toggle — a 200-500ms flicker for no
+    // benefit. eslint-disable-next-line is required because `domain`
+    // and `epsg` are used inside the effect but intentionally not in
+    // the dep array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // When EPSG changes, re-register and update view + MousePosition
   useEffect(() => {
@@ -273,6 +286,21 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
   // a hillshaded color-ramp image overlay on the map. ──
   const demLayerRef = useRef<ImageLayer<Static> | null>(null);
 
+  // Derive a stable string identifier for the loaded GeoTIFF. The
+  // previous effect depended on the whole `files` array, which changes
+  // reference on every file add/remove/probe-status change. That meant
+  // adding a CSV while a 25M-cell DEM was rendered would re-run the
+  // entire Rust render + IPC + canvas-to-PNG + ImageLayer rebuild —
+  // a 3-10 second freeze for no reason. By depending on just the
+  // loaded GeoTIFF's path string, the effect only re-runs when the
+  // actual GeoTIFF changes.
+  const loadedGeotiffPath = useMemo(
+    () =>
+      files.find((f) => f.kind === "geotiff" && f.status === "loaded")
+        ?.path ?? null,
+    [files],
+  );
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -283,16 +311,14 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
       demLayerRef.current = null;
     }
 
-    // Find the first loaded GeoTIFF file
-    const geotiffFile = files.find((f) => f.kind === "geotiff" && f.status === "loaded");
-    if (!geotiffFile) return;
+    if (!loadedGeotiffPath) return;
 
     let cancelled = false;
 
     (async () => {
       try {
         const result = await renderDem({
-          path: geotiffFile.path,
+          path: loadedGeotiffPath,
           color_ramp: "terrain",
         });
 
@@ -351,7 +377,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
         demLayerRef.current = null;
       }
     };
-  }, [files]);
+  }, [loadedGeotiffPath]);
 
   return (
     <div className="relative h-full w-full">
