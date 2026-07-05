@@ -121,7 +121,7 @@ const DensityGatesTool = lazy(() => import("@/components/density-gates-tool").th
 const TidalSplineTool = lazy(() => import("@/components/tidal-spline-tool").then(m => ({ default: m.TidalSplineTool })));
 const MachineControlTool = lazy(() => import("@/components/machine-control-tool").then(m => ({ default: m.MachineControlTool })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
-import type { CsfResult, CubeSurfaceRpc } from "@/lib/tauri-ipc";
+import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
 import {
   colors,
@@ -176,6 +176,7 @@ export function WorkspaceShell() {
   const [eomAuditorOpen, setEomAuditorOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
   const [ntripOpen, setNtripOpen] = useState(false);
+  const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
     if (typeof window !== "undefined") {
@@ -436,6 +437,7 @@ export function WorkspaceShell() {
         domain={activeDomain}
         layout={layout}
         onLayoutChange={setLayout}
+        projectName={currentProject?.name ?? null}
         onToggleSidebar={() => {
           // Below sm we toggle the drawer; above we toggle the inline sidebar.
           if (viewport.isVeryNarrow) setDrawerSidebarOpen((v) => !v);
@@ -589,7 +591,7 @@ export function WorkspaceShell() {
       <LicenseManagerDialog open={licenseOpen} onClose={() => setLicenseOpen(false)} />
       <BenchmarkDialog open={benchmarkOpen} onClose={() => setBenchmarkOpen(false)} />
       <TelemetryDialog open={telemetryOpen} onClose={() => setTelemetryOpen(false)} />
-      <ProjectManagerDialog open={projectOpen} onClose={() => setProjectOpen(false)} currentProject={null} onProjectLoaded={() => {}} />
+      <ProjectManagerDialog open={projectOpen} onClose={() => setProjectOpen(false)} currentProject={currentProject} onProjectLoaded={(p) => setCurrentProject(p)} />
       <UpdateCheckerDialog open={updateOpen} onClose={() => setUpdateOpen(false)} />
       <PluginMarketplaceDialog open={marketplaceOpen} onClose={() => setMarketplaceOpen(false)} />
       <DensityGatesTool open={densityGatesOpen} onClose={() => setDensityGatesOpen(false)} />
@@ -611,12 +613,14 @@ function TitleBar({
   onLayoutChange,
   onToggleSidebar,
   onToggleRight,
+  projectName,
 }: {
   domain: DomainMode;
   layout: LayoutProfile;
   onLayoutChange: (l: LayoutProfile) => void;
   onToggleSidebar: () => void;
   onToggleRight: () => void;
+  projectName: string | null;
 }) {
   const accent = domainAccent[domain].primary;
   // In browser mode the fake window controls (minimize/maximize/close) do
@@ -640,7 +644,7 @@ function TitleBar({
         </span>
         <span className="text-steel-gray hidden md:inline">/</span>
         <span className="text-[13px] text-steel-light hidden md:inline truncate">
-          Untitled Project
+          {projectName ?? "No project loaded"}
         </span>
         <span
           className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider flex-shrink-0"
