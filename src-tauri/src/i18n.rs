@@ -282,21 +282,30 @@ mod tests {
     fn test_translate_english() {
         assert_eq!(translate("common.save", Language::En), "Save");
         assert_eq!(translate("menu.file.open", Language::En), "Open Project");
-        assert_eq!(translate("mining.volume_calc", Language::En), "Volume Calculator");
+        assert_eq!(
+            translate("mining.volume_calc", Language::En),
+            "Volume Calculator"
+        );
     }
 
     #[test]
     fn test_translate_spanish() {
         assert_eq!(translate("common.save", Language::Es), "Guardar");
         assert_eq!(translate("menu.file.open", Language::Es), "Abrir Proyecto");
-        assert_eq!(translate("mining.volume_calc", Language::Es), "Calculadora de Volumen");
+        assert_eq!(
+            translate("mining.volume_calc", Language::Es),
+            "Calculadora de Volumen"
+        );
     }
 
     #[test]
     fn test_translate_portuguese() {
         assert_eq!(translate("common.save", Language::Pt), "Salvar");
         assert_eq!(translate("menu.file.open", Language::Pt), "Abrir Projeto");
-        assert_eq!(translate("mining.volume_calc", Language::Pt), "Calculadora de Volume");
+        assert_eq!(
+            translate("mining.volume_calc", Language::Pt),
+            "Calculadora de Volume"
+        );
     }
 
     #[test]
@@ -308,8 +317,14 @@ mod tests {
 
     #[test]
     fn test_translate_missing_key_returns_key() {
-        assert_eq!(translate("nonexistent.key.xyz", Language::En), "nonexistent.key.xyz");
-        assert_eq!(translate("nonexistent.key.xyz", Language::Es), "nonexistent.key.xyz");
+        assert_eq!(
+            translate("nonexistent.key.xyz", Language::En),
+            "nonexistent.key.xyz"
+        );
+        assert_eq!(
+            translate("nonexistent.key.xyz", Language::Es),
+            "nonexistent.key.xyz"
+        );
     }
 
     #[test]
@@ -342,16 +357,34 @@ mod tests {
     #[test]
     fn test_mining_terms_translated() {
         // Critical mining terms that surveyors need in their language
-        assert_eq!(translate("mining.highwall_monitoring", Language::Es), "Monitoreo de Talud");
-        assert_eq!(translate("mining.highwall_monitoring", Language::Pt), "Monitoramento de Talude");
-        assert_eq!(translate("mining.stockpile_audit", Language::Es), "Auditoría de Acopios");
-        assert_eq!(translate("mining.stockpile_audit", Language::Pt), "Auditoria de Pilhas");
+        assert_eq!(
+            translate("mining.highwall_monitoring", Language::Es),
+            "Monitoreo de Talud"
+        );
+        assert_eq!(
+            translate("mining.highwall_monitoring", Language::Pt),
+            "Monitoramento de Talude"
+        );
+        assert_eq!(
+            translate("mining.stockpile_audit", Language::Es),
+            "Auditoría de Acopios"
+        );
+        assert_eq!(
+            translate("mining.stockpile_audit", Language::Pt),
+            "Auditoria de Pilhas"
+        );
     }
 
     #[test]
     fn test_marine_terms_translated() {
-        assert_eq!(translate("marine.dredge_audit", Language::Es), "Auditoría de Dragado");
-        assert_eq!(translate("marine.dredge_audit", Language::Pt), "Auditoria de Dragagem");
+        assert_eq!(
+            translate("marine.dredge_audit", Language::Es),
+            "Auditoría de Dragado"
+        );
+        assert_eq!(
+            translate("marine.dredge_audit", Language::Pt),
+            "Auditoria de Dragagem"
+        );
         assert_eq!(translate("marine.svp_editor", Language::Es), "Editor SVP");
         assert_eq!(translate("marine.svp_editor", Language::Pt), "Editor SVP");
     }

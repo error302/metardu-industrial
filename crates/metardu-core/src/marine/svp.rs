@@ -27,13 +27,13 @@ pub struct SvpProfile {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SvpPoint {
-    pub depth: f64,  // meters
-    pub speed: f64,   // m/s
+    pub depth: f64, // meters
+    pub speed: f64, // m/s
 }
 
 pub fn parse_svp(path: &Path) -> Result<SvpProfile, SvpError> {
-    let file = std::fs::File::open(path)
-        .map_err(|_| SvpError::NotFound(path.display().to_string()))?;
+    let file =
+        std::fs::File::open(path).map_err(|_| SvpError::NotFound(path.display().to_string()))?;
     let reader = std::io::BufReader::new(file);
     let mut points = Vec::new();
 
@@ -78,9 +78,15 @@ pub fn parse_svp(path: &Path) -> Result<SvpProfile, SvpError> {
     }
 
     let min_depth = points.iter().map(|p| p.depth).fold(f64::INFINITY, f64::min);
-    let max_depth = points.iter().map(|p| p.depth).fold(f64::NEG_INFINITY, f64::max);
+    let max_depth = points
+        .iter()
+        .map(|p| p.depth)
+        .fold(f64::NEG_INFINITY, f64::max);
     let min_speed = points.iter().map(|p| p.speed).fold(f64::INFINITY, f64::min);
-    let max_speed = points.iter().map(|p| p.speed).fold(f64::NEG_INFINITY, f64::max);
+    let max_speed = points
+        .iter()
+        .map(|p| p.speed)
+        .fold(f64::NEG_INFINITY, f64::max);
 
     Ok(SvpProfile {
         source: path.display().to_string(),
@@ -139,9 +145,18 @@ mod tests {
             source: "test".into(),
             cast_count: 3,
             points: vec![
-                SvpPoint { depth: 0.0, speed: 1505.0 },
-                SvpPoint { depth: 10.0, speed: 1500.0 },
-                SvpPoint { depth: 20.0, speed: 1495.0 },
+                SvpPoint {
+                    depth: 0.0,
+                    speed: 1505.0,
+                },
+                SvpPoint {
+                    depth: 10.0,
+                    speed: 1500.0,
+                },
+                SvpPoint {
+                    depth: 20.0,
+                    speed: 1495.0,
+                },
             ],
             min_depth: 0.0,
             max_depth: 20.0,

@@ -22,9 +22,7 @@ pub struct ReadSssRequest {
 /// scrolling waterfall (X = across-track samples, Y = ping index,
 /// pixel intensity = backscatter amplitude).
 #[tauri::command]
-pub async fn read_sss_pings_cmd(
-    request: ReadSssRequest,
-) -> Result<SssData, String> {
+pub async fn read_sss_pings_cmd(request: ReadSssRequest) -> Result<SssData, String> {
     let path = std::path::PathBuf::from(&request.path);
     let max_pings = request.max_pings.unwrap_or(0);
     // XTF parsing is potentially slow (multi-GB files) — run in blocking task
@@ -51,9 +49,7 @@ pub struct TargetHeightRequest {
 /// the system measures the shadow length in meters (from across-track
 /// distance = sample_index × sound_speed × sample_interval / 2).
 #[tauri::command]
-pub fn compute_target_height_cmd(
-    request: TargetHeightRequest,
-) -> f64 {
+pub fn compute_target_height_cmd(request: TargetHeightRequest) -> f64 {
     crate::formats::compute_target_height_from_shadow(
         request.fish_altitude_m,
         request.slant_range_to_target_m,
@@ -169,10 +165,7 @@ pub fn undo_brush_cmd(request: UndoRequest) -> BrushResult {
 /// Used by the frontend when re-running CUBE on the cleaned cloud —
 /// only the accepted points are passed to the CUBE surface generator.
 #[tauri::command]
-pub fn accepted_indices_cmd(
-    mask: RejectMask,
-    total: u32,
-) -> Vec<u32> {
+pub fn accepted_indices_cmd(mask: RejectMask, total: u32) -> Vec<u32> {
     mask.accepted_indices(total)
 }
 
@@ -180,9 +173,6 @@ pub fn accepted_indices_cmd(
 /// whether a drawn polygon contains a point without invoking the
 /// full slice pipeline.
 #[tauri::command]
-pub fn point_in_polygon_cmd(
-    point: Point2D,
-    polygon: Vec<Point2D>,
-) -> bool {
+pub fn point_in_polygon_cmd(point: Point2D, polygon: Vec<Point2D>) -> bool {
     crate::slice_editor::point_in_polygon_2d_test(point, &polygon)
 }

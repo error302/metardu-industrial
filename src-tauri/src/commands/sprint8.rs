@@ -1,9 +1,7 @@
 // Sprint 8 — Project + Updater + i18n + Marketplace IPC commands.
 
 use crate::i18n::{self, Language};
-use crate::plugin_marketplace::{
-    self, InstalledPlugin, PluginRegistry, RegistryPlugin,
-};
+use crate::plugin_marketplace::{self, InstalledPlugin, PluginRegistry, RegistryPlugin};
 use crate::project::{
     add_file_to_project, add_recent_report, load_project, new_project, remove_file_from_project,
     save_project, update_view_state, MetarduProject, ProjectFile, ViewState,
@@ -124,7 +122,9 @@ pub fn fetch_plugin_registry_cmd(source: String) -> Result<PluginRegistry, Strin
 
 #[tauri::command]
 pub fn list_installed_plugins_cmd(app: tauri::AppHandle) -> Result<Vec<InstalledPlugin>, String> {
-    let app_data_dir = app.path().app_data_dir()
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
         .map_err(|e| format!("failed to get app data dir: {e}"))?;
     plugin_marketplace::list_installed_plugins(&app_data_dir).map_err(|e| e.to_string())
 }
@@ -135,28 +135,26 @@ pub fn install_plugin_cmd(
     registry: PluginRegistry,
     plugin_id: String,
 ) -> Result<InstalledPlugin, String> {
-    let app_data_dir = app.path().app_data_dir()
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
         .map_err(|e| format!("failed to get app data dir: {e}"))?;
     plugin_marketplace::install_plugin(&registry, &plugin_id, &app_data_dir)
         .map_err(|e| ctx_no_input!("installing plugin", e))
 }
 
 #[tauri::command]
-pub fn uninstall_plugin_cmd(
-    app: tauri::AppHandle,
-    plugin_id: String,
-) -> Result<(), String> {
-    let app_data_dir = app.path().app_data_dir()
+pub fn uninstall_plugin_cmd(app: tauri::AppHandle, plugin_id: String) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
         .map_err(|e| format!("failed to get app data dir: {e}"))?;
     plugin_marketplace::uninstall_plugin(&plugin_id, &app_data_dir)
         .map_err(|e| ctx_no_input!("uninstalling plugin", e))
 }
 
 #[tauri::command]
-pub fn search_registry_cmd(
-    registry: PluginRegistry,
-    query: String,
-) -> Vec<RegistryPlugin> {
+pub fn search_registry_cmd(registry: PluginRegistry, query: String) -> Vec<RegistryPlugin> {
     plugin_marketplace::search_registry(&registry, &query)
         .into_iter()
         .cloned()

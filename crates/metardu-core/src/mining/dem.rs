@@ -103,9 +103,7 @@ impl DemGrid {
     /// Iterate over (col, row, value) tuples for all valid cells.
     pub fn iter_valid(&self) -> impl Iterator<Item = (usize, usize, f64)> + '_ {
         (0..self.nrows).flat_map(move |row| {
-            (0..self.ncols).filter_map(move |col| {
-                self.get(col, row).map(|v| (col, row, v))
-            })
+            (0..self.ncols).filter_map(move |col| self.get(col, row).map(|v| (col, row, v)))
         })
     }
 }

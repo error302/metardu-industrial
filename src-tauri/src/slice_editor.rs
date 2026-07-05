@@ -247,7 +247,11 @@ pub fn slice_by_polygon(request: &SliceRequest) -> Result<SliceResult, String> {
         let p2d = Point2D { x: *x, y: *y };
         if point_in_polygon_2d(p2d, &request.polygon) {
             indices.push(i as u32);
-            points.push(Point3D { x: *x, y: *y, z: *z });
+            points.push(Point3D {
+                x: *x,
+                y: *y,
+                z: *z,
+            });
         }
     }
 
@@ -296,19 +300,28 @@ mod tests {
         // Notch points are OUTSIDE the polygon; points in the right arm
         // and the bottom band (y<2) or top band (y>8) are INSIDE.
         let c = vec![
-            p(0.0, 0.0), p(10.0, 0.0), p(10.0, 10.0), p(0.0, 10.0),
-            p(0.0, 8.0), p(8.0, 8.0), p(8.0, 2.0), p(0.0, 2.0),
+            p(0.0, 0.0),
+            p(10.0, 0.0),
+            p(10.0, 10.0),
+            p(0.0, 10.0),
+            p(0.0, 8.0),
+            p(8.0, 8.0),
+            p(8.0, 2.0),
+            p(0.0, 2.0),
         ];
-        assert!(!point_in_polygon_2d(p(5.0, 5.0), &c));   // in notch
-        assert!(!point_in_polygon_2d(p(1.0, 5.0), &c));   // in notch
-        assert!(point_in_polygon_2d(p(9.0, 5.0), &c));    // right arm of C
-        assert!(point_in_polygon_2d(p(1.0, 1.0), &c));    // bottom band
-        assert!(point_in_polygon_2d(p(1.0, 9.0), &c));    // top band
+        assert!(!point_in_polygon_2d(p(5.0, 5.0), &c)); // in notch
+        assert!(!point_in_polygon_2d(p(1.0, 5.0), &c)); // in notch
+        assert!(point_in_polygon_2d(p(9.0, 5.0), &c)); // right arm of C
+        assert!(point_in_polygon_2d(p(1.0, 1.0), &c)); // bottom band
+        assert!(point_in_polygon_2d(p(1.0, 9.0), &c)); // top band
     }
 
     #[test]
     fn test_point_in_polygon_too_few_vertices() {
-        assert!(!point_in_polygon_2d(p(0.0, 0.0), &[p(0.0, 0.0), p(1.0, 1.0)]));
+        assert!(!point_in_polygon_2d(
+            p(0.0, 0.0),
+            &[p(0.0, 0.0), p(1.0, 1.0)]
+        ));
     }
 
     #[test]

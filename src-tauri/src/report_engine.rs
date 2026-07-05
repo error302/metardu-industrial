@@ -197,9 +197,8 @@ fn render_html(spec: &ReportSpec) -> String {
     // This is the field a compliance reviewer scans first when validating
     // a plan — burying it in metadata would be a real audit friction point.
     // Only render if at least one of the three fields is set.
-    let has_compliance = spec.datum_note.is_some()
-        || spec.reporting_code.is_some()
-        || spec.jurisdiction.is_some();
+    let has_compliance =
+        spec.datum_note.is_some() || spec.reporting_code.is_some() || spec.jurisdiction.is_some();
     if has_compliance {
         h.push_str("<div class='comp'>");
         if let Some(d) = &spec.datum_note {
@@ -347,11 +346,26 @@ mod tests {
         assert!(content.contains("class='comp'"), "missing compliance strip");
         // All three labels + values must render.
         assert!(content.contains("DATUM"), "missing DATUM label");
-        assert!(content.contains("Datum: GDA2020 / Epoch 2020.0"), "missing datum note value");
-        assert!(content.contains("REPORTING CODE"), "missing REPORTING CODE label");
-        assert!(content.contains("JORC 2012 Edition"), "missing reporting code value");
-        assert!(content.contains("JURISDICTION"), "missing JURISDICTION label");
-        assert!(content.contains("Australia — NSW"), "missing jurisdiction value");
+        assert!(
+            content.contains("Datum: GDA2020 / Epoch 2020.0"),
+            "missing datum note value"
+        );
+        assert!(
+            content.contains("REPORTING CODE"),
+            "missing REPORTING CODE label"
+        );
+        assert!(
+            content.contains("JORC 2012 Edition"),
+            "missing reporting code value"
+        );
+        assert!(
+            content.contains("JURISDICTION"),
+            "missing JURISDICTION label"
+        );
+        assert!(
+            content.contains("Australia — NSW"),
+            "missing jurisdiction value"
+        );
     }
 
     #[test]
@@ -375,7 +389,10 @@ mod tests {
         };
         generate_report(&spec).unwrap();
         let content = std::fs::read_to_string("/tmp/test_no_compliance.html").unwrap();
-        assert!(!content.contains("class='comp'"), "compliance strip should not render");
+        assert!(
+            !content.contains("class='comp'"),
+            "compliance strip should not render"
+        );
         assert!(!content.contains("DATUM"), "DATUM label should not render");
     }
 

@@ -282,15 +282,18 @@ mod tests {
     fn test_save_and_load_roundtrip() {
         let tmp = std::env::temp_dir().join("metardu_test_project.metardu");
         let mut project = new_project("Roundtrip Test", "EPSG:28355", "mining");
-        add_file_to_project(&mut project, ProjectFile {
-            path: "/tmp/survey.tif".into(),
-            kind: "geotiff".into(),
-            name: "survey".into(),
-            size_bytes: 1024,
-            visible: true,
-            color: Some("#FFA500".into()),
-            opacity: 0.8,
-        });
+        add_file_to_project(
+            &mut project,
+            ProjectFile {
+                path: "/tmp/survey.tif".into(),
+                kind: "geotiff".into(),
+                name: "survey".into(),
+                size_bytes: 1024,
+                visible: true,
+                color: Some("#FFA500".into()),
+                opacity: 0.8,
+            },
+        );
         add_recent_report(&mut project, "/tmp/report.html");
 
         save_project(&project, &tmp).unwrap();
@@ -311,24 +314,30 @@ mod tests {
     #[test]
     fn test_add_file_replaces_existing() {
         let mut p = new_project("Test", "EPSG:4326", "both");
-        add_file_to_project(&mut p, ProjectFile {
-            path: "/tmp/a.tif".into(),
-            kind: "geotiff".into(),
-            name: "a".into(),
-            size_bytes: 100,
-            visible: true,
-            color: None,
-            opacity: 1.0,
-        });
-        add_file_to_project(&mut p, ProjectFile {
-            path: "/tmp/a.tif".into(),
-            kind: "geotiff".into(),
-            name: "a_updated".into(),
-            size_bytes: 200,
-            visible: false,
-            color: Some("#FF0000".into()),
-            opacity: 0.5,
-        });
+        add_file_to_project(
+            &mut p,
+            ProjectFile {
+                path: "/tmp/a.tif".into(),
+                kind: "geotiff".into(),
+                name: "a".into(),
+                size_bytes: 100,
+                visible: true,
+                color: None,
+                opacity: 1.0,
+            },
+        );
+        add_file_to_project(
+            &mut p,
+            ProjectFile {
+                path: "/tmp/a.tif".into(),
+                kind: "geotiff".into(),
+                name: "a_updated".into(),
+                size_bytes: 200,
+                visible: false,
+                color: Some("#FF0000".into()),
+                opacity: 0.5,
+            },
+        );
         assert_eq!(p.files.len(), 1);
         assert_eq!(p.files[0].name, "a_updated");
         assert!(!p.files[0].visible);
@@ -337,15 +346,18 @@ mod tests {
     #[test]
     fn test_remove_file() {
         let mut p = new_project("Test", "EPSG:4326", "both");
-        add_file_to_project(&mut p, ProjectFile {
-            path: "/tmp/a.tif".into(),
-            kind: "geotiff".into(),
-            name: "a".into(),
-            size_bytes: 100,
-            visible: true,
-            color: None,
-            opacity: 1.0,
-        });
+        add_file_to_project(
+            &mut p,
+            ProjectFile {
+                path: "/tmp/a.tif".into(),
+                kind: "geotiff".into(),
+                name: "a".into(),
+                size_bytes: 100,
+                visible: true,
+                color: None,
+                opacity: 1.0,
+            },
+        );
         remove_file_from_project(&mut p, "/tmp/a.tif");
         assert!(p.files.is_empty());
     }
@@ -399,12 +411,15 @@ mod tests {
     #[test]
     fn test_update_view_state() {
         let mut p = new_project("Test", "EPSG:4326", "both");
-        update_view_state(&mut p, ViewState {
-            center_lon: 144.0,
-            center_lat: -37.0,
-            zoom: 12.0,
-            rotation: 45.0,
-        });
+        update_view_state(
+            &mut p,
+            ViewState {
+                center_lon: 144.0,
+                center_lat: -37.0,
+                zoom: 12.0,
+                rotation: 45.0,
+            },
+        );
         assert!((p.view_state.center_lon - 144.0).abs() < 0.001);
         assert!((p.view_state.zoom - 12.0).abs() < 0.001);
     }

@@ -131,10 +131,7 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
     let version_major = header_buf[24];
     let version_minor = header_buf[25];
     if version_major != 1 || !matches!(version_minor, 2 | 3 | 4) {
-        return Err(LasError::UnsupportedVersion(
-            version_major,
-            version_minor,
-        ));
+        return Err(LasError::UnsupportedVersion(version_major, version_minor));
     }
 
     let file_source_id = u16::from_le_bytes(header_buf[4..6].try_into().unwrap());
@@ -147,21 +144,16 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
     let file_creation_day = u16::from_le_bytes(header_buf[90..92].try_into().unwrap());
     let file_creation_year = u16::from_le_bytes(header_buf[92..94].try_into().unwrap());
     let header_size = u16::from_le_bytes(header_buf[94..96].try_into().unwrap());
-    let offset_to_point_data =
-        u32::from_le_bytes(header_buf[96..100].try_into().unwrap()) as u64;
+    let offset_to_point_data = u32::from_le_bytes(header_buf[96..100].try_into().unwrap()) as u64;
     let num_vlrs = u32::from_le_bytes(header_buf[100..104].try_into().unwrap());
     let point_data_format_id = header_buf[104];
-    let point_data_record_length =
-        u16::from_le_bytes(header_buf[105..107].try_into().unwrap());
+    let point_data_record_length = u16::from_le_bytes(header_buf[105..107].try_into().unwrap());
 
     // Legacy number of point records (LAS 1.2/1.3) and per-return counts.
-    let legacy_num_points =
-        u32::from_le_bytes(header_buf[107..111].try_into().unwrap()) as u64;
+    let legacy_num_points = u32::from_le_bytes(header_buf[107..111].try_into().unwrap()) as u64;
     let mut num_points_by_return = [0u64; 15];
     for i in 0..5usize {
-        let v = u32::from_le_bytes(
-            header_buf[111 + i * 4..115 + i * 4].try_into().unwrap(),
-        ) as u64;
+        let v = u32::from_le_bytes(header_buf[111 + i * 4..115 + i * 4].try_into().unwrap()) as u64;
         num_points_by_return[i] = v;
     }
 
@@ -215,8 +207,7 @@ pub fn read_header(path: &Path) -> Result<LasHeader, LasError> {
             }
             let user_id = trim_ascii(&vlr_header[2..18]);
             let record_id = u16::from_le_bytes(vlr_header[18..20].try_into().unwrap());
-            let record_length =
-                u16::from_le_bytes(vlr_header[20..22].try_into().unwrap()) as usize;
+            let record_length = u16::from_le_bytes(vlr_header[20..22].try_into().unwrap()) as usize;
             let mut payload = vec![0u8; record_length];
             if file.read_exact(&mut payload).is_err() {
                 break;
@@ -317,9 +308,8 @@ pub fn read_points(path: &Path, max_points: u64) -> Result<Vec<(f64, f64, f64)>,
             .map_err(|e| LasError::LazDecompression(e.to_string()))?;
         let mut file = File::open(path)?;
         file.seek(SeekFrom::Start(header.offset_to_point_data))?;
-        let mut decompressor =
-            laz::LasZipDecompressor::new(file, vlr)
-                .map_err(|e| LasError::LazDecompression(e.to_string()))?;
+        let mut decompressor = laz::LasZipDecompressor::new(file, vlr)
+            .map_err(|e| LasError::LazDecompression(e.to_string()))?;
         for _ in 0..count {
             decompressor
                 .decompress_one(&mut buf)

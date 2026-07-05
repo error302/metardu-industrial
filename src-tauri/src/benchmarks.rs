@@ -234,8 +234,12 @@ fn benchmark_volume_calc(iterations: usize) -> BenchmarkResult {
     let n = w * h;
 
     for _ in 0..iterations {
-        let current: Vec<f64> = (0..n).map(|i| (i as f64 / 100.0).sin() * 10.0 + 100.0).collect();
-        let reference: Vec<f64> = (0..n).map(|i| (i as f64 / 100.0).cos() * 5.0 + 95.0).collect();
+        let current: Vec<f64> = (0..n)
+            .map(|i| (i as f64 / 100.0).sin() * 10.0 + 100.0)
+            .collect();
+        let reference: Vec<f64> = (0..n)
+            .map(|i| (i as f64 / 100.0).cos() * 5.0 + 95.0)
+            .collect();
 
         let start = Instant::now();
         // Compute fill/cut
@@ -283,7 +287,7 @@ fn benchmark_dredge_audit(iterations: usize) -> BenchmarkResult {
 
     for _ in 0..iterations {
         let post: Vec<f64> = vec![15.5; n]; // dredged 0.5m beyond design
-        let pre: Vec<f64> = vec![12.0; n];  // pre-dredge seabed at 12m
+        let pre: Vec<f64> = vec![12.0; n]; // pre-dredge seabed at 12m
         let design: Vec<f64> = vec![15.0; n]; // design depth 15m
 
         let start = Instant::now();
@@ -517,7 +521,10 @@ mod tests {
 
     #[test]
     fn test_throughput_format() {
-        let t = Throughput { value: 1234.5, unit: "points/sec".into() };
+        let t = Throughput {
+            value: 1234.5,
+            unit: "points/sec".into(),
+        };
         assert_eq!(t.unit, "points/sec");
         assert!((t.value - 1234.5).abs() < 0.1);
     }

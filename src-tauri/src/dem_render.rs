@@ -27,10 +27,18 @@ pub struct DemRenderRequest {
     pub z_scale: f64,
 }
 
-fn default_azimuth() -> f64 { 315.0 }
-fn default_altitude() -> f64 { 45.0 }
-fn default_ramp() -> String { "terrain".into() }
-fn default_z_scale() -> f64 { 1.0 }
+fn default_azimuth() -> f64 {
+    315.0
+}
+fn default_altitude() -> f64 {
+    45.0
+}
+fn default_ramp() -> String {
+    "terrain".into()
+}
+fn default_z_scale() -> f64 {
+    1.0
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DemRenderResult {
@@ -59,10 +67,10 @@ pub fn render_dem(request: &DemRenderRequest) -> Result<DemRenderResult, String>
     use crate::formats::read_geotiff_header;
 
     let path = Path::new(&request.path);
-    let header = read_geotiff_header(path)
-        .map_err(|e| ctx!("reading DEM header", request.path, e))?;
-    let grid = read_dem_grid(path, &header)
-        .map_err(|e| ctx!("reading DEM grid", request.path, e))?;
+    let header =
+        read_geotiff_header(path).map_err(|e| ctx!("reading DEM header", request.path, e))?;
+    let grid =
+        read_dem_grid(path, &header).map_err(|e| ctx!("reading DEM grid", request.path, e))?;
 
     let width = header.width;
     let height = header.length;
@@ -71,7 +79,8 @@ pub fn render_dem(request: &DemRenderRequest) -> Result<DemRenderResult, String>
     if grid.len() < n {
         return Err(format!(
             "grid too small: expected {} cells, got {}",
-            n, grid.len()
+            n,
+            grid.len()
         ));
     }
 
@@ -132,16 +141,20 @@ pub fn render_dem(request: &DemRenderRequest) -> Result<DemRenderResult, String>
                 let r = r.clamp(0, height as i32 - 1) as usize;
                 let c = c.clamp(0, width as i32 - 1) as usize;
                 let v = grid[r * width as usize + c];
-                if v.is_nan() || v <= -9999.0 { z } else { v }
+                if v.is_nan() || v <= -9999.0 {
+                    z
+                } else {
+                    v
+                }
             };
 
             let z_nw = get_z(row as i32 - 1, col as i32 - 1) * z_scale;
-            let z_n  = get_z(row as i32 - 1, col as i32)     * z_scale;
+            let z_n = get_z(row as i32 - 1, col as i32) * z_scale;
             let z_ne = get_z(row as i32 - 1, col as i32 + 1) * z_scale;
-            let z_w  = get_z(row as i32,     col as i32 - 1) * z_scale;
-            let z_e  = get_z(row as i32,     col as i32 + 1) * z_scale;
+            let z_w = get_z(row as i32, col as i32 - 1) * z_scale;
+            let z_e = get_z(row as i32, col as i32 + 1) * z_scale;
             let z_sw = get_z(row as i32 + 1, col as i32 - 1) * z_scale;
-            let z_s  = get_z(row as i32 + 1, col as i32)     * z_scale;
+            let z_s = get_z(row as i32 + 1, col as i32) * z_scale;
             let z_se = get_z(row as i32 + 1, col as i32 + 1) * z_scale;
 
             // Slope in x and y directions (dz/dx and dz/dy)
@@ -204,11 +217,11 @@ fn color_ramp_terrain(z: f64, min_z: f64, max_z: f64) -> (u8, u8, u8) {
 
     // 5-stop gradient
     let stops = [
-        (0.0,  ( 50, 100, 200)), // deep water blue
-        (0.2,  ( 80, 180, 100)), // green (lowlands)
-        (0.5,  (200, 200,  80)), // yellow (mid)
-        (0.75, (160, 110,  60)), // brown (high)
-        (1.0,  (240, 240, 240)), // white (peaks)
+        (0.0, (50, 100, 200)),  // deep water blue
+        (0.2, (80, 180, 100)),  // green (lowlands)
+        (0.5, (200, 200, 80)),  // yellow (mid)
+        (0.75, (160, 110, 60)), // brown (high)
+        (1.0, (240, 240, 240)), // white (peaks)
     ];
 
     interpolate_ramp(t, &stops)
@@ -220,11 +233,11 @@ fn color_ramp_bathy(z: f64, min_z: f64, max_z: f64) -> (u8, u8, u8) {
     let t = ((z - min_z) / range).clamp(0.0, 1.0);
 
     let stops = [
-        (0.0,  ( 20,  40, 100)), // deep
-        (0.25, ( 40, 100, 180)), // mid blue
-        (0.5,  ( 80, 180, 220)), // shallow blue
+        (0.0, (20, 40, 100)),    // deep
+        (0.25, (40, 100, 180)),  // mid blue
+        (0.5, (80, 180, 220)),   // shallow blue
         (0.75, (200, 220, 100)), // shallow yellow
-        (1.0,  (220, 100,  60)), // red (shoal)
+        (1.0, (220, 100, 60)),   // red (shoal)
     ];
 
     interpolate_ramp(t, &stops)
@@ -279,20 +292,14 @@ mod tests {
 
     #[test]
     fn test_interpolate_ramp_midpoint() {
-        let stops = [
-            (0.0, (0, 0, 0)),
-            (1.0, (100, 100, 100)),
-        ];
+        let stops = [(0.0, (0, 0, 0)), (1.0, (100, 100, 100))];
         let (r, g, b) = interpolate_ramp(0.5, &stops);
         assert_eq!((r, g, b), (50, 50, 50));
     }
 
     #[test]
     fn test_interpolate_ramp_clamp() {
-        let stops = [
-            (0.0, (10, 20, 30)),
-            (1.0, (100, 200, 255)),
-        ];
+        let stops = [(0.0, (10, 20, 30)), (1.0, (100, 200, 255))];
         assert_eq!(interpolate_ramp(-0.5, &stops), (10, 20, 30));
         assert_eq!(interpolate_ramp(1.5, &stops), (100, 200, 255));
     }

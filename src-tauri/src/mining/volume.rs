@@ -38,6 +38,11 @@ pub struct VolumeResult {
     pub fill_cells: usize,
     /// Number of cells where cut occurred
     pub cut_cells: usize,
+    /// Number of cells skipped because either current or reference
+    /// was NODATA. Important QC signal — a high nodata count means
+    /// the survey coverage is sparse and the volume estimate is
+    /// based on a small fraction of the design area.
+    pub nodata_cells: usize,
     /// Per-bench breakdown — only for cells within each band
     pub benches: Vec<BenchVolume>,
 }
@@ -106,13 +111,26 @@ pub fn compute_volumes(
     let mut cut_volume = 0.0;
     let mut fill_cells = 0usize;
     let mut cut_cells = 0usize;
+    let mut nodata_cells = 0usize;
 
-    // Determine bench bounds for breakdown
+    // Determine bench bounds for breakdown — skip NODATA cells.
+    // NODATA pixels (typically -9999.0 or NaN) would otherwise produce
+    // garbage volumes: dz = -9999 - 100 = -10099 → cut volume inflated
+    // by ~10⁴ m³ per NODATA pixel. This is exactly the silent-wrong-
+    // results bug the surveyor would never catch until reconciliation.
     let mut z_min = f64::INFINITY;
     let mut z_max = f64::NEG_INFINITY;
     for (c, r) in current.iter().zip(reference.iter()) {
+        if is_nodata(*c) || is_nodata(*r) {
+            nodata_cells += 1;
+            continue;
+        }
         z_min = z_min.min(*c).min(*r);
         z_max = z_max.max(*c).max(*r);
+    }
+    // If every cell was NODATA, we can't compute volumes.
+    if z_min == f64::INFINITY {
+        return Err(VolumeError::Empty);
     }
     let benches = if bench_interval > 0.0 {
         build_bench_breakpoints(z_min, z_max, bench_interval)
@@ -133,6 +151,12 @@ pub fn compute_volumes(
         .collect();
 
     for (c, r) in current.iter().zip(reference.iter()) {
+        // Skip NODATA cells in the per-cell pass too — they contributed
+        // nothing to the bench bounds and must not contribute to the
+        // volume totals either.
+        if is_nodata(*c) || is_nodata(*r) {
+            continue;
+        }
         let dz = c - r;
         if dz > 0.0 {
             fill_volume += dz * cell_area;
@@ -173,8 +197,19 @@ pub fn compute_volumes(
         cell_area,
         fill_cells,
         cut_cells,
+        nodata_cells,
         benches: bench_results,
     })
+}
+
+/// Return true if a DEM cell value represents NODATA. Matches the
+/// core crate's `is_nodata` so the IPC command and the EOM pipeline
+/// agree on what counts as a missing cell.
+fn is_nodata(v: f64) -> bool {
+    // NaN is the canonical NODATA marker for GeoTIFFs whose NoData
+    // value was set to NaN. We also treat -9999 (the de-facto
+    // industry default) as NODATA — both common cases are covered.
+    v.is_nan() || v <= -9999.0
 }
 
 /// Build bench breakpoints as [(z_min, z_max), ...] covering [z_min, z_max].
@@ -269,6 +304,35 @@ mod tests {
     #[test]
     fn test_empty_grids_error() {
         let result = compute_volumes(&[], &[], 1.0, 1.0, 0.0);
+        assert!(matches!(result, Err(VolumeError::Empty)));
+    }
+
+    #[test]
+    fn test_nodata_cells_skipped() {
+        // 4 cells: 1 fill, 1 cut, 2 NODATA (one in current, one in reference).
+        // Without NODATA handling the cut cell at -9999 would dominate the
+        // result (dz = -10099 → 10099 * 100 = 1.01M m³ of "cut"). With
+        // NODATA handling it must be skipped and counted as nodata_cells.
+        let current = vec![110.0, f64::NAN, 90.0, 105.0];
+        let reference = vec![100.0, 100.0, 100.0, -9999.0];
+        let result = compute_volumes(&current, &reference, 10.0, 10.0, 0.0).unwrap();
+        assert_eq!(result.fill_cells, 1, "only the 110 vs 100 cell should fill");
+        assert_eq!(result.cut_cells, 1, "only the 90 vs 100 cell should cut");
+        assert_eq!(
+            result.nodata_cells, 2,
+            "NaN and -9999 must both count as NODATA"
+        );
+        assert_eq!(result.fill_volume, 10.0 * 100.0); // 1 fill cell, dz=10, area=100
+        assert_eq!(result.cut_volume, 10.0 * 100.0); // 1 cut cell, dz=10, area=100
+        assert_eq!(result.net_volume, 0.0);
+    }
+
+    #[test]
+    fn test_all_nodata_errors() {
+        // If every cell is NODATA there's nothing to compute.
+        let current = vec![f64::NAN, f64::NAN];
+        let reference = vec![-9999.0, -9999.0];
+        let result = compute_volumes(&current, &reference, 1.0, 1.0, 0.0);
         assert!(matches!(result, Err(VolumeError::Empty)));
     }
 }

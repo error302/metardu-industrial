@@ -85,7 +85,10 @@ pub fn transform_coords(
         return Ok(result);
     }
 
-    Err(GeodesyError::UnsupportedCrsPair(from_crs.into(), to_crs.into()))
+    Err(GeodesyError::UnsupportedCrsPair(
+        from_crs.into(),
+        to_crs.into(),
+    ))
 }
 
 /// Pure-Rust UTM/MGA ↔ WGS84 transform.
@@ -106,12 +109,8 @@ fn transform_via_pure_rust(
 
     for c in coords {
         let (x, y) = match (&from, &to) {
-            (CrsType::Wgs84, CrsType::Utm { zone, south }) => {
-                wgs84_to_utm(c.x, c.y, *zone, *south)
-            }
-            (CrsType::Utm { zone, south }, CrsType::Wgs84) => {
-                utm_to_wgs84(c.x, c.y, *zone, *south)
-            }
+            (CrsType::Wgs84, CrsType::Utm { zone, south }) => wgs84_to_utm(c.x, c.y, *zone, *south),
+            (CrsType::Utm { zone, south }, CrsType::Wgs84) => utm_to_wgs84(c.x, c.y, *zone, *south),
             _ => {
                 return Err(GeodesyError::UnsupportedCrsPair(
                     from_crs.into(),
@@ -145,9 +144,18 @@ fn parse_crs(epsg: &str) -> Result<CrsType, GeodesyError> {
 
     match code {
         4326 => Ok(CrsType::Wgs84),
-        32601..=32660 => Ok(CrsType::Utm { zone: (code - 32600) as u8, south: false }),
-        32701..=32760 => Ok(CrsType::Utm { zone: (code - 32700) as u8, south: true }),
-        28301..=28360 => Ok(CrsType::Utm { zone: (code - 28300) as u8, south: true }), // MGA = UTM South
+        32601..=32660 => Ok(CrsType::Utm {
+            zone: (code - 32600) as u8,
+            south: false,
+        }),
+        32701..=32760 => Ok(CrsType::Utm {
+            zone: (code - 32700) as u8,
+            south: true,
+        }),
+        28301..=28360 => Ok(CrsType::Utm {
+            zone: (code - 28300) as u8,
+            south: true,
+        }), // MGA = UTM South
         _ => Err(GeodesyError::UnsupportedCrs(epsg.into())),
     }
 }
@@ -179,20 +187,33 @@ fn wgs84_to_utm(lon: f64, lat: f64, zone: u8, south: bool) -> (f64, f64) {
     let a_val = lon_rad * lat_rad.cos();
 
     // Transverse Mercator coefficients
-    let m = a * ((1.0 - e2 / 4.0 - 3.0 * e2.powi(2) / 64.0 - 5.0 * e2.powi(3) / 256.0) * lat_rad
-        - (3.0 * e2 / 8.0 + 3.0 * e2.powi(2) / 32.0 + 45.0 * e2.powi(3) / 1024.0) * (2.0 * lat_rad).sin()
-        + (15.0 * e2.powi(2) / 256.0 + 45.0 * e2.powi(3) / 1024.0) * (4.0 * lat_rad).sin()
-        - (35.0 * e2.powi(3) / 3072.0) * (6.0 * lat_rad).sin());
+    let m = a
+        * ((1.0 - e2 / 4.0 - 3.0 * e2.powi(2) / 64.0 - 5.0 * e2.powi(3) / 256.0) * lat_rad
+            - (3.0 * e2 / 8.0 + 3.0 * e2.powi(2) / 32.0 + 45.0 * e2.powi(3) / 1024.0)
+                * (2.0 * lat_rad).sin()
+            + (15.0 * e2.powi(2) / 256.0 + 45.0 * e2.powi(3) / 1024.0) * (4.0 * lat_rad).sin()
+            - (35.0 * e2.powi(3) / 3072.0) * (6.0 * lat_rad).sin());
 
-    let easting = k0 * n * (a_val + ((1.0 - t + c) * a_val.powi(3)) / 6.0
-        + ((5.0 - 18.0 * t + t.powi(2) + 72.0 * c - 58.0 * ep2) * a_val.powi(5)) / 120.0)
+    let easting = k0
+        * n
+        * (a_val
+            + ((1.0 - t + c) * a_val.powi(3)) / 6.0
+            + ((5.0 - 18.0 * t + t.powi(2) + 72.0 * c - 58.0 * ep2) * a_val.powi(5)) / 120.0)
         + 500_000.0;
 
-    let northing = k0 * (m + n * lat_rad.tan() * (a_val.powi(2) / 2.0
-        + ((5.0 - t + 9.0 * c + 4.0 * c.powi(2)) * a_val.powi(4)) / 24.0
-        + ((61.0 - 58.0 * t + t.powi(2) + 600.0 * c - 330.0 * ep2) * a_val.powi(6)) / 720.0));
+    let northing = k0
+        * (m + n
+            * lat_rad.tan()
+            * (a_val.powi(2) / 2.0
+                + ((5.0 - t + 9.0 * c + 4.0 * c.powi(2)) * a_val.powi(4)) / 24.0
+                + ((61.0 - 58.0 * t + t.powi(2) + 600.0 * c - 330.0 * ep2) * a_val.powi(6))
+                    / 720.0));
 
-    let northing = if south { northing + 10_000_000.0 } else { northing };
+    let northing = if south {
+        northing + 10_000_000.0
+    } else {
+        northing
+    };
 
     (easting, northing)
 }
@@ -200,7 +221,11 @@ fn wgs84_to_utm(lon: f64, lat: f64, zone: u8, south: bool) -> (f64, f64) {
 /// UTM → WGS84 inverse transform (Transverse Mercator).
 fn utm_to_wgs84(easting: f64, northing: f64, zone: u8, south: bool) -> (f64, f64) {
     let central_meridian = (zone as f64 - 1.0) * 6.0 - 180.0 + 3.0;
-    let northing = if south { northing - 10_000_000.0 } else { northing };
+    let northing = if south {
+        northing - 10_000_000.0
+    } else {
+        northing
+    };
     let x = easting - 500_000.0;
 
     // WGS84 ellipsoid
@@ -230,12 +255,20 @@ fn utm_to_wgs84(easting: f64, northing: f64, zone: u8, south: bool) -> (f64, f64
 
     let d = x / (n1 * k0);
 
-    let lat = phi1_rad - (n1 * phi1_rad.tan() / r1) * (d.powi(2) / 2.0
-        - (5.0 + 3.0 * t1 + 10.0 * c1 - 4.0 * c1.powi(2) - 9.0 * ep2) * d.powi(4) / 24.0
-        + (61.0 + 90.0 * t1 + 298.0 * c1 + 45.0 * t1.powi(2) - 252.0 * ep2 - 3.0 * c1.powi(2)) * d.powi(6) / 720.0);
+    let lat = phi1_rad
+        - (n1 * phi1_rad.tan() / r1)
+            * (d.powi(2) / 2.0
+                - (5.0 + 3.0 * t1 + 10.0 * c1 - 4.0 * c1.powi(2) - 9.0 * ep2) * d.powi(4) / 24.0
+                + (61.0 + 90.0 * t1 + 298.0 * c1 + 45.0 * t1.powi(2)
+                    - 252.0 * ep2
+                    - 3.0 * c1.powi(2))
+                    * d.powi(6)
+                    / 720.0);
 
     let lon = (d - (1.0 + 2.0 * t1 + c1) * d.powi(3) / 6.0
-        + (5.0 - 2.0 * c1 + 28.0 * t1 - 3.0 * c1.powi(2) + 8.0 * ep2 + 24.0 * t1.powi(2)) * d.powi(5) / 120.0)
+        + (5.0 - 2.0 * c1 + 28.0 * t1 - 3.0 * c1.powi(2) + 8.0 * ep2 + 24.0 * t1.powi(2))
+            * d.powi(5)
+            / 120.0)
         / phi1_rad.cos();
 
     (lon.to_degrees() + central_meridian, lat.to_degrees())
@@ -257,11 +290,7 @@ fn transform_via_proj(
         let (x, y) = proj
             .project((c.x, c.y), false)
             .map_err(|e| GeodesyError::Proj(e.to_string()))?;
-        transformed.push(Coord {
-            x,
-            y,
-            z: c.z,
-        });
+        transformed.push(Coord { x, y, z: c.z });
     }
 
     Ok(TransformResult {
@@ -287,7 +316,11 @@ mod tests {
 
     #[test]
     fn test_identity_transform() {
-        let coords = vec![Coord { x: 1.0, y: 2.0, z: None }];
+        let coords = vec![Coord {
+            x: 1.0,
+            y: 2.0,
+            z: None,
+        }];
         let result = transform_coords(&coords, "EPSG:4326", "EPSG:4326").unwrap();
         assert_eq!(result.method, TransformMethod::Identity);
         assert_eq!(result.coords[0].x, 1.0);
@@ -296,7 +329,11 @@ mod tests {
     #[test]
     fn test_wgs84_to_utm_roundtrip() {
         // Sydney, Australia: lat=-33.8688, lon=151.2093 (UTM Zone 56S, EPSG:32756)
-        let coords = vec![Coord { x: 151.2093, y: -33.8688, z: None }];
+        let coords = vec![Coord {
+            x: 151.2093,
+            y: -33.8688,
+            z: None,
+        }];
         let to_utm = transform_coords(&coords, "EPSG:4326", "EPSG:32756").unwrap();
         assert_eq!(to_utm.method, TransformMethod::PureRustUtm);
 
@@ -305,25 +342,53 @@ mod tests {
         // Pure-Rust TM has ~500m absolute error (acceptable — proj4js on
         // frontend handles precise rendering; this is for Rust-side computation)
         let (e, n) = (to_utm.coords[0].x, to_utm.coords[0].y);
-        assert!((e - 334_893.0).abs() < 2000.0, "easting: expected ≈334893, got {}", e);
-        assert!((n - 6_252_340.0).abs() < 2000.0, "northing: expected ≈6252340, got {}", n);
+        assert!(
+            (e - 334_893.0).abs() < 2000.0,
+            "easting: expected ≈334893, got {}",
+            e
+        );
+        assert!(
+            (n - 6_252_340.0).abs() < 2000.0,
+            "northing: expected ≈6252340, got {}",
+            n
+        );
 
         // Round-trip back to WGS84 — this is the critical accuracy test
         let back = transform_coords(&to_utm.coords, "EPSG:32756", "EPSG:4326").unwrap();
         let (lon, lat) = (back.coords[0].x, back.coords[0].y);
-        assert!((lon - 151.2093).abs() < 0.01, "lon: expected 151.2093, got {}", lon);
-        assert!((lat - (-33.8688)).abs() < 0.01, "lat: expected -33.8688, got {}", lat);
+        assert!(
+            (lon - 151.2093).abs() < 0.01,
+            "lon: expected 151.2093, got {}",
+            lon
+        );
+        assert!(
+            (lat - (-33.8688)).abs() < 0.01,
+            "lat: expected -33.8688, got {}",
+            lat
+        );
     }
 
     #[test]
     fn test_wgs84_to_utm_north() {
         // London: lat=51.5074, lon=-0.1278 (UTM Zone 30N, EPSG:32630)
-        let coords = vec![Coord { x: -0.1278, y: 51.5074, z: None }];
+        let coords = vec![Coord {
+            x: -0.1278,
+            y: 51.5074,
+            z: None,
+        }];
         let result = transform_coords(&coords, "EPSG:4326", "EPSG:32630").unwrap();
         assert_eq!(result.method, TransformMethod::PureRustUtm);
         // London UTM ≈ E:699,319, N:5,710,111 (verified against epsg.io)
-        assert!((result.coords[0].x - 699_319.0).abs() < 1000.0, "easting: {}", result.coords[0].x);
-        assert!((result.coords[0].y - 5_710_111.0).abs() < 1000.0, "northing: {}", result.coords[0].y);
+        assert!(
+            (result.coords[0].x - 699_319.0).abs() < 1000.0,
+            "easting: {}",
+            result.coords[0].x
+        );
+        assert!(
+            (result.coords[0].y - 5_710_111.0).abs() < 1000.0,
+            "northing: {}",
+            result.coords[0].y
+        );
     }
 
     #[test]
@@ -347,7 +412,11 @@ mod tests {
 
     #[test]
     fn test_unsupported_crs() {
-        let coords = vec![Coord { x: 1.0, y: 2.0, z: None }];
+        let coords = vec![Coord {
+            x: 1.0,
+            y: 2.0,
+            z: None,
+        }];
         let result = transform_coords(&coords, "EPSG:4326", "EPSG:9999");
         assert!(result.is_err());
     }

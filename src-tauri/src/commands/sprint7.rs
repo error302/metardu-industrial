@@ -56,8 +56,8 @@ pub fn activate_license_cmd(
     license_content: String,
     save_path: Option<String>,
 ) -> Result<LicenseStatus, String> {
-    let status = parse_license(&license_content)
-        .map_err(|e| ctx_no_input!("parsing license", e))?;
+    let status =
+        parse_license(&license_content).map_err(|e| ctx_no_input!("parsing license", e))?;
 
     // Optionally save the license to disk for future runs
     if let Some(path) = save_path {
@@ -182,14 +182,10 @@ pub struct BenchmarkRequest {
 /// The frontend displays the results in a "Performance Benchmark" dialog
 /// so users can verify their hardware meets recommended specs.
 #[tauri::command]
-pub async fn run_benchmarks_cmd(
-    request: BenchmarkRequest,
-) -> Result<BenchmarkSuiteResult, String> {
+pub async fn run_benchmarks_cmd(request: BenchmarkRequest) -> Result<BenchmarkSuiteResult, String> {
     let iterations = request.iterations.unwrap_or(5);
     // Benchmarks are CPU-intensive — run in blocking task
-    tokio::task::spawn_blocking(move || {
-        run_benchmark_suite(iterations)
-    })
-    .await
-    .map_err(|e| format!("run_benchmarks_cmd: task join error: {e}"))
+    tokio::task::spawn_blocking(move || run_benchmark_suite(iterations))
+        .await
+        .map_err(|e| format!("run_benchmarks_cmd: task join error: {e}"))
 }

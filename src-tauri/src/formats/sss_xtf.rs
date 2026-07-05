@@ -108,7 +108,10 @@ pub fn read_xtf_header(path: &Path) -> Result<XtfHeader, SssError> {
     let magic = String::from_utf8_lossy(&header_buf[0..4]).to_string();
     if magic != "XGTF" {
         // Maybe it's a generic format — check if it's actually XTF
-        let hex: String = header_buf[0..4].iter().map(|b| format!("{:02X}", b)).collect();
+        let hex: String = header_buf[0..4]
+            .iter()
+            .map(|b| format!("{:02X}", b))
+            .collect();
         return Err(SssError::NotXtf(format!("'{}' (hex: {})", magic, hex)));
     }
 
@@ -121,7 +124,10 @@ pub fn read_xtf_header(path: &Path) -> Result<XtfHeader, SssError> {
     let n_channels = header_buf[64];
     // Total ping count hint at offset 100 (u32 little-endian) — may be 0 if unknown
     let total_ping_count_hint = u32::from_le_bytes([
-        header_buf[100], header_buf[101], header_buf[102], header_buf[103],
+        header_buf[100],
+        header_buf[101],
+        header_buf[102],
+        header_buf[103],
     ]);
 
     Ok(XtfHeader {
@@ -153,7 +159,11 @@ pub fn read_xtf_pings(path: &Path, max_pings: usize) -> Result<SssData, SssError
 
     let mut pings: Vec<SssPing> = Vec::new();
     let mut max_samples_per_channel = 0usize;
-    let max_pings = if max_pings == 0 { usize::MAX } else { max_pings };
+    let max_pings = if max_pings == 0 {
+        usize::MAX
+    } else {
+        max_pings
+    };
 
     // Walk ping packets. Each ping packet starts with a 256-byte ping header.
     // Byte 0-1: packet type (0x00 = sidescan, 0x01 = bathymetry, 0x02 = raw)
@@ -171,7 +181,10 @@ pub fn read_xtf_pings(path: &Path, max_pings: usize) -> Result<SssData, SssError
         if packet_type != 0x0000 {
             // Skip non-sidescan packets — read the data size and skip
             let data_size = u32::from_le_bytes([
-                ping_header[4], ping_header[5], ping_header[6], ping_header[7],
+                ping_header[4],
+                ping_header[5],
+                ping_header[6],
+                ping_header[7],
             ]) as u64;
             file.seek(SeekFrom::Current(data_size as i64))
                 .map_err(|_| SssError::Truncated(file.stream_position().unwrap_or(0)))?;
@@ -180,42 +193,75 @@ pub fn read_xtf_pings(path: &Path, max_pings: usize) -> Result<SssData, SssError
 
         // Ping number at bytes 10-13 (u32 LE)
         let ping_number = u32::from_le_bytes([
-            ping_header[10], ping_header[11], ping_header[12], ping_header[13],
+            ping_header[10],
+            ping_header[11],
+            ping_header[12],
+            ping_header[13],
         ]);
 
         // Timestamp — XTF uses a Windows FILETIME (100ns ticks since 1601-01-01)
         // stored at bytes 14-21 as u64 LE. Convert to Unix epoch seconds.
         let filetime_ticks = u64::from_le_bytes([
-            ping_header[14], ping_header[15], ping_header[16], ping_header[17],
-            ping_header[18], ping_header[19], ping_header[20], ping_header[21],
+            ping_header[14],
+            ping_header[15],
+            ping_header[16],
+            ping_header[17],
+            ping_header[18],
+            ping_header[19],
+            ping_header[20],
+            ping_header[21],
         ]);
         let timestamp_secs = filetime_to_unix_secs(filetime_ticks);
 
         // Latitude at bytes 22-29 (f64 LE)
         let latitude = f64::from_le_bytes([
-            ping_header[22], ping_header[23], ping_header[24], ping_header[25],
-            ping_header[26], ping_header[27], ping_header[28], ping_header[29],
+            ping_header[22],
+            ping_header[23],
+            ping_header[24],
+            ping_header[25],
+            ping_header[26],
+            ping_header[27],
+            ping_header[28],
+            ping_header[29],
         ]);
         // Longitude at bytes 30-37 (f64 LE)
         let longitude = f64::from_le_bytes([
-            ping_header[30], ping_header[31], ping_header[32], ping_header[33],
-            ping_header[34], ping_header[35], ping_header[36], ping_header[37],
+            ping_header[30],
+            ping_header[31],
+            ping_header[32],
+            ping_header[33],
+            ping_header[34],
+            ping_header[35],
+            ping_header[36],
+            ping_header[37],
         ]);
         // Heading at bytes 56-59 (f32 LE, degrees)
         let heading_deg = f32::from_le_bytes([
-            ping_header[56], ping_header[57], ping_header[58], ping_header[59],
+            ping_header[56],
+            ping_header[57],
+            ping_header[58],
+            ping_header[59],
         ]);
         // Altitude (fish height) at bytes 84-87 (f32 LE, meters)
         let altitude_m = f32::from_le_bytes([
-            ping_header[84], ping_header[85], ping_header[86], ping_header[87],
+            ping_header[84],
+            ping_header[85],
+            ping_header[86],
+            ping_header[87],
         ]);
         // Sound speed at bytes 88-91 (f32 LE)
         let sound_speed_mps = f32::from_le_bytes([
-            ping_header[88], ping_header[89], ping_header[90], ping_header[91],
+            ping_header[88],
+            ping_header[89],
+            ping_header[90],
+            ping_header[91],
         ]);
         // Sample interval at bytes 96-99 (f32 LE, seconds)
         let sample_interval_secs = f32::from_le_bytes([
-            ping_header[96], ping_header[97], ping_header[98], ping_header[99],
+            ping_header[96],
+            ping_header[97],
+            ping_header[98],
+            ping_header[99],
         ]);
 
         // Each ping has data for multiple channels. The number of channels
@@ -227,7 +273,10 @@ pub fn read_xtf_pings(path: &Path, max_pings: usize) -> Result<SssData, SssError
 
         // Read the data section. Bytes 4-7 give the total data size for all channels.
         let total_data_size = u32::from_le_bytes([
-            ping_header[4], ping_header[5], ping_header[6], ping_header[7],
+            ping_header[4],
+            ping_header[5],
+            ping_header[6],
+            ping_header[7],
         ]) as usize;
 
         let mut data_buf = vec![0u8; total_data_size];
@@ -247,12 +296,14 @@ pub fn read_xtf_pings(path: &Path, max_pings: usize) -> Result<SssData, SssError
             }
             // First 4 bytes: samples per channel for this chan
             let n_samples = u32::from_le_bytes([
-                data_buf[offset], data_buf[offset + 1], data_buf[offset + 2], data_buf[offset + 3],
+                data_buf[offset],
+                data_buf[offset + 1],
+                data_buf[offset + 2],
+                data_buf[offset + 3],
             ]) as usize;
             // Next 4 bytes: bytes per sample (typically 1 for u8 backscatter, 2 for u16)
-            let bytes_per_sample = u16::from_le_bytes([
-                data_buf[offset + 4], data_buf[offset + 5],
-            ]) as usize;
+            let bytes_per_sample =
+                u16::from_le_bytes([data_buf[offset + 4], data_buf[offset + 5]]) as usize;
             offset += 8;
             // Some vendors insert a 64-byte channel info block here. Detect: if
             // offset + 64 + n_samples * bytes_per_sample > total_data_size, skip the 64-byte block.
@@ -438,7 +489,7 @@ mod tests {
         buf[0..4].copy_from_slice(b"XGTF");
         buf[4] = 26; // file format version
         buf[5] = 1; // system type
-        // Sonar name at bytes 6..38
+                    // Sonar name at bytes 6..38
         let name = b"EdgeTech 4125";
         buf[6..6 + name.len()].copy_from_slice(name);
         buf[64] = 2; // 2 channels (port + starboard)

@@ -129,7 +129,8 @@ pub fn run_tidal_correction(
             if warnings.len() < 2 {
                 warnings.push(format!(
                     "some sonar pings are after tide range (tide ends at {}, sonar ends at {})",
-                    tide_max_ts, sonar_data.last().unwrap().0
+                    tide_max_ts,
+                    sonar_data.last().unwrap().0
                 ));
             }
             tide_max_ts
@@ -162,7 +163,11 @@ pub fn run_tidal_correction(
         tide_readings: tide_data.len(),
         min_tide_m: min_tide,
         max_tide_m: max_tide,
-        mean_tide_m: if count > 0 { sum_tide / count as f64 } else { 0.0 },
+        mean_tide_m: if count > 0 {
+            sum_tide / count as f64
+        } else {
+            0.0
+        },
         min_corrected_depth_m: min_corrected,
         max_corrected_depth_m: max_corrected,
         output_path: request.output_csv_path.clone(),
@@ -197,7 +202,11 @@ fn parse_csv_pairs(path: &str) -> Result<Vec<(f64, f64)>, TidalError> {
                 }
                 return Err(TidalError::CsvParse {
                     file: path.to_string(),
-                    line: format!("line {}: cannot parse timestamp '{}'", i + 1, parts[0].trim()),
+                    line: format!(
+                        "line {}: cannot parse timestamp '{}'",
+                        i + 1,
+                        parts[0].trim()
+                    ),
                 });
             }
         };
@@ -300,7 +309,8 @@ impl CubicSpline {
         let a = (self.xs[hi] - x) / h;
         let b = (x - self.xs[lo]) / h;
 
-        a * self.ys[lo] + b * self.ys[hi]
+        a * self.ys[lo]
+            + b * self.ys[hi]
             + ((a * a * a - a) * self.y2[lo] + (b * b * b - b) * self.y2[hi]) * (h * h) / 6.0
     }
 }
@@ -316,7 +326,10 @@ mod tests {
     #[test]
     fn test_parse_csv_pairs_basic() {
         let tmp = std::env::temp_dir().join("metardu_test_sonar.csv");
-        write_csv(&tmp, "timestamp,depth\n1000.0,10.5\n1001.0,10.6\n1002.0,10.7\n");
+        write_csv(
+            &tmp,
+            "timestamp,depth\n1000.0,10.5\n1001.0,10.6\n1002.0,10.7\n",
+        );
         let data = parse_csv_pairs(tmp.to_str().unwrap()).unwrap();
         assert_eq!(data.len(), 3);
         assert!((data[0].0 - 1000.0).abs() < 0.001);
@@ -347,11 +360,7 @@ mod tests {
 
         // At x = π/4, sin = √2/2 ≈ 0.707
         let val = spline.interpolate(std::f64::consts::FRAC_PI_4);
-        assert!(
-            (val - 0.707).abs() < 0.15,
-            "expected ≈0.707, got {}",
-            val
-        );
+        assert!((val - 0.707).abs() < 0.15, "expected ≈0.707, got {}", val);
 
         // At x = π, should be exactly 0 (data point)
         let val2 = spline.interpolate(std::f64::consts::PI);
@@ -360,13 +369,7 @@ mod tests {
 
     #[test]
     fn test_cubic_spline_clamps_outside_range() {
-        let points = vec![
-            (0.0, 0.0),
-            (1.0, 1.0),
-            (2.0, 0.0),
-            (3.0, 1.0),
-            (4.0, 0.0),
-        ];
+        let points = vec![(0.0, 0.0), (1.0, 1.0), (2.0, 0.0), (3.0, 1.0), (4.0, 0.0)];
         let spline = CubicSpline::new(&points).unwrap();
 
         // Before range — should return first y
@@ -391,12 +394,20 @@ mod tests {
         // Sonar: 10 pings from t=1000 to t=1009, depth ≈ 15m
         let mut sonar_content = String::from("timestamp,depth\n");
         for i in 0..10 {
-            sonar_content.push_str(&format!("{}\n", 1000.0 + i as f64, 15.0 + (i as f64 * 0.01)));
+            sonar_content.push_str(&format!(
+                "{}\n",
+                1000.0 + i as f64,
+                15.0 + (i as f64 * 0.01)
+            ));
         }
         // Fix: format string is wrong, let me just write it properly
         let mut sonar_content = String::from("timestamp,depth\n");
         for i in 0..10 {
-            sonar_content.push_str(&format!("{:.1},{:.2}\n", 1000.0 + i as f64, 15.0 + i as f64 * 0.01));
+            sonar_content.push_str(&format!(
+                "{:.1},{:.2}\n",
+                1000.0 + i as f64,
+                15.0 + i as f64 * 0.01
+            ));
         }
         write_csv(&sonar_path, &sonar_content);
 

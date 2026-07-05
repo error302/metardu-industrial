@@ -29,9 +29,9 @@ use metardu_core::mining::dem::DemParams;
 use metardu_core::mining::eom::{hex_sha256, run_eom_pipeline, EomInput, EomProgress};
 use metardu_core::mining::license::{
     self, compute_machine_fingerprint, current_unix_seconds, export_private_key_pem,
-    export_public_key_pem, generate_license_keypair, import_private_key_pem,
-    import_public_key_pem, load_license_file, save_license_file, sign_license, verify_license,
-    LicenseClaims, MachineFingerprint,
+    export_public_key_pem, generate_license_keypair, import_private_key_pem, import_public_key_pem,
+    load_license_file, save_license_file, sign_license, verify_license, LicenseClaims,
+    MachineFingerprint,
 };
 use metardu_core::mining::report::{generate_pdf_report, ReportData, SOFTWARE_VERSION};
 
@@ -105,9 +105,10 @@ enum Commands {
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let result = match cli.command {
-        Some(Commands::GenerateKeypair { private_out, public_out }) => {
-            cmd_generate_keypair(&private_out, &public_out)
-        }
+        Some(Commands::GenerateKeypair {
+            private_out,
+            public_out,
+        }) => cmd_generate_keypair(&private_out, &public_out),
         Some(Commands::SignLicense {
             private_key,
             customer,
@@ -128,9 +129,10 @@ fn main() -> ExitCode {
             &out,
         ),
         Some(Commands::Fingerprint { site_id }) => cmd_fingerprint(&site_id),
-        Some(Commands::VerifyLicense { license, public_key }) => {
-            cmd_verify_license(&license, &public_key)
-        }
+        Some(Commands::VerifyLicense {
+            license,
+            public_key,
+        }) => cmd_verify_license(&license, &public_key),
         None => cmd_demo(),
     };
     match result {
@@ -304,9 +306,18 @@ fn cmd_demo() -> Result<(), Box<dyn std::error::Error>> {
         "      DEM             : {} cols x {} rows, cell={} m",
         output.dem.ncols, output.dem.nrows, output.dem.cell_size
     );
-    println!("      fill volume     : +{:.2} m^3", output.volumes.fill_volume);
-    println!("      cut volume      : -{:.2} m^3", output.volumes.cut_volume);
-    println!("      net volume      : {:+.2} m^3", output.volumes.net_volume);
+    println!(
+        "      fill volume     : +{:.2} m^3",
+        output.volumes.fill_volume
+    );
+    println!(
+        "      cut volume      : -{:.2} m^3",
+        output.volumes.cut_volume
+    );
+    println!(
+        "      net volume      : {:+.2} m^3",
+        output.volumes.net_volume
+    );
 
     println!("[3/4] Generating signed PDF report...");
     let report = ReportData {

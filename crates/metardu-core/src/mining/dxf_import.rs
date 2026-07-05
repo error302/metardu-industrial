@@ -13,8 +13,8 @@
 
 use std::path::Path;
 
-use dxf::Drawing;
 use dxf::entities::EntityType;
+use dxf::Drawing;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -115,18 +115,33 @@ pub fn import_dxf_surface(path: &Path) -> Result<DxfSurface, DxfError> {
             _ => continue,
         };
         face_count += 1;
-        let p1 = (face.first_corner.x, face.first_corner.y, face.first_corner.z);
-        let p2 = (face.second_corner.x, face.second_corner.y, face.second_corner.z);
-        let p3 = (face.third_corner.x, face.third_corner.y, face.third_corner.z);
-        let p4 = (face.fourth_corner.x, face.fourth_corner.y, face.fourth_corner.z);
+        let p1 = (
+            face.first_corner.x,
+            face.first_corner.y,
+            face.first_corner.z,
+        );
+        let p2 = (
+            face.second_corner.x,
+            face.second_corner.y,
+            face.second_corner.z,
+        );
+        let p3 = (
+            face.third_corner.x,
+            face.third_corner.y,
+            face.third_corner.z,
+        );
+        let p4 = (
+            face.fourth_corner.x,
+            face.fourth_corner.y,
+            face.fourth_corner.z,
+        );
 
         // First triangle: p1, p2, p3
         triangles.push(Triangle { p1, p2, p3 });
         // If the fourth corner differs from the third, the 3DFACE is a
         // quad — add the second triangle along the (p1, p3) diagonal.
-        let is_quad = (p4.0 - p3.0).abs() > 1e-9
-            || (p4.1 - p3.1).abs() > 1e-9
-            || (p4.2 - p3.2).abs() > 1e-9;
+        let is_quad =
+            (p4.0 - p3.0).abs() > 1e-9 || (p4.1 - p3.1).abs() > 1e-9 || (p4.2 - p3.2).abs() > 1e-9;
         if is_quad {
             triangles.push(Triangle { p1, p2: p3, p3: p4 });
         }
@@ -308,14 +323,12 @@ mod tests {
     fn test_rasterize_flat_tin_yields_constant_z() {
         let tmp = tempfile::NamedTempFile::with_suffix(".dxf").unwrap();
         // Two triangles covering a 10x10 square at z=50.
-        let faces = [
-            (
-                Point::new(0.0, 0.0, 50.0),
-                Point::new(10.0, 0.0, 50.0),
-                Point::new(10.0, 10.0, 50.0),
-                Point::new(0.0, 10.0, 50.0),
-            ),
-        ];
+        let faces = [(
+            Point::new(0.0, 0.0, 50.0),
+            Point::new(10.0, 0.0, 50.0),
+            Point::new(10.0, 10.0, 50.0),
+            Point::new(0.0, 10.0, 50.0),
+        )];
         write_test_dxf(tmp.path(), &faces);
         let surface = import_dxf_surface(tmp.path()).unwrap();
         let dem = rasterize_dxf_to_dem(&surface, 1.0, None).unwrap();

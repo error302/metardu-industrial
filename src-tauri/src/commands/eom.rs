@@ -7,11 +7,12 @@
 use metardu_core::mining::csf::CsfParams;
 use metardu_core::mining::dem::DemParams;
 use metardu_core::mining::dxf_import::{import_dxf_surface, rasterize_dxf_to_dem, DesignDem};
-use metardu_core::mining::eom::{run_eom_pipeline, EomInput, EomOutput, EomPipelineError, EomProgress};
+use metardu_core::mining::eom::{
+    run_eom_pipeline, EomInput, EomOutput, EomPipelineError, EomProgress,
+};
 use metardu_core::mining::license::{
-    check_status, compute_machine_fingerprint, generate_license_keypair,
-    import_public_key_pem, sign_license, verify_license, LicenseClaims, LicenseFile,
-    LicenseStatus, RsaPubKey,
+    check_status, compute_machine_fingerprint, generate_license_keypair, import_public_key_pem,
+    sign_license, verify_license, LicenseClaims, LicenseFile, LicenseStatus, RsaPubKey,
 };
 use metardu_core::mining::report::{generate_pdf_report, ReportData};
 use std::path::PathBuf;
@@ -59,7 +60,11 @@ fn get_machine_id() -> String {
     }
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
-    hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect()
+    hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect()
 }
 
 #[tauri::command]
@@ -83,9 +88,28 @@ pub async fn run_eom_pipeline_cmd(
     };
     let label = input.current_las_path.clone();
     tokio::task::spawn_blocking(move || {
-        let result = run_eom_pipeline(&core_input, |p| { let _ = on_progress.send(p); });
+        // Time the actual pipeline execution so the audit report
+        // can carry a real processing_time_ms instead of a hard-
+        // coded 0. Wall-clock is the right clock here: the surveyor
+        // cares how long they waited, not how much CPU was spent.
+        // (If we ever need CPU time we can add a second field, but
+        // no consumer currently asks for it.)
+        let start = std::time::Instant::now();
+        let result = run_eom_pipeline(&core_input, |p| {
+            let _ = on_progress.send(p);
+        });
+        let elapsed_ms = start.elapsed().as_millis() as u64;
         result
-            .map(|o| EomOutputAdapter::from(o))
+            .map(|o| {
+                let mut adapter = EomOutputAdapter::from(o);
+                // The core crate's EomOutput doesn't carry timing, so
+                // the From impl defaults this to 0. Stamp the real
+                // wall-clock value here — this is the only place
+                // processing_time_ms is set on a freshly-run pipeline,
+                // so there's no risk of double-counting.
+                adapter.processing_time_ms = elapsed_ms;
+                adapter
+            })
             .map_err(|e| format!("EOM pipeline failed: {} — {}", label, e))
     })
     .await
@@ -108,15 +132,24 @@ pub async fn generate_eom_report_cmd(
             author: surveyor.clone(),
             project: customer,
             site,
-            created_at: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+            created_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
             signed,
             summary: format!(
                 "Fill: +{:.2} m³\nCut: -{:.2} m³\nNet: {:+.2} m³\nAudit: {}",
-                eom_output.fill_volume, eom_output.cut_volume, eom_output.net_volume, eom_output.audit_hash
+                eom_output.fill_volume,
+                eom_output.cut_volume,
+                eom_output.net_volume,
+                eom_output.audit_hash
             ),
             chain_of_custody: metardu_core::mining::report::ChainOfCustody {
                 custody_id: format!("EOM-{}", &eom_output.audit_hash[..12]),
-                created_at: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+                created_at: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0),
                 custodian: surveyor.clone(),
                 source_file: eom_output.source_file,
                 source_hash: eom_output.source_hash,
@@ -131,8 +164,7 @@ pub async fn generate_eom_report_cmd(
             software_version: "0.1.0".to_string(),
         };
         let path = PathBuf::from(&output_path);
-        generate_pdf_report(&path, &report)
-            .map_err(|e| format!("PDF generation failed: {e}"))
+        generate_pdf_report(&path, &report).map_err(|e| format!("PDF generation failed: {e}"))
     })
     .await
     .map_err(|e| format!("task join error: {e}"))?
@@ -157,8 +189,7 @@ pub async fn verify_eom_license_cmd(
 ) -> Result<LicenseClaims, String> {
     let pub_key = bundled_public_key()?;
     tokio::task::spawn_blocking(move || {
-        verify_license(&license, &pub_key)
-            .map_err(|e| format!("license verification failed: {e}"))
+        verify_license(&license, &pub_key).map_err(|e| format!("license verification failed: {e}"))
     })
     .await
     .map_err(|e| format!("task join error: {e}"))?
@@ -167,10 +198,9 @@ pub async fn verify_eom_license_cmd(
 #[tauri::command]
 pub async fn sign_eom_license_cmd(claims: LicenseClaims) -> Result<LicenseFile, String> {
     tokio::task::spawn_blocking(move || {
-        let (priv_key, _pub_key) = generate_license_keypair()
-            .map_err(|e| format!("keypair generation failed: {e}"))?;
-        sign_license(&claims, &priv_key)
-            .map_err(|e| format!("license signing failed: {e}"))
+        let (priv_key, _pub_key) =
+            generate_license_keypair().map_err(|e| format!("keypair generation failed: {e}"))?;
+        sign_license(&claims, &priv_key).map_err(|e| format!("license signing failed: {e}"))
     })
     .await
     .map_err(|e| format!("task join error: {e}"))?
@@ -190,17 +220,13 @@ pub async fn check_license_status_cmd(
 }
 
 #[tauri::command]
-pub async fn consume_report_cmd(
-    _license: Option<LicenseFile>,
-) -> Result<LicenseStatus, String> {
+pub async fn consume_report_cmd(_license: Option<LicenseFile>) -> Result<LicenseStatus, String> {
     // Simplified: just check status (the ReportCounter lives in the core module)
     let pub_key = bundled_public_key()?;
     let machine_id = get_machine_id();
-    tokio::task::spawn_blocking(move || {
-        Ok(check_status(None, &pub_key, &machine_id, "", 3))
-    })
-    .await
-    .map_err(|e| format!("task join error: {e}"))?
+    tokio::task::spawn_blocking(move || Ok(check_status(None, &pub_key, &machine_id, "", 3)))
+        .await
+        .map_err(|e| format!("task join error: {e}"))?
 }
 
 #[tauri::command]
@@ -245,8 +271,12 @@ pub struct EomWatchFolderConfig {
     pub surveyor: String,
 }
 
-fn default_poll() -> u64 { 5 }
-fn default_bench() -> f64 { 5.0 }
+fn default_poll() -> u64 {
+    5
+}
+fn default_bench() -> f64 {
+    5.0
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct EomWatchEvent {
@@ -263,7 +293,10 @@ pub struct EomWatchEvent {
 static EOM_WATCH_RUNNING: AtomicBool = AtomicBool::new(false);
 
 #[tauri::command]
-pub async fn start_eom_watch_folder(app: AppHandle, config: EomWatchFolderConfig) -> Result<(), String> {
+pub async fn start_eom_watch_folder(
+    app: AppHandle,
+    config: EomWatchFolderConfig,
+) -> Result<(), String> {
     if EOM_WATCH_RUNNING.load(Ordering::SeqCst) {
         return Err("already running".to_string());
     }
@@ -285,11 +318,19 @@ pub async fn start_eom_watch_folder(app: AppHandle, config: EomWatchFolderConfig
         while EOM_WATCH_RUNNING.load(Ordering::SeqCst) {
             let new_files = scan_dir(&wp, &seen);
             for fp in new_files {
-                let _ = app.emit("eom://watch", EomWatchEvent {
-                    kind: "started".into(), file_path: fp.clone(),
-                    report_path: None, fill_volume: None, cut_volume: None,
-                    net_volume: None, error: None, processing_time_ms: None,
-                });
+                let _ = app.emit(
+                    "eom://watch",
+                    EomWatchEvent {
+                        kind: "started".into(),
+                        file_path: fp.clone(),
+                        report_path: None,
+                        fill_volume: None,
+                        cut_volume: None,
+                        net_volume: None,
+                        error: None,
+                        processing_time_ms: None,
+                    },
+                );
                 let machine_id = get_machine_id();
                 let input = EomInput {
                     point_cloud_path: PathBuf::from(&fp),
@@ -306,43 +347,76 @@ pub async fn start_eom_watch_folder(app: AppHandle, config: EomWatchFolderConfig
                 };
                 match run_eom_pipeline(&input, |_| {}) {
                     Ok(output) => {
-                        let rp = format!("{}_eom_report.pdf",
-                            fp.rsplit_once('.').map(|(b,_)| b).unwrap_or(&fp));
+                        let rp = format!(
+                            "{}_eom_report.pdf",
+                            fp.rsplit_once('.').map(|(b, _)| b).unwrap_or(&fp)
+                        );
                         let rd = ReportData {
                             title: "MetaRDU EOM Report".into(),
                             subtitle: config.site.clone(),
                             author: config.surveyor.clone(),
                             project: config.customer.clone(),
                             site: config.site.clone(),
-                            created_at: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+                            created_at: std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .map(|d| d.as_secs())
+                                .unwrap_or(0),
                             signed: true,
-                            summary: format!("Fill: {:.1} m³, Cut: {:.1} m³", output.volumes.fill_volume, output.volumes.cut_volume),
+                            summary: format!(
+                                "Fill: {:.1} m³, Cut: {:.1} m³",
+                                output.volumes.fill_volume, output.volumes.cut_volume
+                            ),
                             chain_of_custody: output.chain_of_custody.clone(),
                             software_version: "0.1.0".to_string(),
                         };
                         match generate_pdf_report(std::path::Path::new(&rp), &rd) {
-                            Ok(()) => { let _ = app.emit("eom://watch", EomWatchEvent {
-                                kind: "completed".into(), file_path: fp.clone(),
-                                report_path: Some(rp),
-                                fill_volume: Some(output.volumes.fill_volume),
-                                cut_volume: Some(output.volumes.cut_volume),
-                                net_volume: Some(output.volumes.net_volume),
-                                error: None, processing_time_ms: None,
-                            });}
-                            Err(e) => { let _ = app.emit("eom://watch", EomWatchEvent {
-                                kind: "failed".into(), file_path: fp.clone(),
-                                report_path: None, fill_volume: None, cut_volume: None,
-                                net_volume: None, error: Some(format!("PDF: {e}")),
-                                processing_time_ms: None,
-                            });}
+                            Ok(()) => {
+                                let _ = app.emit(
+                                    "eom://watch",
+                                    EomWatchEvent {
+                                        kind: "completed".into(),
+                                        file_path: fp.clone(),
+                                        report_path: Some(rp),
+                                        fill_volume: Some(output.volumes.fill_volume),
+                                        cut_volume: Some(output.volumes.cut_volume),
+                                        net_volume: Some(output.volumes.net_volume),
+                                        error: None,
+                                        processing_time_ms: None,
+                                    },
+                                );
+                            }
+                            Err(e) => {
+                                let _ = app.emit(
+                                    "eom://watch",
+                                    EomWatchEvent {
+                                        kind: "failed".into(),
+                                        file_path: fp.clone(),
+                                        report_path: None,
+                                        fill_volume: None,
+                                        cut_volume: None,
+                                        net_volume: None,
+                                        error: Some(format!("PDF: {e}")),
+                                        processing_time_ms: None,
+                                    },
+                                );
+                            }
                         }
                     }
-                    Err(e) => { let _ = app.emit("eom://watch", EomWatchEvent {
-                        kind: "failed".into(), file_path: fp.clone(),
-                        report_path: None, fill_volume: None, cut_volume: None,
-                        net_volume: None, error: Some(format!("Pipeline: {e}")),
-                        processing_time_ms: None,
-                    });}
+                    Err(e) => {
+                        let _ = app.emit(
+                            "eom://watch",
+                            EomWatchEvent {
+                                kind: "failed".into(),
+                                file_path: fp.clone(),
+                                report_path: None,
+                                fill_volume: None,
+                                cut_volume: None,
+                                net_volume: None,
+                                error: Some(format!("Pipeline: {e}")),
+                                processing_time_ms: None,
+                            },
+                        );
+                    }
                 }
             }
             std::thread::sleep(Duration::from_secs(poll));
@@ -367,19 +441,39 @@ fn scan_dir(
     seen: &std::sync::Arc<std::sync::Mutex<std::collections::HashSet<String>>>,
 ) -> Vec<String> {
     let mut new_files = Vec::new();
-    let entries = match std::fs::read_dir(path) { Ok(e) => e, Err(_) => return new_files };
+    let entries = match std::fs::read_dir(path) {
+        Ok(e) => e,
+        Err(_) => return new_files,
+    };
     let now = std::time::SystemTime::now();
     let mut s = seen.lock().unwrap();
     for entry in entries.flatten() {
         let ep = entry.path();
-        if !ep.is_file() { continue; }
-        let ext = ep.extension().and_then(|e| e.to_str()).map(|s| s.to_lowercase()).unwrap_or_default();
-        if ext != "las" && ext != "laz" { continue; }
+        if !ep.is_file() {
+            continue;
+        }
+        let ext = ep
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.to_lowercase())
+            .unwrap_or_default();
+        if ext != "las" && ext != "laz" {
+            continue;
+        }
         let key = ep.display().to_string();
-        if s.contains(&key) { continue; }
+        if s.contains(&key) {
+            continue;
+        }
         if let Ok(m) = entry.metadata() {
             if let Ok(modified) = m.modified() {
-                if now.duration_since(modified).unwrap_or(Duration::from_secs(0)).as_secs() < 2 { continue; }
+                if now
+                    .duration_since(modified)
+                    .unwrap_or(Duration::from_secs(0))
+                    .as_secs()
+                    < 2
+                {
+                    continue;
+                }
             }
         }
         s.insert(key.clone());
@@ -445,7 +539,11 @@ impl From<EomOutput> for EomOutputAdapter {
             dem_cell_size: o.dem.cell_size,
             source_file: coc.source_file.clone(),
             source_hash: coc.source_hash.clone(),
-            processing_time_ms: 0, // TODO: pass from pipeline if available
+            // Set to 0 here; the run_eom_pipeline_cmd wrapper stamps
+            // the real wall-clock time on the adapter after the
+            // pipeline returns. We can't compute it inside `From`
+            // because the core `EomOutput` doesn't carry timing.
+            processing_time_ms: 0,
             warnings: Vec::new(),
         }
     }
@@ -474,7 +572,10 @@ impl From<ReportDataAdapter> for ReportData {
             author: a.surveyor,
             project: a.customer,
             site: a.site,
-            created_at: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+            created_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
             signed: a.signed,
             summary: String::new(),
             chain_of_custody: ChainOfCustody::default(),
@@ -500,8 +601,7 @@ pub async fn run_triage_cmd(dir: String) -> Result<TriageReport, String> {
     let dir_label = dir.clone();
     tokio::task::spawn_blocking(move || {
         let path = PathBuf::from(&dir);
-        run_triage(&path)
-            .map_err(|e| format!("triage analysis failed: {} — {}", dir_label, e))
+        run_triage(&path).map_err(|e| format!("triage analysis failed: {} — {}", dir_label, e))
     })
     .await
     .map_err(|e| format!("run_triage_cmd: task join error: {e}"))?

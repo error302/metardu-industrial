@@ -230,8 +230,12 @@ pub fn record_event(
             *s.failure_counts.entry(event_name.to_string()).or_insert(0) += 1;
         }
         if let Some(d) = duration_ms {
-            *s.command_total_ms.entry(event_name.to_string()).or_insert(0) += d;
-            *s.command_call_count.entry(event_name.to_string()).or_insert(0) += 1;
+            *s.command_total_ms
+                .entry(event_name.to_string())
+                .or_insert(0) += d;
+            *s.command_call_count
+                .entry(event_name.to_string())
+                .or_insert(0) += 1;
         }
     }
 
@@ -254,12 +258,7 @@ pub fn record_event(
 ///
 /// Called from panic handlers and IPC error paths. The crash is stored
 /// locally and (if auto-submit is enabled) queued for submission.
-pub fn record_crash(
-    command: &str,
-    message: &str,
-    stack_trace: &str,
-    license_tier: &str,
-) -> String {
+pub fn record_crash(command: &str, message: &str, stack_trace: &str, license_tier: &str) -> String {
     let mut state = TELEMETRY_STATE.lock().unwrap();
     if state.is_none() {
         *state = Some(TelemetryState::new());
@@ -338,14 +337,18 @@ pub fn get_stats() -> TelemetryStats {
     let pending_crashes = s.crashes.iter().filter(|c| !c.submitted).count();
 
     // Top 5 commands by call count
-    let mut top_commands: Vec<(String, u64)> = s.command_counts.iter()
+    let mut top_commands: Vec<(String, u64)> = s
+        .command_counts
+        .iter()
         .map(|(k, v)| (k.clone(), *v))
         .collect();
     top_commands.sort_by(|a, b| b.1.cmp(&a.1));
     top_commands.truncate(5);
 
     // Top 5 failures
-    let mut top_failures: Vec<(String, u64)> = s.failure_counts.iter()
+    let mut top_failures: Vec<(String, u64)> = s
+        .failure_counts
+        .iter()
         .map(|(k, v)| (k.clone(), *v))
         .collect();
     top_failures.sort_by(|a, b| b.1.cmp(&a.1));

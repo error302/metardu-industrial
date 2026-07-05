@@ -3,16 +3,14 @@
 // Density Gates + Tidal Spline + Machine Control Compiler
 // These are the tools surveyors actually struggle with.
 
+use crate::dem_render::{self, DemRenderRequest, DemRenderResult};
 use crate::marine::density_gates::{self, CoverageReport, DensityGatesRequest};
 use crate::marine::tidal_spline::{self, TidalCorrectionRequest, TidalCorrectionResult};
 use crate::mining::machine_control::{self, MachineControlRequest, MachineControlResult};
-use crate::dem_render::{self, DemRenderRequest, DemRenderResult};
 
 /// Run density gates analysis on a folder of sonar files.
 #[tauri::command]
-pub async fn run_density_gates_cmd(
-    request: DensityGatesRequest,
-) -> Result<CoverageReport, String> {
+pub async fn run_density_gates_cmd(request: DensityGatesRequest) -> Result<CoverageReport, String> {
     tokio::task::spawn_blocking(move || {
         density_gates::run_density_gates(&request)
             .map_err(|e| ctx_no_input!("running density gates", e))
@@ -53,13 +51,10 @@ pub async fn compile_machine_control_cmd(
 ///
 /// Returns packed RGBA bytes + geographic bounds for OpenLayers overlay.
 #[tauri::command]
-pub async fn render_dem_cmd(
-    request: DemRenderRequest,
-) -> Result<DemRenderResult, String> {
+pub async fn render_dem_cmd(request: DemRenderRequest) -> Result<DemRenderResult, String> {
     let path_label = request.path.clone();
     tokio::task::spawn_blocking(move || {
-        dem_render::render_dem(&request)
-            .map_err(|e| ctx!("rendering DEM", path_label, e))
+        dem_render::render_dem(&request).map_err(|e| ctx!("rendering DEM", path_label, e))
     })
     .await
     .map_err(|e| format!("render_dem_cmd: task join error: {e}"))?

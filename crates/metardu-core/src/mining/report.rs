@@ -139,12 +139,8 @@ pub fn generate_pdf_report(path: &Path, data: &ReportData) -> Result<(), ReportE
     let coc_json = serde_json::to_string(&coc)?;
 
     // 3. Build the PDF document.
-    let (doc, page1, layer1) = PdfDocument::new(
-        data.title.clone(),
-        Mm(210.0),
-        Mm(297.0),
-        "Layer 1",
-    );
+    let (doc, page1, layer1) =
+        PdfDocument::new(data.title.clone(), Mm(210.0), Mm(297.0), "Layer 1");
     let font = doc
         .add_builtin_font(BuiltinFont::Helvetica)
         .map_err(|e| ReportError::Pdf(e.to_string()))?;
@@ -239,13 +235,7 @@ pub fn generate_pdf_report(path: &Path, data: &ReportData) -> Result<(), ReportE
     y -= line_height + section_gap;
 
     // --- Chain of Custody section --------------------------------------
-    layer.use_text(
-        "Chain of Custody",
-        14.0,
-        Mm(left_margin),
-        Mm(y),
-        &bold_font,
-    );
+    layer.use_text("Chain of Custody", 14.0, Mm(left_margin), Mm(y), &bold_font);
     y -= line_height + 1.0;
     let coc_lines = vec![
         format!("Custody ID:    {}", coc.custody_id),
@@ -263,11 +253,7 @@ pub fn generate_pdf_report(path: &Path, data: &ReportData) -> Result<(), ReportE
         ),
         format!(
             "DEM:           cell={} m, bounds=({:.2}, {:.2}, {:.2}, {:.2})",
-            coc.dem_cell_size,
-            coc.dem_min_x,
-            coc.dem_min_y,
-            coc.dem_max_x,
-            coc.dem_max_y
+            coc.dem_cell_size, coc.dem_min_x, coc.dem_min_y, coc.dem_max_x, coc.dem_max_y
         ),
         format!("License ID:    {}", coc.license_id),
         format!("Machine ID:    {}", coc.machine_id),
@@ -300,7 +286,11 @@ pub fn generate_pdf_report(path: &Path, data: &ReportData) -> Result<(), ReportE
 
     // --- Footer ---------------------------------------------------------
     layer.use_text(
-        format!("{} — {}", data.software_version, format_unix_ts(data.created_at)),
+        format!(
+            "{} — {}",
+            data.software_version,
+            format_unix_ts(data.created_at)
+        ),
         8.0,
         Mm(left_margin),
         Mm(15.0),

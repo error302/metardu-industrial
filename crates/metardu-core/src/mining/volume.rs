@@ -38,6 +38,11 @@ pub struct VolumeResult {
     pub fill_cells: usize,
     /// Number of cells where cut occurred
     pub cut_cells: usize,
+    /// Number of cells skipped because either current or reference
+    /// was NODATA. Important QC signal — a high nodata count means
+    /// the survey coverage is sparse and the volume estimate is
+    /// based on a small fraction of the design area.
+    pub nodata_cells: usize,
     /// Per-bench breakdown — only for cells within each band
     pub benches: Vec<BenchVolume>,
 }
@@ -198,6 +203,7 @@ pub fn compute_volumes(
         cell_area,
         fill_cells,
         cut_cells,
+        nodata_cells,
         benches: bench_results,
     })
 }

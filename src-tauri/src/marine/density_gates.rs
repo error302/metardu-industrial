@@ -124,11 +124,11 @@ fn target_density_for_order(order: &str, cell_size_deg: f64) -> u64 {
 
     // IHO S-44 minimum density (soundings per m²)
     let density_per_m2 = match order {
-        "special" => 0.25,      // Special order: 1 sounding per 4m²
-        "order_1a" => 0.04,     // Order 1a: 1 sounding per 25m²
-        "order_1b" => 0.02,     // Order 1b
-        "order_2" => 0.01,      // Order 2
-        _ => 0.04,              // default to Order 1a
+        "special" => 0.25,  // Special order: 1 sounding per 4m²
+        "order_1a" => 0.04, // Order 1a: 1 sounding per 25m²
+        "order_1b" => 0.02, // Order 1b
+        "order_2" => 0.01,  // Order 2
+        _ => 0.04,          // default to Order 1a
     };
 
     (density_per_m2 * cell_area_m2).max(1.0) as u64
@@ -170,9 +170,7 @@ pub fn run_density_gates(request: &DensityGatesRequest) -> Result<CoverageReport
             .and_then(|s| s.to_str())
             .unwrap_or("unknown")
             .to_string();
-        let file_size = std::fs::metadata(file_path)
-            .map(|m| m.len())
-            .unwrap_or(0);
+        let file_size = std::fs::metadata(file_path).map(|m| m.len()).unwrap_or(0);
 
         match extract_ping_positions(file_path) {
             Ok(positions) => {
@@ -371,7 +369,8 @@ fn extract_from_all(path: &Path) -> Result<Vec<(f64, f64)>, String> {
 
     // Verify magic: first byte must be 0x49 (start datagram)
     let mut start_byte = [0u8; 1];
-    file.read_exact(&mut start_byte).map_err(|e| e.to_string())?;
+    file.read_exact(&mut start_byte)
+        .map_err(|e| e.to_string())?;
     if start_byte[0] != 0x49 {
         return Err("not a valid Kongsberg .all file".into());
     }
@@ -391,7 +390,8 @@ fn extract_from_all(path: &Path) -> Result<Vec<(f64, f64)>, String> {
         }
 
         let type_byte = header[0];
-        let size = u32::from(header[1]) | (u32::from(header[2]) << 8) | (u32::from(header[3]) << 16);
+        let size =
+            u32::from(header[1]) | (u32::from(header[2]) << 8) | (u32::from(header[3]) << 16);
 
         if size < 4 {
             break;
@@ -412,19 +412,18 @@ fn extract_from_all(path: &Path) -> Result<Vec<(f64, f64)>, String> {
         // Position datagram = 0x50 ('P')
         if type_byte == 0x50 && payload.len() >= 14 {
             // Parse: timestamp(4) + pos_fix_desc(2) + lat(4, i32, ×2e7) + lon(4, i32, ×2e7)
-            let lat_raw = i32::from_le_bytes([
-                payload[6], payload[7], payload[8], payload[9],
-            ]);
-            let lon_raw = i32::from_le_bytes([
-                payload[10], payload[11], payload[12], payload[13],
-            ]);
+            let lat_raw = i32::from_le_bytes([payload[6], payload[7], payload[8], payload[9]]);
+            let lon_raw = i32::from_le_bytes([payload[10], payload[11], payload[12], payload[13]]);
 
             let lat = lat_raw as f64 / 20_000_000.0;
             let lon = lon_raw as f64 / 20_000_000.0;
 
-            if lat.is_finite() && lon.is_finite()
-                && lat >= -90.0 && lat <= 90.0
-                && lon >= -180.0 && lon <= 180.0
+            if lat.is_finite()
+                && lon.is_finite()
+                && lat >= -90.0
+                && lat <= 90.0
+                && lon >= -180.0
+                && lon <= 180.0
             {
                 positions.push((lon, lat));
             }
@@ -512,17 +511,18 @@ fn extract_from_s7k(path: &Path) -> Result<Vec<(f64, f64)>, String> {
             // Offset 8: 8 bytes — latitude (f64, decimal degrees)
             // Offset 16: 8 bytes — longitude (f64, decimal degrees)
             let lat = f64::from_le_bytes([
-                data[8], data[9], data[10], data[11],
-                data[12], data[13], data[14], data[15],
+                data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15],
             ]);
             let lon = f64::from_le_bytes([
-                data[16], data[17], data[18], data[19],
-                data[20], data[21], data[22], data[23],
+                data[16], data[17], data[18], data[19], data[20], data[21], data[22], data[23],
             ]);
 
-            if lat.is_finite() && lon.is_finite()
-                && lat >= -90.0 && lat <= 90.0
-                && lon >= -180.0 && lon <= 180.0
+            if lat.is_finite()
+                && lon.is_finite()
+                && lat >= -90.0
+                && lat <= 90.0
+                && lon >= -180.0
+                && lon <= 180.0
             {
                 positions.push((lon, lat));
             }

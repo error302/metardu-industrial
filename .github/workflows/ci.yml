@@ -17,7 +17,7 @@ jobs:
   # Type-check + lint the frontend (fast, runs on every push)
   # ───────────────────────────────────────────────────────────────
   frontend-check:
-    name: Frontend typecheck + build
+    name: Frontend typecheck + lint + build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +31,14 @@ jobs:
         working-directory: .
         run: npm ci
 
+      - name: Oxlint
+        # Oxlint catches React rules-of-hooks violations, unused vars,
+        # and other JS/TS pitfalls that tsc can't see. Exits non-zero
+        # on any error-level finding; warnings are tolerated (we have
+        # a few known-acceptable ones like Fast Refresh hints).
+        working-directory: .
+        run: npx oxlint
+
       - name: Type check + build
         working-directory: .
         run: npm run build
@@ -43,10 +51,34 @@ jobs:
           retention-days: 7
 
   # ───────────────────────────────────────────────────────────────
+  # Test the metardu-core crate (no system deps, runs on every push)
+  # ───────────────────────────────────────────────────────────────
+  core-test:
+    name: Core crate test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "crates/metardu-core"
+
+      - name: Cargo test (metardu-core)
+        # Runs every #[test] in the core crate — NTRIP CRC-24Q
+        # verification, NODATA handling, license sign/verify round-
+        # trip, triage parsing, etc. ~90 tests, sub-minute runtime.
+        working-directory: crates/metardu-core
+        run: cargo test --lib --verbose
+
+  # ───────────────────────────────────────────────────────────────
   # Rust formatting + clippy (fast, runs on every push)
   # ───────────────────────────────────────────────────────────────
   rust-check:
-    name: Rust fmt + clippy
+    name: Rust fmt + clippy + test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +113,13 @@ jobs:
         working-directory: src-tauri
         run: cargo clippy --all-targets -- -D warnings
 
+      - name: Cargo test (src-tauri)
+        # Run the IPC command tests + any tests in the Tauri shell
+        # crate. These need the GTK system libs (unlike the core
+        # crate), so they live in this job rather than core-test.
+        working-directory: src-tauri
+        run: cargo test --lib --verbose
+
       - name: Cargo clippy (geo-proj feature)
         working-directory: src-tauri
         run: cargo clippy --all-targets --features geo-proj -- -D warnings
@@ -95,7 +134,7 @@ jobs:
   # ───────────────────────────────────────────────────────────────
   build:
     name: Build ${{ matrix.os }}
-    needs: [frontend-check, rust-check]
+    needs: [frontend-check, rust-check, core-test]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false

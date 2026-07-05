@@ -131,7 +131,9 @@ mod serde_bytes_compat {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
-        base64::engine::general_purpose::STANDARD.encode(v).serialize(s)
+        base64::engine::general_purpose::STANDARD
+            .encode(v)
+            .serialize(s)
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
@@ -282,7 +284,10 @@ pub fn compute_machine_fingerprint(machine_id: &str, site_id: &str) -> MachineFi
     hasher.update(b"|");
     hasher.update(site_id.as_bytes());
     let digest = hasher.finalize();
-    let fingerprint = digest.iter().map(|b| format!("{:02x}", b)).collect::<String>();
+    let fingerprint = digest
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
     MachineFingerprint {
         machine_id: if machine_id.len() == 64 && machine_id.chars().all(|c| c.is_ascii_hexdigit()) {
             machine_id.to_string()

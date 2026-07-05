@@ -15,7 +15,9 @@ pub mod volume;
 
 pub use csf::{classify_ground, CsfError, CsfParams, CsfResult};
 pub use dem::{rasterize_ground_to_dem, DemError, DemGrid, DemParams};
-pub use dxf_import::{import_dxf_surface, rasterize_dxf_to_dem, DesignDem, DxfError, DxfSurface, Triangle};
+pub use dxf_import::{
+    import_dxf_surface, rasterize_dxf_to_dem, DesignDem, DxfError, DxfSurface, Triangle,
+};
 pub use eom::{run_eom_pipeline, EomInput, EomOutput, EomPipelineError, EomProgress};
 pub use las::{read_header, read_points, LasError, LasHeader};
 pub use license::{

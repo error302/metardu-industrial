@@ -360,11 +360,20 @@ mod tests {
         // Exclusive Order — added in Edition 6.1.0 (June 2023).
         // a=0.15, b=0.0075 → at 10m: sqrt(0.0225 + 0.005625) ≈ 0.1677
         let (a, b) = S44Order::Exclusive.vertical_constants();
-        assert!((a - 0.15).abs() < 1e-12, "Exclusive a should be 0.15, got {a}");
-        assert!((b - 0.0075).abs() < 1e-12, "Exclusive b should be 0.0075, got {b}");
+        assert!(
+            (a - 0.15).abs() < 1e-12,
+            "Exclusive a should be 0.15, got {a}"
+        );
+        assert!(
+            (b - 0.0075).abs() < 1e-12,
+            "Exclusive b should be 0.0075, got {b}"
+        );
         let threshold = S44Order::Exclusive.vertical_threshold(10.0);
         // sqrt(0.15² + (0.0075×10)²) = sqrt(0.0225 + 0.005625) = sqrt(0.028125) ≈ 0.16771
-        assert!((threshold - 0.16771).abs() < 0.0001, "Exclusive threshold at 10m: {threshold}");
+        assert!(
+            (threshold - 0.16771).abs() < 0.0001,
+            "Exclusive threshold at 10m: {threshold}"
+        );
         // Horizontal threshold for Exclusive is 1m — tighter than Special (2m).
         assert!((S44Order::Exclusive.horizontal_threshold() - 1.0).abs() < 1e-12);
         assert_eq!(S44Order::Exclusive.feature_detection_size(), Some(0.5));
@@ -377,9 +386,14 @@ mod tests {
         for depth in [1.0, 5.0, 10.0, 20.0, 50.0] {
             let ex = S44Order::Exclusive.vertical_threshold(depth);
             let sp = S44Order::Special.vertical_threshold(depth);
-            assert!(ex < sp, "Exclusive ({ex}) should be < Special ({sp}) at depth {depth}");
+            assert!(
+                ex < sp,
+                "Exclusive ({ex}) should be < Special ({sp}) at depth {depth}"
+            );
         }
-        assert!(S44Order::Exclusive.horizontal_threshold() < S44Order::Special.horizontal_threshold());
+        assert!(
+            S44Order::Exclusive.horizontal_threshold() < S44Order::Special.horizontal_threshold()
+        );
     }
 
     #[test]
@@ -389,8 +403,14 @@ mod tests {
         // If someone "fixes" this to 0.50/0.013 citing an old table, this
         // test will fail and force them to read the actual IHO PDF.
         let (a, b) = S44Order::Order1a.vertical_constants();
-        assert!((a - 0.25).abs() < 1e-12, "Order 1a a must be 0.25 (6th ed), got {a}");
-        assert!((b - 0.0075).abs() < 1e-12, "Order 1a b must be 0.0075 (6th ed), got {b}");
+        assert!(
+            (a - 0.25).abs() < 1e-12,
+            "Order 1a a must be 0.25 (6th ed), got {a}"
+        );
+        assert!(
+            (b - 0.0075).abs() < 1e-12,
+            "Order 1a b must be 0.0075 (6th ed), got {b}"
+        );
     }
 
     #[test]
@@ -398,8 +418,14 @@ mod tests {
         // CRITICAL regression guard: 5th-edition Order 2 used a=1.00, b=0.023.
         // 6th-edition Order 2 uses a=0.50, b=0.013.
         let (a, b) = S44Order::Order2.vertical_constants();
-        assert!((a - 0.50).abs() < 1e-12, "Order 2 a must be 0.50 (6th ed), got {a}");
-        assert!((b - 0.013).abs() < 1e-12, "Order 2 b must be 0.013 (6th ed), got {b}");
+        assert!(
+            (a - 0.50).abs() < 1e-12,
+            "Order 2 a must be 0.50 (6th ed), got {a}"
+        );
+        assert!(
+            (b - 0.013).abs() < 1e-12,
+            "Order 2 b must be 0.013 (6th ed), got {b}"
+        );
     }
 
     #[test]
@@ -423,7 +449,11 @@ mod tests {
         }];
         let exclusive = check_compliance(&soundings, S44Order::Exclusive).unwrap();
         let special = check_compliance(&soundings, S44Order::Special).unwrap();
-        assert_eq!(exclusive.status, S44Status::Fail, "0.20m should fail Exclusive");
+        assert_eq!(
+            exclusive.status,
+            S44Status::Fail,
+            "0.20m should fail Exclusive"
+        );
         assert_eq!(special.status, S44Status::Pass, "0.20m should pass Special");
     }
 }

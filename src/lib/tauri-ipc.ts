@@ -276,6 +276,8 @@ export interface VolumeResultRpc {
   cell_area: number;
   fill_cells: number;
   cut_cells: number;
+  /** Cells skipped because either surface was NODATA. QC signal. */
+  nodata_cells: number;
   benches: BenchVolumeRpc[];
 }
 
@@ -2134,6 +2136,7 @@ export interface BenchVolumeRpc {
 export interface VolumeResultRpc {
   fill_volume: number; cut_volume: number; net_volume: number;
   cell_area: number; fill_cells: number; cut_cells: number;
+  nodata_cells: number;
   benches: BenchVolumeRpc[];
 }
 

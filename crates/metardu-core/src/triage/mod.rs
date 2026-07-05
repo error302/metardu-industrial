@@ -124,11 +124,20 @@ pub fn run_triage(dir: &Path) -> Result<TriageReport, TriageError> {
     let mut report = TriageReport {
         total_files: files.len(),
         healthy_files: files.iter().filter(|f| f.status == FileStatus::Ok).count(),
-        warning_files: files.iter().filter(|f| f.status == FileStatus::Warning).count(),
-        error_files: files.iter().filter(|f| f.status == FileStatus::Error).count(),
+        warning_files: files
+            .iter()
+            .filter(|f| f.status == FileStatus::Warning)
+            .count(),
+        error_files: files
+            .iter()
+            .filter(|f| f.status == FileStatus::Error)
+            .count(),
         total_size_bytes: files.iter().map(|f| f.size_bytes).sum(),
         total_points: files.iter().filter_map(|f| f.point_count).sum(),
-        total_images: files.iter().filter(|f| f.kind == TriageFileKind::DroneImage).count() as u64,
+        total_images: files
+            .iter()
+            .filter(|f| f.kind == TriageFileKind::DroneImage)
+            .count() as u64,
         files,
         coverage_gaps: Vec::new(),
         time_span_secs: None,
@@ -138,11 +147,8 @@ pub fn run_triage(dir: &Path) -> Result<TriageReport, TriageError> {
     };
 
     // Detect CRS mismatches
-    let crs_set: std::collections::HashSet<String> = report
-        .files
-        .iter()
-        .filter_map(|f| f.crs.clone())
-        .collect();
+    let crs_set: std::collections::HashSet<String> =
+        report.files.iter().filter_map(|f| f.crs.clone()).collect();
     if crs_set.len() > 1 {
         report.crs_mismatch = true;
         report.detected_crs_list = crs_set.into_iter().collect();
@@ -156,11 +162,9 @@ pub fn run_triage(dir: &Path) -> Result<TriageReport, TriageError> {
     let timestamps: Vec<(u64, u64)> = report
         .files
         .iter()
-        .filter_map(|f| {
-            match (f.timestamp_start, f.timestamp_end) {
-                (Some(s), Some(e)) => Some((s, e)),
-                _ => None,
-            }
+        .filter_map(|f| match (f.timestamp_start, f.timestamp_end) {
+            (Some(s), Some(e)) => Some((s, e)),
+            _ => None,
         })
         .collect();
 
@@ -217,9 +221,7 @@ fn analyze_file(path: &Path) -> TriageFile {
 
     let (kind, status, bounds, point_count, timestamp_start, timestamp_end, crs, error) =
         match ext.as_str() {
-            "jpg" | "jpeg" | "tif" | "tiff" => {
-                analyze_image(path, &ext)
-            }
+            "jpg" | "jpeg" | "tif" | "tiff" => analyze_image(path, &ext),
             "las" => analyze_las(path, false),
             "laz" => analyze_las(path, true),
             "rinex" | "obs" | "nav" => analyze_rinex(path),
@@ -252,7 +254,19 @@ fn analyze_file(path: &Path) -> TriageFile {
 }
 
 /// Analyze a drone image — extract EXIF GPS + timestamp.
-fn analyze_image(path: &Path, ext: &str) -> (TriageFileKind, FileStatus, Option<(f64,f64,f64,f64)>, Option<u64>, Option<u64>, Option<u64>, Option<String>, Option<String>) {
+fn analyze_image(
+    path: &Path,
+    ext: &str,
+) -> (
+    TriageFileKind,
+    FileStatus,
+    Option<(f64, f64, f64, f64)>,
+    Option<u64>,
+    Option<u64>,
+    Option<u64>,
+    Option<String>,
+    Option<String>,
+) {
     let kind = if ext == "tif" || ext == "tiff" {
         TriageFileKind::Geotiff
     } else {
@@ -261,13 +275,35 @@ fn analyze_image(path: &Path, ext: &str) -> (TriageFileKind, FileStatus, Option<
 
     let file = match std::fs::File::open(path) {
         Ok(f) => f,
-        Err(e) => return (kind, FileStatus::Error, None, None, None, None, None, Some(e.to_string())),
+        Err(e) => {
+            return (
+                kind,
+                FileStatus::Error,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(e.to_string()),
+            )
+        }
     };
     let mut buf_reader = std::io::BufReader::new(&file);
     let exif_reader = exif::Reader::new();
     let exif_data = match exif_reader.read_from_container(&mut buf_reader) {
         Ok(e) => e,
-        Err(_) => return (kind, FileStatus::Warning, None, None, None, None, None, Some("No EXIF data".to_string())),
+        Err(_) => {
+            return (
+                kind,
+                FileStatus::Warning,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("No EXIF data".to_string()),
+            )
+        }
     };
 
     // Extract GPS coordinates from Rational values
@@ -323,8 +359,24 @@ fn rational_to_decimal(value: exif::Value) -> f64 {
 }
 
 /// Analyze a LAS/LAZ file — extract header info.
-fn analyze_las(path: &Path, is_laz: bool) -> (TriageFileKind, FileStatus, Option<(f64,f64,f64,f64)>, Option<u64>, Option<u64>, Option<u64>, Option<String>, Option<String>) {
-    let kind = if is_laz { TriageFileKind::LazPointcloud } else { TriageFileKind::LasPointcloud };
+fn analyze_las(
+    path: &Path,
+    is_laz: bool,
+) -> (
+    TriageFileKind,
+    FileStatus,
+    Option<(f64, f64, f64, f64)>,
+    Option<u64>,
+    Option<u64>,
+    Option<u64>,
+    Option<String>,
+    Option<String>,
+) {
+    let kind = if is_laz {
+        TriageFileKind::LazPointcloud
+    } else {
+        TriageFileKind::LasPointcloud
+    };
 
     match crate::mining::las::read_header(path) {
         Ok(header) => {
@@ -354,14 +406,32 @@ fn analyze_las(path: &Path, is_laz: bool) -> (TriageFileKind, FileStatus, Option
 }
 
 /// Analyze a RINEX file — basic header parse.
-fn analyze_rinex(path: &Path) -> (TriageFileKind, FileStatus, Option<(f64,f64,f64,f64)>, Option<u64>, Option<u64>, Option<u64>, Option<String>, Option<String>) {
+fn analyze_rinex(
+    path: &Path,
+) -> (
+    TriageFileKind,
+    FileStatus,
+    Option<(f64, f64, f64, f64)>,
+    Option<u64>,
+    Option<u64>,
+    Option<u64>,
+    Option<String>,
+    Option<String>,
+) {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
-        Err(e) => return (
-            TriageFileKind::GnssRinex,
-            FileStatus::Error, None, None, None, None, None,
-            Some(e.to_string()),
-        ),
+        Err(e) => {
+            return (
+                TriageFileKind::GnssRinex,
+                FileStatus::Error,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(e.to_string()),
+            )
+        }
     };
 
     // RINEX header contains approximate position in the "APPROX POSITION XYZ" line
@@ -405,14 +475,32 @@ fn analyze_rinex(path: &Path) -> (TriageFileKind, FileStatus, Option<(f64,f64,f6
 }
 
 /// Analyze an NMEA log — extract positions from GGA sentences.
-fn analyze_nmea(path: &Path) -> (TriageFileKind, FileStatus, Option<(f64,f64,f64,f64)>, Option<u64>, Option<u64>, Option<u64>, Option<String>, Option<String>) {
+fn analyze_nmea(
+    path: &Path,
+) -> (
+    TriageFileKind,
+    FileStatus,
+    Option<(f64, f64, f64, f64)>,
+    Option<u64>,
+    Option<u64>,
+    Option<u64>,
+    Option<String>,
+    Option<String>,
+) {
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
-        Err(e) => return (
-            TriageFileKind::GnssNmea,
-            FileStatus::Error, None, None, None, None, None,
-            Some(e.to_string()),
-        ),
+        Err(e) => {
+            return (
+                TriageFileKind::GnssNmea,
+                FileStatus::Error,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(e.to_string()),
+            )
+        }
     };
 
     let mut min_lat = f64::INFINITY;
@@ -425,7 +513,9 @@ fn analyze_nmea(path: &Path) -> (TriageFileKind, FileStatus, Option<(f64,f64,f64
         if line.starts_with("$GPGGA") || line.starts_with("$GNGGA") {
             let parts: Vec<&str> = line.split(',').collect();
             if parts.len() >= 6 {
-                if let (Ok(lat_raw), Ok(lon_raw)) = (parts[2].parse::<f64>(), parts[4].parse::<f64>()) {
+                if let (Ok(lat_raw), Ok(lon_raw)) =
+                    (parts[2].parse::<f64>(), parts[4].parse::<f64>())
+                {
                     let lat = nmea_coord_to_decimal(lat_raw, parts[3]);
                     let lon = nmea_coord_to_decimal(lon_raw, parts[5]);
                     if lat.is_finite() && lon.is_finite() {

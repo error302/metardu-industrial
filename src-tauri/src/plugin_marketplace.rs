@@ -143,7 +143,9 @@ pub fn get_plugins_dir(app_data_dir: &Path) -> PathBuf {
 /// Looks for .json metadata sidecar files (one per installed plugin).
 /// Each sidecar contains the InstalledPlugin metadata. If a .so/.dll/.dylib
 /// binary exists without a sidecar, derives metadata from the filename.
-pub fn list_installed_plugins(app_data_dir: &Path) -> Result<Vec<InstalledPlugin>, MarketplaceError> {
+pub fn list_installed_plugins(
+    app_data_dir: &Path,
+) -> Result<Vec<InstalledPlugin>, MarketplaceError> {
     let plugins_dir = get_plugins_dir(app_data_dir);
     let mut installed = Vec::new();
     let mut seen_ids = std::collections::HashSet::new();
@@ -176,7 +178,10 @@ pub fn list_installed_plugins(app_data_dir: &Path) -> Result<Vec<InstalledPlugin
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
             let ext_lower = ext.to_lowercase();
             if ext_lower == "so" || ext_lower == "dll" || ext_lower == "dylib" {
-                let filename = path.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown");
+                let filename = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown");
                 if seen_ids.insert(filename.to_string()) {
                     installed.push(InstalledPlugin {
                         id: filename.into(),
@@ -203,7 +208,9 @@ pub fn install_plugin(
     app_data_dir: &Path,
 ) -> Result<InstalledPlugin, MarketplaceError> {
     // Find the plugin in the registry
-    let plugin = registry.plugins.iter()
+    let plugin = registry
+        .plugins
+        .iter()
         .find(|p| p.id == plugin_id)
         .ok_or_else(|| MarketplaceError::NotFound(plugin_id.into()))?;
 
@@ -222,7 +229,10 @@ pub fn install_plugin(
         name: plugin.name.clone(),
         version: plugin.version.clone(),
         vendor: plugin.vendor.clone(),
-        installed_path: plugins_dir.join(format!("{}.json", plugin.id)).to_string_lossy().to_string(),
+        installed_path: plugins_dir
+            .join(format!("{}.json", plugin.id))
+            .to_string_lossy()
+            .to_string(),
         installed_date: now_iso(),
     };
 
@@ -264,7 +274,9 @@ pub fn search_registry<'a>(registry: &'a PluginRegistry, query: &str) -> Vec<&'a
         return registry.plugins.iter().collect();
     }
     let q = query.to_lowercase();
-    registry.plugins.iter()
+    registry
+        .plugins
+        .iter()
         .filter(|p| {
             p.name.to_lowercase().contains(&q)
                 || p.description.to_lowercase().contains(&q)

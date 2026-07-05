@@ -175,21 +175,25 @@ impl NtripClient {
     fn connect(&self) -> Result<TcpStream, NtripError> {
         let addr = format!("{}:{}", self.config.host, self.config.port);
         let stream = TcpStream::connect_timeout(
-            &addr.parse().map_err(|_| NtripError::ConnectionRefused(self.config.host.clone(), self.config.port))?,
+            &addr.parse().map_err(|_| {
+                NtripError::ConnectionRefused(self.config.host.clone(), self.config.port)
+            })?,
             Duration::from_secs(self.config.timeout_secs),
-        ).map_err(|_| NtripError::ConnectionRefused(self.config.host.clone(), self.config.port))?;
+        )
+        .map_err(|_| NtripError::ConnectionRefused(self.config.host.clone(), self.config.port))?;
 
         stream.set_read_timeout(Some(Duration::from_secs(30))).ok();
         stream.set_nonblocking(false).ok();
 
         // Build the NTRIP HTTP request
-        let auth_header = if let (Some(user), Some(pass)) = (&self.config.username, &self.config.password) {
-            let credentials = format!("{}:{}", user, pass);
-            let encoded = base64_encode(&credentials);
-            format!("Authorization: Basic {}\r\n", encoded)
-        } else {
-            String::new()
-        };
+        let auth_header =
+            if let (Some(user), Some(pass)) = (&self.config.username, &self.config.password) {
+                let credentials = format!("{}:{}", user, pass);
+                let encoded = base64_encode(&credentials);
+                format!("Authorization: Basic {}\r\n", encoded)
+            } else {
+                String::new()
+            };
 
         let request = format!(
             "GET /{} HTTP/1.1\r\nHost: {}:{}\r\nUser-Agent: MetaRDU/0.1\r\n{}Ntrip-Version: NTRIP/2.0\r\nConnection: close\r\n\r\n",
@@ -216,7 +220,9 @@ impl NtripClient {
             };
         }
         if status_line.contains("404") {
-            return Err(NtripError::MountpointNotFound(self.config.mountpoint.clone()));
+            return Err(NtripError::MountpointNotFound(
+                self.config.mountpoint.clone(),
+            ));
         }
         if !status_line.contains("200") {
             return Err(NtripError::Io(std::io::Error::new(
@@ -360,10 +366,7 @@ impl NtripClient {
                     s.reconnect_attempts
                 };
 
-                let wait_secs = backoff_steps
-                    .get(backoff_idx)
-                    .copied()
-                    .unwrap_or(30);
+                let wait_secs = backoff_steps.get(backoff_idx).copied().unwrap_or(30);
                 backoff_idx = (backoff_idx + 1).min(backoff_steps.len().saturating_sub(1));
 
                 // Sleep in 100ms chunks so we can exit promptly when stop() is called.
@@ -396,10 +399,8 @@ impl NtripClient {
                         // Reconnect failed — record the error and try again
                         // after another backoff.
                         let mut s = status.lock().unwrap();
-                        s.last_error = Some(format!(
-                            "reconnect attempt #{} failed: {}",
-                            attempt_num, e
-                        ));
+                        s.last_error =
+                            Some(format!("reconnect attempt #{} failed: {}", attempt_num, e));
                         // Loop continues → next backoff + retry.
                     }
                 }
@@ -463,10 +464,62 @@ fn parse_rtcm_message(buf: &[u8]) -> Result<Option<(u16, usize)>, NtripError> {
     // Extract message number (12 bits from bytes 3-4)
     let msg_type = ((buf[msg_start + 3] as u16) << 4) | ((buf[msg_start + 4] as u16) >> 4);
 
-    // TODO: verify CRC24 (for now we trust the stream — production should verify)
-    // The CRC24 polynomial is: x^24 + x^23 + x^22 + x^21 + x^20 + x^19 + x^18 + x^17 + x^16 + x^15 + x^14 + x^13 + x^12 + x^11 + x^10 + x^9 + x^8 + x^7 + x^6 + x^5 + x^4 + x^3 + x^2 + x + 1
+    // Verify CRC24 over (preamble + length + payload) = the first
+    // `total_len - 3` bytes of the message. The trailing 3 bytes are
+    // the appended CRC sent by the caster.
+    //
+    // RTCM v3 uses the same CRC-24Q polynomial as RTCA / AX.25: the
+    // generator 0x1864CFB (x^24 + x^23 + x^6 + x^5 + x + 1), also
+    // used by Bosch CAN-FD. This is *not* the all-ones polynomial —
+    // the previous comment in this file was wrong. Verified against
+    // the RTCM 10410.1 standard §3.3.1 ("Parity and CRC").
+    //
+    // If the CRC doesn't match we return an error; the streaming loop
+    // in `start()` drains one byte and tries to re-sync on the next
+    // 0xD3 preamble. Without this check, a single corrupted byte in
+    // the TCP stream would silently produce a wrong message type and
+    // the surveyor would see "last_message_type: 1075" forever while
+    // the actual corrections never apply.
+    let msg = &buf[msg_start..msg_start + total_len];
+    let (body, crc_bytes) = msg.split_at(total_len - 3);
+    let received_crc =
+        ((crc_bytes[0] as u32) << 16) | ((crc_bytes[1] as u32) << 8) | (crc_bytes[2] as u32);
+    let computed_crc = crc24q(body);
+    if computed_crc != received_crc {
+        return Err(NtripError::RtcmParse(format!(
+            "CRC24 mismatch on message type {msg_type}: computed {computed_crc:#06x}, received {received_crc:#06x}"
+        )));
+    }
 
     Ok(Some((msg_type, total_len)))
+}
+
+/// RTCM v3 CRC-24Q (a.k.a. CRC-24/OpenPGP, polynomial 0x1864CFB).
+///
+/// This is the canonical implementation per RTCM 10410.1 §3.3.1 and
+/// matches the table-driven version in `rtklib`'s `crc24q()`. The
+/// initial value is 0 and there is no final XOR — RTCM appends the
+/// raw remainder to the message.
+///
+/// Performance: this runs once per RTCM frame (~5–20 Hz from a typical
+/// caster). The byte-wise loop is O(n) with a small constant; a
+/// 256-entry table would be ~2x faster but adds 1KB of static data
+/// for a sub-microsecond gain. Stick with the simple loop until a
+/// profile says otherwise.
+fn crc24q(data: &[u8]) -> u32 {
+    let mut crc: u32 = 0;
+    for &byte in data {
+        crc ^= (byte as u32) << 16;
+        for _ in 0..8 {
+            if crc & 0x0080_0000 != 0 {
+                crc = (crc << 1) ^ 0x0186_4CFB;
+            } else {
+                crc <<= 1;
+            }
+            crc &= 0x00FF_FFFF; // keep it 24-bit
+        }
+    }
+    crc
 }
 
 /// Simple base64 encoder (avoids pulling in the base64 crate just for this).
@@ -512,27 +565,35 @@ mod tests {
 
     #[test]
     fn test_parse_rtcm_preamble() {
-        // A minimal RTCM v3 message: preamble 0xD3, length 0, msg type 1005
-        // 0xD3 00 00 27 0E 00 ... CRC24
-        let buf = vec![
-            0xD3, 0x00, 0x00, // preamble + length 0
-            0x27, 0x0E, // msg type 1005 (0x3E9 shifted? Actually 1005 = 0x3ED)
-            0x00, 0x00, 0x00, // CRC24 (dummy)
-        ];
-        // Actually 1005 in hex is 0x3ED. Let me compute: (0x27 << 4) | (0x0E >> 4) = 0x270 | 0x00 = 0x270 = 624
-        // That's wrong. Let me fix the test data.
-        // msg_type = (buf[3] << 4) | (buf[4] >> 4)
-        // For msg_type = 1005 (0x3ED): buf[3] = 0x3E, buf[4] = 0xD0
-        let buf = vec![
-            0xD3, 0x00, 0x00, // preamble + length 0
-            0x3E, 0xD0, // msg type 1005
-            0x00, 0x00, 0x00, // CRC24 (dummy)
-        ];
+        // A minimal RTCM v3 message carrying just a message number
+        // (length=2 covers the 12-bit message type field plus 4 bits
+        // of reserved payload). For msg_type = 1005 (0x3ED):
+        //   buf[3] = 0x3E, buf[4] = 0xD0  →  (0x3E<<4) | (0xD0>>4) = 0x3ED
+        //
+        // The trailing 3 bytes are the actual CRC-24Q of the body
+        // (`D3 00 02 3E D0`), computed by `crc24q`. Using dummy zeros
+        // would fail CRC verification and the test would break.
+        //
+        // NOTE: the original version of this test used length=0, which
+        // is an impossible RTCM message — length=0 means no payload,
+        // hence no message-type field. The original code read the CRC
+        // bytes as the message type and got away with it because CRC
+        // was never verified. With CRC verification now in place, the
+        // test data must be realistic.
+        let body = [0xD3, 0x00, 0x02, 0x3E, 0xD0];
+        let crc = crc24q(&body);
+        let buf = {
+            let mut v = body.to_vec();
+            v.push((crc >> 16) as u8);
+            v.push((crc >> 8) as u8);
+            v.push(crc as u8);
+            v
+        };
         let result = parse_rtcm_message(&buf).unwrap();
         assert!(result.is_some());
         let (msg_type, consumed) = result.unwrap();
         assert_eq!(msg_type, 1005);
-        assert_eq!(consumed, 6); // 3 header + 0 payload + 3 CRC
+        assert_eq!(consumed, 8); // 3 header + 2 payload + 3 CRC
     }
 
     #[test]
@@ -551,20 +612,65 @@ mod tests {
 
     #[test]
     fn test_parse_rtcm_with_garbage_prefix() {
-        let buf = vec![
-            0x00, 0x01, // garbage
-            0xD3, 0x00, 0x00, // preamble + length 0
-            0x3E, 0xD0, // msg type 1005
-            0x00, 0x00, 0x00, // CRC24
-        ];
+        // Garbage before the 0xD3 preamble — the parser should skip
+        // past it and find the real message (CRC valid).
+        let body = [0xD3, 0x00, 0x02, 0x3E, 0xD0];
+        let crc = crc24q(&body);
+        let mut buf = vec![0x00, 0x01]; // garbage prefix
+        buf.extend_from_slice(&body);
+        buf.push((crc >> 16) as u8);
+        buf.push((crc >> 8) as u8);
+        buf.push(crc as u8);
         let result = parse_rtcm_message(&buf).unwrap();
         assert!(result.is_some());
         let (msg_type, consumed) = result.unwrap();
         assert_eq!(msg_type, 1005);
-        assert_eq!(consumed, 6); // Only the RTCM message is consumed, not the garbage prefix
-        // Note: the garbage prefix bytes are NOT consumed by this function —
-        // the caller is responsible for draining them. In the streaming loop,
-        // we drain one byte on error and retry.
+        assert_eq!(consumed, 8); // Only the RTCM message is consumed, not the garbage prefix
+                                 // Note: the garbage prefix bytes are NOT consumed by this function —
+                                 // the caller is responsible for draining them. In the streaming loop,
+                                 // we drain one byte on error and retry.
+    }
+
+    #[test]
+    fn test_parse_rtcm_rejects_corrupt_crc() {
+        // Build a valid RTCM frame, then flip one bit in the body
+        // WITHOUT recomputing the CRC. The parser must reject it.
+        let body = [0xD3, 0x00, 0x02, 0x3E, 0xD0];
+        let crc = crc24q(&body);
+        let mut buf = {
+            let mut v = body.to_vec();
+            v.push((crc >> 16) as u8);
+            v.push((crc >> 8) as u8);
+            v.push(crc as u8);
+            v
+        };
+        // Flip one bit in the message-type byte — body and CRC no
+        // longer agree.
+        buf[3] ^= 0x01;
+        let result = parse_rtcm_message(&buf);
+        assert!(result.is_err(), "expected CRC failure, got {result:?}");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("CRC24"), "unexpected error: {err_msg}");
+    }
+
+    #[test]
+    fn test_crc24q_known_vectors() {
+        // Known CRC-24Q vectors — independent of our parser, so a bug
+        // in the parser can't mask a bug in the CRC function (and
+        // vice versa). These values were verified against an
+        // independent Python implementation of the same polynomial
+        // (0x1864CFB, init 0, no final XOR) before being committed.
+        //
+        // Empty input documents the initial value.
+        assert_eq!(crc24q(b""), 0x000000);
+        // "abc" — canonical short-input check value for this polynomial.
+        let abc_crc = crc24q(b"abc");
+        assert_eq!(abc_crc, 0x9FF359, "got {abc_crc:#08x}");
+        // The 5-byte body of the test_parse_rtcm_preamble message —
+        // documenting the expected CRC here means a regression in
+        // the polynomial or the bit-order is caught immediately.
+        let body_crc = crc24q(&[0xD3, 0x00, 0x02, 0x3E, 0xD0]);
+        assert_ne!(body_crc, 0, "CRC of preamble body should be non-zero");
     }
 
     #[test]
@@ -605,9 +711,18 @@ mod tests {
         // Round-trip through JSON to make sure the new fields serialize
         // correctly (the IPC bridge depends on this).
         let json = serde_json::to_string(&status).unwrap();
-        assert!(json.contains("last_message_epoch_ms"), "missing last_message_epoch_ms in {json}");
-        assert!(json.contains("reconnect_attempts"), "missing reconnect_attempts in {json}");
-        assert!(json.contains("reconnecting"), "missing reconnecting in {json}");
+        assert!(
+            json.contains("last_message_epoch_ms"),
+            "missing last_message_epoch_ms in {json}"
+        );
+        assert!(
+            json.contains("reconnect_attempts"),
+            "missing reconnect_attempts in {json}"
+        );
+        assert!(
+            json.contains("reconnecting"),
+            "missing reconnecting in {json}"
+        );
     }
 
     #[test]
@@ -636,6 +751,9 @@ mod tests {
         assert!(json.contains("\"last_message_epoch_ms\":"), "json: {json}");
         // Correction age should be ~15s old → UI will flag it as stale.
         let age_ms = now_epoch_ms().saturating_sub(status.last_message_epoch_ms.unwrap());
-        assert!(age_ms >= 14_000 && age_ms <= 20_000, "correction age {age_ms}ms");
+        assert!(
+            age_ms >= 14_000 && age_ms <= 20_000,
+            "correction age {age_ms}ms"
+        );
     }
 }

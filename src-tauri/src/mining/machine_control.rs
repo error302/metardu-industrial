@@ -106,8 +106,9 @@ pub fn compile_machine_control(
 
     // Parse the input file
     let (points, lines, warnings) = match ext.as_str() {
-        "dxf" => parse_dxf(input_path)
-            .map_err(|e| ctx!("parsing DXF file", request.input_path, e))?,
+        "dxf" => {
+            parse_dxf(input_path).map_err(|e| ctx!("parsing DXF file", request.input_path, e))?
+        }
         "xml" | "landxml" => parse_landxml(input_path)
             .map_err(|e| ctx!("parsing LandXML file", request.input_path, e))?,
         _ => {
@@ -129,9 +130,15 @@ pub fn compile_machine_control(
     }
 
     let file_size = match request.vendor {
-        MachineControlVendor::Leica => write_svd(output_path, &points, &lines).map_err(|e| e.to_string())?,
-        MachineControlVendor::Trimble => write_tp3(output_path, &points, &lines).map_err(|e| e.to_string())?,
-        MachineControlVendor::Topcon => write_top(output_path, &points, &lines).map_err(|e| e.to_string())?,
+        MachineControlVendor::Leica => {
+            write_svd(output_path, &points, &lines).map_err(|e| e.to_string())?
+        }
+        MachineControlVendor::Trimble => {
+            write_tp3(output_path, &points, &lines).map_err(|e| e.to_string())?
+        }
+        MachineControlVendor::Topcon => {
+            write_top(output_path, &points, &lines).map_err(|e| e.to_string())?
+        }
     };
 
     Ok(MachineControlResult {
@@ -168,7 +175,9 @@ pub struct AlignmentLine {
 ///   - POLYLINE/LWPOLYLINE entities → multi-point AlignmentLine
 ///
 /// Phase 8: basic text-based DXF parsing (sufficient for most pit designs)
-fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Vec<String>), MachineControlError> {
+fn parse_dxf(
+    path: &Path,
+) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Vec<String>), MachineControlError> {
     let content = std::fs::read_to_string(path)?;
     let lines: Vec<&str> = content.lines().map(|l| l.trim()).collect();
     let mut points = Vec::new();
@@ -196,9 +205,16 @@ fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Ve
                     break; // next entity
                 }
                 match c {
-                    "10" => { x = v.parse().unwrap_or(0.0); found_coords = true; }
-                    "20" => { y = v.parse().unwrap_or(0.0); }
-                    "30" => { z = v.parse().unwrap_or(0.0); }
+                    "10" => {
+                        x = v.parse().unwrap_or(0.0);
+                        found_coords = true;
+                    }
+                    "20" => {
+                        y = v.parse().unwrap_or(0.0);
+                    }
+                    "30" => {
+                        z = v.parse().unwrap_or(0.0);
+                    }
                     _ => {}
                 }
                 j += 2;
@@ -213,8 +229,12 @@ fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Ve
 
         // Look for LINE entities (2-point)
         if code == "0" && value == "LINE" {
-            let mut x1 = 0.0; let mut y1 = 0.0; let mut z1 = 0.0;
-            let mut x2 = 0.0; let mut y2 = 0.0; let mut z2 = 0.0;
+            let mut x1 = 0.0;
+            let mut y1 = 0.0;
+            let mut z1 = 0.0;
+            let mut x2 = 0.0;
+            let mut y2 = 0.0;
+            let mut z2 = 0.0;
             let mut found = false;
             let mut layer = String::new();
 
@@ -222,15 +242,32 @@ fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Ve
             while j < lines.len() - 1 {
                 let c = lines[j];
                 let v = lines[j + 1];
-                if c == "0" { break; }
+                if c == "0" {
+                    break;
+                }
                 match c {
-                    "10" => { x1 = v.parse().unwrap_or(0.0); found = true; }
-                    "20" => { y1 = v.parse().unwrap_or(0.0); }
-                    "30" => { z1 = v.parse().unwrap_or(0.0); }
-                    "11" => { x2 = v.parse().unwrap_or(0.0); }
-                    "21" => { y2 = v.parse().unwrap_or(0.0); }
-                    "31" => { z2 = v.parse().unwrap_or(0.0); }
-                    "8" => { layer = v.to_string(); }
+                    "10" => {
+                        x1 = v.parse().unwrap_or(0.0);
+                        found = true;
+                    }
+                    "20" => {
+                        y1 = v.parse().unwrap_or(0.0);
+                    }
+                    "30" => {
+                        z1 = v.parse().unwrap_or(0.0);
+                    }
+                    "11" => {
+                        x2 = v.parse().unwrap_or(0.0);
+                    }
+                    "21" => {
+                        y2 = v.parse().unwrap_or(0.0);
+                    }
+                    "31" => {
+                        z2 = v.parse().unwrap_or(0.0);
+                    }
+                    "8" => {
+                        layer = v.to_string();
+                    }
                     _ => {}
                 }
                 j += 2;
@@ -238,9 +275,17 @@ fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Ve
 
             if found {
                 let idx1 = points.len();
-                points.push(AlignmentPoint { x: x1, y: y1, z: z1 });
+                points.push(AlignmentPoint {
+                    x: x1,
+                    y: y1,
+                    z: z1,
+                });
                 let idx2 = points.len();
-                points.push(AlignmentPoint { x: x2, y: y2, z: z2 });
+                points.push(AlignmentPoint {
+                    x: x2,
+                    y: y2,
+                    z: z2,
+                });
                 lines_out.push(AlignmentLine {
                     point_indices: vec![idx1, idx2],
                     layer,
@@ -260,13 +305,23 @@ fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Ve
             while j < lines.len() - 1 {
                 let c = lines[j];
                 let v = lines[j + 1];
-                if c == "0" { break; }
+                if c == "0" {
+                    break;
+                }
                 match c {
-                    "8" => { layer = v.to_string(); }
-                    "10" => { current_x = v.parse().unwrap_or(0.0); }
+                    "8" => {
+                        layer = v.to_string();
+                    }
+                    "10" => {
+                        current_x = v.parse().unwrap_or(0.0);
+                    }
                     "20" => {
                         let y = v.parse().unwrap_or(0.0);
-                        poly_points.push(AlignmentPoint { x: current_x, y, z: 0.0 });
+                        poly_points.push(AlignmentPoint {
+                            x: current_x,
+                            y,
+                            z: 0.0,
+                        });
                     }
                     _ => {}
                 }
@@ -299,9 +354,15 @@ fn parse_dxf(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Ve
 }
 
 /// Parse a LandXML file. Phase 9 — for now returns empty with a warning.
-fn parse_landxml(path: &Path) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Vec<String>), MachineControlError> {
+fn parse_landxml(
+    path: &Path,
+) -> Result<(Vec<AlignmentPoint>, Vec<AlignmentLine>, Vec<String>), MachineControlError> {
     let _ = std::fs::read_to_string(path)?;
-    Ok((Vec::new(), Vec::new(), vec!["LandXML parsing is Phase 9 — use DXF for now".into()]))
+    Ok((
+        Vec::new(),
+        Vec::new(),
+        vec!["LandXML parsing is Phase 9 — use DXF for now".into()],
+    ))
 }
 
 /// Write a Leica iCON .svd file.
@@ -469,7 +530,7 @@ EOF
 
         let (points, lines, warnings) = parse_dxf(&tmp).unwrap();
         assert_eq!(points.len(), 4); // 2 POINT entities + 2 from LINE
-        assert_eq!(lines.len(), 1);  // 1 LINE entity
+        assert_eq!(lines.len(), 1); // 1 LINE entity
         assert_eq!(lines[0].layer, "CENTERLINE");
         assert_eq!(lines[0].point_indices.len(), 2);
 

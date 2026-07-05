@@ -117,10 +117,7 @@ pub enum EomPipelineError {
 
 /// Run the full EOM pipeline. `on_progress` is called at the start of
 /// each stage with a human-readable progress update.
-pub fn run_eom_pipeline<F>(
-    input: &EomInput,
-    on_progress: F,
-) -> Result<EomOutput, EomPipelineError>
+pub fn run_eom_pipeline<F>(input: &EomInput, on_progress: F) -> Result<EomOutput, EomPipelineError>
 where
     F: Fn(EomProgress),
 {
@@ -192,7 +189,13 @@ where
     let reference: Vec<f64> = dem
         .data
         .iter()
-        .map(|v| if *v == dem.nodata_value { dem.nodata_value } else { baseline_z })
+        .map(|v| {
+            if *v == dem.nodata_value {
+                dem.nodata_value
+            } else {
+                baseline_z
+            }
+        })
         .collect();
     // Skip NODATA cells by setting their reference to the same NODATA so
     // dz = 0 for those cells. To keep the volume computation honest, we
@@ -200,11 +203,23 @@ where
     let current_clean: Vec<f64> = dem
         .data
         .iter()
-        .map(|v| if *v == dem.nodata_value { baseline_z } else { *v })
+        .map(|v| {
+            if *v == dem.nodata_value {
+                baseline_z
+            } else {
+                *v
+            }
+        })
         .collect();
     let reference_clean: Vec<f64> = reference
         .iter()
-        .map(|v| if *v == dem.nodata_value { baseline_z } else { *v })
+        .map(|v| {
+            if *v == dem.nodata_value {
+                baseline_z
+            } else {
+                *v
+            }
+        })
         .collect();
     let volumes = compute_volumes(
         &current_clean,
@@ -229,7 +244,10 @@ where
     audit_input.push_str(&format!("|cell={}", input.dem_cell_size));
     audit_input.push_str(&format!("|bench={}", input.bench_interval));
     audit_input.push_str(&format!("|cloth={}", input.csf_params.cloth_resolution));
-    audit_input.push_str(&format!("|threshold={}", input.csf_params.classification_threshold));
+    audit_input.push_str(&format!(
+        "|threshold={}",
+        input.csf_params.classification_threshold
+    ));
     audit_input.push_str(&format!("|iters={}", csf_result.iterations_run));
     audit_input.push_str(&format!("|fill={:.6}", volumes.fill_volume));
     audit_input.push_str(&format!("|cut={:.6}", volumes.cut_volume));
@@ -385,11 +403,10 @@ mod tests {
         };
 
         let progress_calls = std::sync::atomic::AtomicUsize::new(0);
-        let output =
-            run_eom_pipeline(&input, |_| {
-                progress_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            })
-            .unwrap();
+        let output = run_eom_pipeline(&input, |_| {
+            progress_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        })
+        .unwrap();
         let progress_count = progress_calls.load(std::sync::atomic::Ordering::SeqCst);
         assert_eq!(output.points_read, 400);
         assert!(output.ground_points > 0);
@@ -439,12 +456,18 @@ mod tests {
         std::fs::write(tmp.path(), b"hello world").unwrap();
         let hash = sha256_file(tmp.path()).unwrap();
         // SHA-256 of "hello world"
-        assert_eq!(hash, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
+        assert_eq!(
+            hash,
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+        );
     }
 
     #[test]
     fn test_hex_sha256_empty_input() {
         let h = hex_sha256(b"");
-        assert_eq!(h, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        assert_eq!(
+            h,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
     }
 }

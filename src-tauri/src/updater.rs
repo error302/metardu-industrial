@@ -118,7 +118,11 @@ const DEFAULT_UPDATE_ENDPOINT: &str = "";
 ///
 /// Phase 9+ will wire this to Tauri's actual updater plugin.
 pub fn check_for_updates(endpoint: &str) -> Result<UpdateInfo, UpdateError> {
-    let endpoint = if endpoint.is_empty() { DEFAULT_UPDATE_ENDPOINT } else { endpoint };
+    let endpoint = if endpoint.is_empty() {
+        DEFAULT_UPDATE_ENDPOINT
+    } else {
+        endpoint
+    };
     if endpoint.is_empty() {
         return Err(UpdateError::NotConfigured);
     }
@@ -147,8 +151,8 @@ pub fn download_update(info: &UpdateInfo) -> Result<String, UpdateError> {
     }
     // Phase 9: real download + signature verification
     // For now, return a temp path placeholder
-    let temp_path = std::env::temp_dir()
-        .join(format!("metardu-update-{}.bin", info.latest_version));
+    let temp_path =
+        std::env::temp_dir().join(format!("metardu-update-{}.bin", info.latest_version));
     Ok(temp_path.to_string_lossy().to_string())
 }
 
