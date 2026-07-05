@@ -1,0 +1,121 @@
+# Dependabot configuration — automated dependency update PRs.
+#
+# Dependabot opens a PR when a new version of a dependency is
+# published. PRs trigger CI, so we know immediately if the update
+# breaks the build. Review and merge at your own pace — weekly is
+# a good cadence for a solo-maintainer project.
+#
+# The config covers:
+#   - npm (frontend: React, OpenLayers, Deck.gl, Tauri JS API, etc.)
+#   - cargo (Rust: Tauri, serde, rsa, rayon, printpdf, etc.)
+#
+# GitHub Actions versions are also tracked so the workflow actions
+# (actions/checkout, Swatinem/rust-cache, etc.) stay current.
+
+version: 2
+
+updates:
+  # ── npm (frontend) ──
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "deps(npm)"
+      include: "scope"
+    # Group patch + minor updates together to reduce PR noise.
+    # Major versions get their own PR since they're more likely
+    # to break.
+    groups:
+      patch-and-minor:
+        update-types:
+          - "patch"
+          - "minor"
+
+  # ── cargo (Rust core crate) ──
+  - package-ecosystem: "cargo"
+    directory: "/crates/metardu-core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps(cargo-core)"
+      include: "scope"
+    groups:
+      patch-and-minor:
+        update-types:
+          - "patch"
+          - "minor"
+
+  # ── cargo (Tauri shell) ──
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps(cargo-tauri)"
+      include: "scope"
+    groups:
+      patch-and-minor:
+        update-types:
+          - "patch"
+          - "minor"
+
+  # ── cargo (metardu-eom-cli) ──
+  - package-ecosystem: "cargo"
+    directory: "/metardu-eom-cli"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps(cargo-eom-cli)"
+      include: "scope"
+
+  # ── cargo (metardu-verify) ──
+  - package-ecosystem: "cargo"
+    directory: "/metardu-verify"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "deps(cargo-verify)"
+      include: "scope"
+
+  # ── GitHub Actions ──
+  # Keeps actions/checkout, actions/setup-node, Swatinem/rust-cache,
+  # etc. up to date. Important for security (action vulnerabilities
+  # are actively exploited in supply-chain attacks).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "deps(actions)"
+      include: "scope"

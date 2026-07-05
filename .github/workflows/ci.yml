@@ -92,6 +92,66 @@ jobs:
         working-directory: crates/metardu-core
         run: cargo audit --deny warnings
 
+      - name: Install cargo-deny
+        # cargo-deny is stricter than cargo-audit: it also checks for
+        # duplicate deps, banned crates, and license compliance. The
+        # deny.toml at the repo root controls what's allowed.
+        run: cargo install cargo-deny --locked || true
+
+      - name: Cargo deny (license + duplicate-dep check)
+        # Runs against the root workspace. deny.toml at the repo root
+        # controls the policy: MIT-compatible licenses only, no GPL/AGPL,
+        # warn on duplicate versions, deny wildcard deps.
+        working-directory: crates/metardu-core
+        run: cargo deny check licenses bans sources
+
+  # ───────────────────────────────────────────────────────────────
+  # Build + test the standalone CLI binaries (no system deps needed)
+  # ───────────────────────────────────────────────────────────────
+  standalone-binaries:
+    name: Standalone binaries (eom-cli + verify)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            metardu-eom-cli
+            metardu-verify
+
+      - name: Cargo test + build (metardu-eom-cli)
+        # The EOM CLI is the signing authority's tool — a regression
+        # here means licenses can't be issued. Build + test on every
+        # push so a broken main is caught within hours.
+        working-directory: metardu-eom-cli
+        run: |
+          cargo test --verbose
+          cargo build --release
+
+      - name: Cargo test + build (metardu-verify)
+        # metardu-verify is the public-facing trust tool — anyone can
+        # run it to verify a MetaRDU chain-of-custody PDF. A regression
+        # here undermines the entire audit trail. Build + test on every
+        # push.
+        working-directory: metardu-verify
+        run: |
+          cargo test --verbose
+          cargo build --release
+
+      - name: Upload binaries as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-binaries-linux-x64
+          path: |
+            metardu-eom-cli/target/release/metardu-eom-cli
+            metardu-verify/target/release/metardu-verify
+          retention-days: 7
+
   # ───────────────────────────────────────────────────────────────
   # Rust formatting + clippy (fast, runs on every push)
   # ───────────────────────────────────────────────────────────────
@@ -152,7 +212,7 @@ jobs:
   # ───────────────────────────────────────────────────────────────
   build:
     name: Build ${{ matrix.os }}
-    needs: [frontend-check, rust-check, core-test]
+    needs: [frontend-check, rust-check, core-test, standalone-binaries]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false

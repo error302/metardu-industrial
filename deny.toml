@@ -1,0 +1,68 @@
+# cargo-deny configuration
+#
+# cargo-deny is stricter than cargo-audit: it also checks for
+# duplicate dependencies, banned crates, and license compliance.
+# Run locally with: cargo deny check
+# CI runs it on every push via .github/workflows/ci.yml.
+
+[advisories]
+# Fail the build on any advisory that applies to our dependencies.
+# `cargo audit` catches the same CVEs, but cargo-deny also catches
+# advisories that are yanked/unmaintained rather than security-only.
+vulnerability = "deny"
+unmaintained = "warn"
+yanked = "deny"
+notice = "warn"
+
+[licenses]
+# Only allow licenses compatible with MIT (our license).
+# GPL/AGPL/CDDL are NOT compatible with a permissive MIT distribution
+# and would force a license change on the whole project.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "Zlib",
+    "CC0-1.0",
+    "0BSD",
+    "Unlicense",
+]
+# Deny any license not in the allow list above.
+deny = [
+    "GPL-2.0",
+    "GPL-3.0",
+    "LGPL-2.0",
+    "LGPL-2.1",
+    "LGPL-3.0",
+    "AGPL-3.0",
+    "CDDL-1.0",
+    "CDDL-1.1",
+    "MPL-2.0",
+]
+# Confidence threshold for license detection. 0.8 is the default
+# and catches most cases without false positives.
+confidence-threshold = 0.8
+
+[bans]
+# Warn on duplicate dependencies (same crate, different versions).
+# Duplicates bloat the binary and can cause subtle type mismatches.
+# We warn rather than deny because some transitive deps are
+# unavoidable (e.g., windows-sys has 3 versions in typical Tauri apps).
+multiple-versions = "warn"
+# Deny wildcard dependencies (e.g., `*`) — they make builds
+# non-reproducible.
+wildcards = "deny"
+# Highlight duplicates in the build output so they're easy to find.
+highlight = "all"
+
+[sources]
+# Only allow crates from crates.io. Deny git deps and custom
+# registries — they make builds non-reproducible and are a supply-
+# chain risk.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
