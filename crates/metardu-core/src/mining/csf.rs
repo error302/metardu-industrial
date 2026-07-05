@@ -147,7 +147,34 @@ pub fn classify_ground(
     }
 
     // Build cloth grid
-    let res = params.cloth_resolution;
+    //
+    // AUTO-TUNING: detect point density and adjust cloth_resolution if
+    // the user's default (0.5m) is too fine for the data. For sparse
+    // airborne lidar (1 point per 10,000+ m²), a 0.5m cloth grid would
+    // create millions of empty cells — the cloth falls through them and
+    // classifies almost nothing as ground.
+    //
+    // Heuristic: cloth_resolution should be ~2× the average point
+    // spacing. avg_spacing = sqrt(extent_area / n_points).
+    let extent_area = (max_x - min_x) * (max_y - min_y);
+    let avg_spacing = (extent_area / points.len() as f64).sqrt();
+    let min_cloth_res = avg_spacing * 2.0;
+    let mut res = params.cloth_resolution.max(min_cloth_res);
+
+    // Also auto-scale the classification threshold for terrain with
+    // large relief. A 0.5m threshold on 180m-relief terrain (406-586m)
+    // is too tight — the cloth can't follow steep slopes that closely.
+    // Scale threshold proportionally to terrain relief.
+    let terrain_relief = max_z - min_z;
+    let auto_threshold = if terrain_relief > 50.0 {
+        // For steep terrain, scale threshold: 0.5m per 50m of relief,
+        // capped at 5m (beyond that, the classification is too loose
+        // to be useful — the surveyor should crop the data).
+        (params.classification_threshold * terrain_relief / 50.0).min(5.0)
+    } else {
+        params.classification_threshold
+    };
+
     let mut cols = ((max_x - min_x) / res).ceil() as usize + 1;
     let mut rows = ((max_y - min_y) / res).ceil() as usize + 1;
     if cols == 0 || rows == 0 {
@@ -170,9 +197,9 @@ pub fn classify_ground(
     let max_dim = cols.max(rows);
     if max_dim > MAX_CLOTH_DIM {
         let scale = max_dim as f64 / MAX_CLOTH_DIM as f64;
-        let new_res = res * scale;
-        cols = ((max_x - min_x) / new_res).ceil() as usize + 1;
-        rows = ((max_y - min_y) / new_res).ceil() as usize + 1;
+        res *= scale;
+        cols = ((max_x - min_x) / res).ceil() as usize + 1;
+        rows = ((max_y - min_y) / res).ceil() as usize + 1;
         // Clamp again to be safe
         cols = cols.min(MAX_CLOTH_DIM);
         rows = rows.min(MAX_CLOTH_DIM);
@@ -285,7 +312,9 @@ pub fn classify_ground(
 
     // Classify points: a point is ground if its distance from the cloth
     // surface (interpolated to the point's xy) is within threshold.
-    let threshold = params.classification_threshold;
+    // Uses the auto-tuned threshold (may be larger than the user's
+    // default for steep/sparse terrain).
+    let threshold = auto_threshold;
     let mut is_ground = Vec::with_capacity(points.len());
     let mut ground_count = 0usize;
 

@@ -68,6 +68,32 @@ fn main() {
                 "    Z stats: min={:.3}, max={:.3}, mean={:.3}",
                 min_z, max_z, mean_z
             );
+
+            // ── Terrain type detection ──
+            let relief = max_z - min_z;
+            let extent_x = header.max_x - header.min_x;
+            let extent_y = header.max_y - header.min_y;
+            let max_extent = extent_x.max(extent_y);
+            println!(
+                "    Extent: {:.0}m × {:.0}m, relief: {:.1}m",
+                extent_x, extent_y, relief
+            );
+
+            if relief > 50.0 && max_extent > 500.0 {
+                println!();
+                println!("  ⚠️  TERRAIN DETECTED (not a stockpile)");
+                println!("     The EOM pipeline is designed for stockpile volume");
+                println!("     calculation against a flat reference. For natural");
+                println!("     terrain, the 'fill volume' is the entire hillside");
+                println!("     above the valley floor — not a meaningful number.");
+                println!("     Results below are computed correctly but the use");
+                println!("     case is wrong. Use Volume Calc with a design surface");
+                println!("     (DXF TIN) for terrain volume comparison.");
+            } else {
+                println!("  ✅ STOCKPILE DETECTED — pipeline is designed for this.");
+            }
+            println!();
+
             p
         }
         Err(e) => {
@@ -90,7 +116,7 @@ fn main() {
         site_id: String::new(),
         signed: false,
         custodian: String::new(),
-        baseline_z: Some(100.0), // flat base at 100m — matches the stockpile generator
+        baseline_z: None, // auto-detect from point cloud (median of lowest 5%)
     };
 
     let start = std::time::Instant::now();

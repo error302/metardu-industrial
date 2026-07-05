@@ -154,11 +154,31 @@ pub fn rasterize_ground_to_dem(
         (min_x, min_y, max_x, max_y)
     });
 
-    let cell = params.cell_size;
+    let mut cell = params.cell_size;
     // `+1` matches the csf convention so that a point sitting exactly on the
     // max boundary is in its own cell rather than spilling outside the grid.
-    let ncols = (((max_x - min_x) / cell).ceil() as usize + 1).max(1);
-    let nrows = (((max_y - min_y) / cell).ceil() as usize + 1).max(1);
+    let mut ncols = (((max_x - min_x) / cell).ceil() as usize + 1).max(1);
+    let mut nrows = (((max_y - min_y) / cell).ceil() as usize + 1).max(1);
+
+    // AUTO-SCALING: cap the DEM grid to prevent excessive memory use
+    // and computation on large extents. A 1m cell_size on a 3.3km
+    // extent creates a 3300×4600 = 15M-cell grid — mostly empty
+    // NODATA cells that waste memory and slow the volume calculation.
+    //
+    // Cap at 1000×1000 = 1M cells. If the requested cell_size would
+    // exceed this, auto-increase it so the grid fits. This is the
+    // same pattern as the CSF cloth grid cap.
+    const MAX_DEM_DIM: usize = 1000;
+    let max_dim = ncols.max(nrows);
+    if max_dim > MAX_DEM_DIM {
+        let scale = max_dim as f64 / MAX_DEM_DIM as f64;
+        cell *= scale;
+        ncols = (((max_x - min_x) / cell).ceil() as usize + 1).max(1);
+        nrows = (((max_y - min_y) / cell).ceil() as usize + 1).max(1);
+        ncols = ncols.min(MAX_DEM_DIM);
+        nrows = nrows.min(MAX_DEM_DIM);
+    }
+
     if ncols == 0 || nrows == 0 {
         return Err(DemError::DegenerateGrid);
     }

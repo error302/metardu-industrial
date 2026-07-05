@@ -179,12 +179,33 @@ where
         message: "Computing cut/fill volumes".into(),
     });
     let baseline_z = input.baseline_z.unwrap_or_else(|| {
-        // Use the minimum non-NODATA elevation of the current DEM.
-        dem.data
+        // AUTO-DETECT ground elevation from the DEM.
+        //
+        // We use the median of the lowest 5% of valid Z values rather
+        // than just the minimum — this is robust against:
+        //   - Outliers (a single low point won't skew the result)
+        //   - Noise (GPS error of ±2cm won't affect the median)
+        //   - Cut areas (a small excavation won't pull the baseline down)
+        //
+        // For a stockpile on flat ground, the lowest 5% are the flat
+        // ground points around the pile — their median IS the ground
+        // elevation. For natural terrain, the lowest 5% are typically
+        // valley bottoms or river beds — still a reasonable "base"
+        // for fill/cut calculation.
+        let mut valid_z: Vec<f64> = dem
+            .data
             .iter()
             .copied()
             .filter(|v| *v != dem.nodata_value)
-            .fold(f64::INFINITY, f64::min)
+            .collect();
+        if valid_z.is_empty() {
+            return 0.0;
+        }
+        valid_z.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let cutoff = (valid_z.len() as f64 * 0.05).ceil() as usize;
+        let cutoff = cutoff.max(1).min(valid_z.len());
+        let lowest = &valid_z[..cutoff];
+        lowest[cutoff / 2]
     });
     let reference: Vec<f64> = dem
         .data
