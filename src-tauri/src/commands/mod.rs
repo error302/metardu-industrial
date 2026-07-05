@@ -93,6 +93,7 @@ pub enum FileProbeResult {
         // other variants are <50B. Box keeps the enum discriminant small.
         header: Box<LasHeader>,
     },
+    #[serde(rename = "geo-tiff")]
     Geotiff {
         path: String,
         header: Box<GeoTiffHeader>,

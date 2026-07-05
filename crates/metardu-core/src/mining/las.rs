@@ -282,6 +282,14 @@ fn trim_ascii(bytes: &[u8]) -> String {
 
 /// Read up to `max_points` point records from a LAS/LAZ file and return
 /// their (x, y, z) coordinates in geographic metres.
+///
+/// **Special case:** `max_points == 0` means "read all points" (no
+/// limit). This matches the convention used by every caller in the
+/// IPC layer (`classify_ground`, `slice_by_polygon`, `run_eom_pipeline`,
+/// the watch folder). The previous implementation did
+/// `header.num_point_records.min(0)` which returned 0 — silently
+/// reading zero points and causing "empty point cloud" errors
+/// everywhere `max_points` defaulted to 0.
 pub fn read_points(path: &Path, max_points: u64) -> Result<Vec<(f64, f64, f64)>, LasError> {
     let header = read_header(path)?;
     if header.point_data_record_length < 12 {
@@ -289,7 +297,12 @@ pub fn read_points(path: &Path, max_points: u64) -> Result<Vec<(f64, f64, f64)>,
             header.point_data_record_length,
         ));
     }
-    let count = header.num_point_records.min(max_points);
+    // 0 means "all" — every caller in the IPC layer relies on this.
+    let count = if max_points == 0 {
+        header.num_point_records
+    } else {
+        header.num_point_records.min(max_points)
+    };
 
     let mut points = Vec::with_capacity(count as usize);
     if count == 0 {
@@ -449,6 +462,24 @@ mod tests {
         write_minimal_las(tmp.path());
         let points = read_points(tmp.path(), 2).unwrap();
         assert_eq!(points.len(), 2);
+    }
+
+    #[test]
+    fn test_max_points_zero_means_all() {
+        // Regression test: max_points=0 used to silently read 0 points
+        // (header.num_point_records.min(0) = 0). Now it means "all".
+        // This is the convention every IPC caller relies on — if it
+        // regresses, the EOM watch folder, slice editor, and CSF
+        // classifier all break with "empty point cloud" errors.
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        write_minimal_las(tmp.path());
+        let header = read_header(tmp.path()).unwrap();
+        let points = read_points(tmp.path(), 0).unwrap();
+        assert_eq!(
+            points.len(),
+            header.num_point_records as usize,
+            "max_points=0 must read ALL points, not zero"
+        );
     }
 
     #[test]

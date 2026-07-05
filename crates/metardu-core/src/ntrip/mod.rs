@@ -311,7 +311,15 @@ impl NtripClient {
                                         rtcm_buffer.drain(..consumed);
                                         let mut s = status.lock().unwrap();
                                         s.messages_received += 1;
-                                        s.bytes_received += consumed as u64;
+                                        // NOTE: bytes_received is incremented once
+                                        // per raw socket read (below, line ~337),
+                                        // NOT per parsed message. The previous code
+                                        // did both, double-counting every byte: a
+                                        // 100-byte read with 5 frames would add
+                                        // ~100 (sum of consumed) + 100 (raw) = 200.
+                                        // The displayed "Bytes received" was ~2x
+                                        // reality. Only messages_received is
+                                        // incremented here.
                                         s.last_message_type = Some(msg_type);
                                         s.last_message_epoch_ms = Some(now_epoch_ms());
                                         // Successful frame — reset backoff so the
@@ -331,7 +339,12 @@ impl NtripClient {
                                 }
                             }
 
-                            // Update bytes received even for incomplete messages
+                            // Update bytes received for the raw socket read.
+                            // This is the only place bytes_received is incremented —
+                            // it counts bytes off the wire, not parsed-frame bytes,
+                            // so partial frames and CRC-failed frames are still
+                            // counted (they consumed socket bandwidth even though
+                            // they were discarded).
                             {
                                 let mut s = status.lock().unwrap();
                                 s.bytes_received += n as u64;
