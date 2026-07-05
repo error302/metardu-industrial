@@ -56,12 +56,17 @@ export function TriageDialog({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEscapeKey(onClose, open);
-  if (!open) return null;
 
+  // NOTE: useCallback MUST run before the early return below — React's
+  // Rules of Hooks require hook call order to be identical on every render.
+  // Returning early before a hook would crash the dialog the second time
+  // it's opened (rendered fewer hooks than expected).
   const handleBrowse = useCallback(async () => {
     const p = await pickFolder("Select field data folder");
     if (p) setFolderPath(p);
   }, []);
+
+  if (!open) return null;
 
   const handleRun = async () => {
     if (!folderPath) return;

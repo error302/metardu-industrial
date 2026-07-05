@@ -11,7 +11,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState, useMemo } from "react";
 import { X, Waves, Upload, Loader2 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
+import { isNative } from "@/lib/tauri-ipc";
 
 interface SvpPoint {
   depth: number;
@@ -66,9 +68,6 @@ export function SvpEditorDialog({ open, onClose }: Props) {
     setError(null);
     setProfile(null);
     try {
-      // Dynamically import to avoid circular deps
-      const { invoke } = await import("@tauri-apps/api/core");
-      const { isNative } = await import("@/lib/tauri-ipc");
       if (!isNative()) {
         setError("Browser mode — SVP parsing requires the native Tauri shell");
         setLoading(false);

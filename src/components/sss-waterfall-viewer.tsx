@@ -174,6 +174,31 @@ export function SssWaterfallViewer({ open, onClose }: Props) {
     setScrollOffset(0);
   }, [autoScroll, data]);
 
+  // Compute the height of a target above the seafloor from a
+  // target/shadow click pair. Wrapped in useCallback so the
+  // handleCanvasClick closure below always has a fresh reference
+  // (otherwise it would capture a stale `data` and compute against
+  // the wrong ping).
+  const computeHeight = useCallback(async (target: ClickPoint, shadow: ClickPoint) => {
+    if (!data) return;
+    const ping = data.pings[target.pingIdx];
+    if (!ping) return;
+
+    // Sample index → slant range (meters)
+    // slant_range = sample_index × sound_speed × sample_interval / 2
+    const slantRange = target.sampleIdx * ping.sound_speed_mps * ping.sample_interval_secs / 2;
+    // Shadow length: difference in sample indices × same conversion
+    const shadowSamples = Math.abs(shadow.sampleIdx - target.sampleIdx);
+    const shadowLengthM = shadowSamples * ping.sound_speed_mps * ping.sample_interval_secs / 2;
+
+    const height = await computeTargetHeight({
+      fishAltitudeM: ping.altitude_m,
+      slantRangeToTargetM: slantRange,
+      shadowLengthM,
+    });
+    setTargetHeightM(height);
+  }, [data]);
+
   // Handle canvas click for measurement
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!data) return;
@@ -205,7 +230,7 @@ export function SssWaterfallViewer({ open, onClose }: Props) {
       } else if (!shadowClick) {
         setShadowClick(click);
         // Compute target height
-        computeHeight(targetClick, click);
+        void computeHeight(targetClick, click);
       } else {
         // Start new measurement
         setTargetClick(click);
@@ -213,27 +238,7 @@ export function SssWaterfallViewer({ open, onClose }: Props) {
         setTargetHeightM(null);
       }
     }
-  }, [data, scrollOffset, measuring, targetClick, shadowClick]);
-
-  const computeHeight = async (target: ClickPoint, shadow: ClickPoint) => {
-    if (!data) return;
-    const ping = data.pings[target.pingIdx];
-    if (!ping) return;
-
-    // Sample index → slant range (meters)
-    // slant_range = sample_index × sound_speed × sample_interval / 2
-    const slantRange = target.sampleIdx * ping.sound_speed_mps * ping.sample_interval_secs / 2;
-    // Shadow length: difference in sample indices × same conversion
-    const shadowSamples = Math.abs(shadow.sampleIdx - target.sampleIdx);
-    const shadowLengthM = shadowSamples * ping.sound_speed_mps * ping.sample_interval_secs / 2;
-
-    const height = await computeTargetHeight({
-      fishAltitudeM: ping.altitude_m,
-      slantRangeToTargetM: slantRange,
-      shadowLengthM,
-    });
-    setTargetHeightM(height);
-  };
+  }, [data, scrollOffset, measuring, targetClick, shadowClick, computeHeight]);
 
   if (!open) return null;
 

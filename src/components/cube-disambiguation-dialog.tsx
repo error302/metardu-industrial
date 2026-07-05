@@ -25,10 +25,14 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
   const [resolvedCells, setResolvedCells] = useState<Set<number>>(new Set());
 
   useEscapeKey(onClose, open);
-  if (!open || !surface) return null;
 
-  // Find ambiguous cells (hypothesis_count > 1)
+  // Find ambiguous cells (hypothesis_count > 1).
+  // NOTE: This useMemo MUST run before the early return below — React's
+  // Rules of Hooks require hook call order to be identical on every render.
+  // Returning early before a hook would crash the dialog the second time
+  // it's opened (rendered fewer hooks than expected).
   const ambiguousCells = useMemo(() => {
+    if (!surface) return [];
     const cells: number[] = [];
     for (let i = 0; i < surface.hypothesis_counts.length; i++) {
       if (surface.hypothesis_counts[i] > 1 && !Number.isNaN(surface.depths[i])) {
@@ -37,6 +41,8 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
     }
     return cells;
   }, [surface]);
+
+  if (!open || !surface) return null;
 
   const [cols, rows] = surface.dims;
   const unresolved = ambiguousCells.filter((i) => !resolvedCells.has(i));

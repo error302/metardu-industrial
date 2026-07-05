@@ -311,11 +311,8 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatUptime(secs: u64_placeholder): string {
+function formatUptime(secs: number): string {
   if (secs < 60) return `${secs}s`;
   if (secs < 3600) return `${Math.floor(secs / 60)}m ${secs % 60}s`;
   return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
 }
-
-// Type alias for readability
-type u64_placeholder = number;
