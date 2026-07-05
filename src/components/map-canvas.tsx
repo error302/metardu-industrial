@@ -341,7 +341,11 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
         const dataUrl = canvas.toDataURL("image/png");
 
         // Convert bounds from WGS84 to the map's projection
-        const [minX, minY, maxX, maxY] = result.bounds;
+        if (!result.bounds || result.bounds.length < 4) return;
+        const minX = result.bounds[0];
+        const minY = result.bounds[1];
+        const maxX = result.bounds[2];
+        const maxY = result.bounds[3];
         const projExtent = transformExtent(
           [minX, minY, maxX, maxY],
           "EPSG:4326",

@@ -47,9 +47,15 @@ export function CubeSurfaceOverlay({ map, surface }: CubeSurfaceOverlayProps) {
     }
 
     if (!surface) return;
+    if (!surface.dims || !surface.bounds || !surface.depths) return;
 
-    const [cols, rows] = surface.dims;
-    const [minX, minY, maxX, maxY] = surface.bounds;
+    const cols = surface.dims[0] ?? 0;
+    const rows = surface.dims[1] ?? 0;
+    if (cols === 0 || rows === 0) return;
+    const minX = surface.bounds[0] ?? 0;
+    const minY = surface.bounds[1] ?? 0;
+    const maxX = surface.bounds[2] ?? 0;
+    const maxY = surface.bounds[3] ?? 0;
 
     // Find valid depth range (excluding NaN)
     const validDepths = surface.depths.filter((d) => !Number.isNaN(d));

@@ -124,10 +124,11 @@ export function installIpcErrorReporter(): void {
   // (e.g. errors in setTimeout / fetch callbacks that aren't in a
   // React render cycle).
   window.addEventListener("error", (event) => {
-    const msg = event.error instanceof Error
-      ? event.error.message
+    const err = event.error;
+    const msg = err instanceof Error
+      ? `${err.message}\n  at ${event.filename}:${event.lineno}:${event.colno}\n  ${err.stack?.split('\n').slice(1, 4).join('\n  ') ?? ''}`
       : event.message || "Unknown error";
-    console.error("[MetaRDU] Uncaught error:", event.error ?? event.message);
+    console.error("[MetaRDU] Uncaught error:", err ?? event.message, "at", event.filename, event.lineno);
     useIpcErrors.getState().push({ kind: "unknown", message: msg });
     event.preventDefault();
   });
