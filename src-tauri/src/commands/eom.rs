@@ -73,6 +73,11 @@ pub async fn run_eom_pipeline_cmd(
     on_progress: Channel<EomProgress>,
 ) -> Result<EomOutputAdapter, String> {
     let machine_id = get_machine_id();
+    let baseline_z = if input.auto_detect_baseline {
+        None // let the pipeline auto-detect via RANSAC
+    } else {
+        Some(input.reference_flat_elevation)
+    };
     let core_input = EomInput {
         point_cloud_path: PathBuf::from(&input.current_las_path),
         csf_params: input.csf_params.clone(),
@@ -84,7 +89,8 @@ pub async fn run_eom_pipeline_cmd(
         site_id: String::new(),
         signed: false,
         custodian: String::new(),
-        baseline_z: Some(input.reference_flat_elevation),
+        baseline_z,
+        design_surface: input.design_surface,
     };
     let label = input.current_las_path.clone();
     tokio::task::spawn_blocking(move || {
@@ -355,6 +361,7 @@ pub async fn start_eom_watch_folder(
                     signed: false,
                     custodian: String::new(),
                     baseline_z: None,
+                    design_surface: None,
                 };
                 match run_eom_pipeline(&input, |_| {}) {
                     Ok(output) => {
@@ -592,6 +599,15 @@ pub struct EomInputAdapter {
     pub dem_params: DemParams,
     pub bench_interval: f64,
     pub max_points: u64,
+    /// Optional design surface for terrain volume comparison.
+    /// When present, volumes are computed against this surface
+    /// instead of a flat baseline. Enables terrain processing.
+    #[serde(default)]
+    pub design_surface: Option<metardu_core::mining::eom::DesignSurfaceRef>,
+    /// When true, use auto-detected ground elevation (RANSAC)
+    /// instead of reference_flat_elevation.
+    #[serde(default)]
+    pub auto_detect_baseline: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

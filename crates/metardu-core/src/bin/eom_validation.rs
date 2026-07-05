@@ -116,7 +116,8 @@ fn main() {
         site_id: String::new(),
         signed: false,
         custodian: String::new(),
-        baseline_z: None, // auto-detect from point cloud (median of lowest 5%)
+        baseline_z: None,     // auto-detect via RANSAC histogram mode
+        design_surface: None, // flat baseline (stockpile use case)
     };
 
     let start = std::time::Instant::now();
