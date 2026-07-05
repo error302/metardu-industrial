@@ -86,7 +86,7 @@ pub fn add_recent_report_cmd(
 #[tauri::command]
 pub async fn check_for_updates_cmd(
     app: tauri::AppHandle,
-    endpoint: Option<String>,
+    #[allow(unused)] endpoint: Option<String>,
 ) -> Result<UpdateInfo, String> {
     updater::check_for_updates(&app)
         .await
