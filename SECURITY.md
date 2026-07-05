@@ -104,11 +104,12 @@ These are known security gaps that are NOT yet fixed:
    The `wasm_sandbox` module exists but is not wired to the file
    parsers. **Mitigation:** only open files from trusted sources.
 
-2. **Auto-updater is a stub.** `src-tauri/src/updater.rs` does not
-   actually fetch or verify updates — see the module doc comment.
-   This means **no security patches can be delivered to installed
-   clients automatically.** Customers must manually re-download.
-   This is the single biggest pre-production gap.
+2. **Auto-updater requires configuration.** `src-tauri/src/updater.rs`
+   is now wired to `tauri-plugin-updater` (Ed25519 signature
+   verification), but requires a signing keypair + endpoint to be
+   configured before it can deliver updates. See `RELEASE.md` §"Auto-
+   updater setup". Until configured, the "Check for Updates" dialog
+   shows "auto-update not available" with a link to GitHub Releases.
 
 3. **No certificate pinning on NTRIP.** The NTRIP client uses raw
    TCP without TLS. RTCM corrections over the public internet are

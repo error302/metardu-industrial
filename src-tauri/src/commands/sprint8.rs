@@ -77,12 +77,31 @@ pub fn add_recent_report_cmd(
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Auto-Updater
+// Auto-Updater — uses tauri-plugin-updater for real signed updates.
 
+/// Check for updates. The endpoint is configured in tauri.conf.json
+/// (plugins.updater.endpoints), not passed from the frontend — the
+/// `endpoint` parameter is accepted for backward compatibility but
+/// ignored. The plugin uses the configured endpoints automatically.
 #[tauri::command]
-pub fn check_for_updates_cmd(endpoint: Option<String>) -> Result<UpdateInfo, String> {
-    let ep = endpoint.unwrap_or_default();
-    updater::check_for_updates(&ep).map_err(|e| e.to_string())
+pub async fn check_for_updates_cmd(
+    app: tauri::AppHandle,
+    _endpoint: Option<String>,
+) -> Result<UpdateInfo, String> {
+    updater::check_for_updates(&app)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Download and install the latest update (if available). The plugin
+/// verifies the Ed25519 signature against the configured pubkey before
+/// installing. Returns Ok(()) on success — the frontend should then
+/// prompt the user to restart.
+#[tauri::command]
+pub async fn download_and_install_update_cmd(app: tauri::AppHandle) -> Result<(), String> {
+    updater::download_and_install_update(&app)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

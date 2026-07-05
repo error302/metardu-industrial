@@ -1885,6 +1885,15 @@ export async function checkForUpdates(endpoint?: string): Promise<UpdateInfo | n
   return invoke<UpdateInfo>("check_for_updates_cmd", { endpoint: endpoint ?? null });
 }
 
+/** Download and install the latest update (if available). The plugin
+ *  verifies the Ed25519 signature against the configured pubkey before
+ *  installing. Returns void on success — the frontend should prompt
+ *  the user to restart. */
+export async function downloadAndInstallUpdate(): Promise<void> {
+  if (!isTauri()) return;
+  await invoke<void>("download_and_install_update_cmd");
+}
+
 export async function getUpdateStatus(): Promise<UpdateStatus | null> {
   if (!isTauri()) return null;
   return invoke<UpdateStatus>("get_update_status_cmd");

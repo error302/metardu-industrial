@@ -88,8 +88,9 @@ use commands::{
     sprint7::record_telemetry_event_cmd, sprint7::run_benchmarks_cmd,
     sprint7::update_telemetry_config_cmd, sprint8::add_file_to_project_cmd,
     sprint8::add_recent_report_cmd, sprint8::check_for_updates_cmd,
-    sprint8::fetch_plugin_registry_cmd, sprint8::get_available_languages_cmd,
-    sprint8::get_current_version_cmd, sprint8::get_update_status_cmd, sprint8::install_plugin_cmd,
+    sprint8::download_and_install_update_cmd, sprint8::fetch_plugin_registry_cmd,
+    sprint8::get_available_languages_cmd, sprint8::get_current_version_cmd,
+    sprint8::get_update_status_cmd, sprint8::install_plugin_cmd,
     sprint8::list_installed_plugins_cmd, sprint8::load_project_cmd, sprint8::new_project_cmd,
     sprint8::remove_file_from_project_cmd, sprint8::save_project_cmd, sprint8::search_registry_cmd,
     sprint8::translate_cmd, sprint8::uninstall_plugin_cmd, sprint8::update_view_state_cmd,
@@ -114,6 +115,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(registry)
         .manage(odm_state)
         .invoke_handler(tauri::generate_handler![
@@ -208,6 +210,7 @@ pub fn run() {
             check_for_updates_cmd,
             get_update_status_cmd,
             get_current_version_cmd,
+            download_and_install_update_cmd,
             translate_cmd,
             get_available_languages_cmd,
             fetch_plugin_registry_cmd,
