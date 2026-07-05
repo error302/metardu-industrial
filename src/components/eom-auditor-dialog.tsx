@@ -395,6 +395,45 @@ export function EomAuditorDialog({ open, onClose }: Props) {
                 onDropdownChange={setPreviousLasPath}
               />
 
+              {/* Terrain warning — shows when the selected LAS file
+                  looks like natural terrain (high relief + large extent)
+                  rather than a stockpile. */}
+              {(() => {
+                const selectedFile = lasFiles.find((f) => f.path === currentLasPath);
+                if (!selectedFile?.bounds) return null;
+                const extentX = selectedFile.bounds.max_x - selectedFile.bounds.min_x;
+                const extentY = selectedFile.bounds.max_y - selectedFile.bounds.min_y;
+                const maxExtent = Math.max(extentX, extentY);
+                // We don't have Z bounds from the probe — use pointCount
+                // as a proxy. If >50K points over >500m extent, it's
+                // likely airborne lidar, not a stockpile.
+                if (maxExtent > 500 && (selectedFile.pointCount ?? 0) > 1000) {
+                  return (
+                    <div
+                      className="rounded-md border p-3 text-xs"
+                      style={{
+                        borderColor: `${colors.investigate}40`,
+                        background: `${colors.investigate}10`,
+                        color: colors.investigate,
+                      }}
+                    >
+                      <div className="flex items-center gap-2 font-semibold mb-1">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                        Terrain detected — not a stockpile
+                      </div>
+                      <div className="text-steel-light">
+                        This file spans {maxExtent.toFixed(0)}m — likely airborne lidar
+                        or terrain survey. The EOM Auditor computes volume against a flat
+                        reference, which gives meaningless results for terrain.
+                        Use <strong>Volume Calc</strong> with a DXF design surface instead,
+                        or crop the point cloud to a stockpile-sized area.
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Reference elevation mode + cell size + bench interval */}
               <div className="grid grid-cols-3 gap-2">
                 <div>

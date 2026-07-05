@@ -71,6 +71,11 @@ import {
 } from "@/components/layout-profiles";
 import { createCommandActions, CommandPalette } from "@/components/command-palette";
 import { PointCloudLayer, type StreamPing } from "@/components/point-cloud-layer";
+// Note: PointCloudLayer is kept as a static import because it's used
+// conditionally (only when activeFileId is set) but its import is
+// tree-shakeable — Vite already splits deck.gl into a separate vendor
+// chunk (deckgl-vendor-*.js, 582KB) that's only fetched when the
+// component first renders. No code change needed here.
 import { LiveStreamPanel } from "@/components/live-stream-panel";
 // ── Lazy-loaded dialogs ──
 // Each dialog is a separate chunk loaded on first open. This cuts
