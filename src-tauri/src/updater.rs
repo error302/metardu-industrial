@@ -200,15 +200,20 @@ pub async fn download_and_install_update(app: &AppHandle) -> Result<(), UpdateEr
         .map_err(|e| UpdateError::Network(e.to_string()))?
         .ok_or(UpdateError::NoUpdate)?;
 
-    // Download and install. The closure receives a DownloadEvent
-    // (Started, Fetch, Progress, Downloaded, Installed).
+    // Download and install. The API takes two closures:
+    //   1. FnMut(usize, Option<u64>) — progress: (downloaded_bytes, total_bytes)
+    //   2. FnOnce() — called when download completes, before install
     // The plugin verifies the Ed25519 signature before installing.
     update
-        .download_and_install(|_event, _progress| {
-            // DownloadEvent::Started | Fetch(content_length) |
-            // Progress(progress) | Downloaded | Installed
-            // We could emit Tauri events here for a progress bar.
-        }, true)
+        .download_and_install(
+            |_downloaded, _total| {
+                // Progress: downloaded bytes, total bytes (None = unknown)
+                // We could emit a Tauri event here for a progress bar.
+            },
+            || {
+                // Download complete — install is about to start
+            },
+        )
         .await
         .map_err(|e| {
             let msg = e.to_string();
