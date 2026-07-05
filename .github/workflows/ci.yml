@@ -92,6 +92,27 @@ jobs:
         working-directory: crates/metardu-core
         run: cargo audit --deny warnings
 
+      - name: EOM pipeline regression test
+        # Runs the EOM pipeline on a synthetic stockpile with a known
+        # analytical volume (3351.03 m³). Fails if the computed fill
+        # volume is >5% off. This catches regressions in CSF, DEM,
+        # RANSAC ground detection, and volume calculation.
+        working-directory: crates/metardu-core
+        run: |
+          # Generate the synthetic stockpile
+          mkdir -p /tmp/test-data
+          python3 ../../scripts/generate_stockpile.py /tmp/test-data/stockpile.las
+          # Build + run the validation binary
+          cargo run --release --bin eom_validation -- /tmp/test-data/stockpile.las 2>&1 | tee /tmp/eom_output.txt
+          # Check the error percentage — fail if >5%
+          ERROR=$(grep "Fill vs analytical" /tmp/eom_output.txt | grep -oP '[\d.]+%' | head -1 | tr -d '%')
+          echo "Fill volume error: ${ERROR}%"
+          if (( $(echo "$ERROR > 5.0" | bc -l) )); then
+            echo "❌ FAIL — fill volume error ${ERROR}% exceeds 5% threshold"
+            exit 1
+          fi
+          echo "✅ PASS — fill volume error ${ERROR}% within 5% threshold"
+
       - name: Install cargo-deny
         # cargo-deny is stricter than cargo-audit: it also checks for
         # duplicate deps, banned crates, and license compliance. The
