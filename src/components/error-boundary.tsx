@@ -15,12 +15,13 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorStack?: string | null;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorStack: null };
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -29,6 +30,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("MetaRDU Error Boundary caught:", error, errorInfo);
+    // Store the component stack so we can see WHERE the error occurred
+    this.setState({ error, errorStack: errorInfo.componentStack });
   }
 
   render() {
@@ -57,9 +60,16 @@ export class ErrorBoundary extends Component<Props, State> {
             {"\n"}
             {this.state.error.stack}
           </div>
+          {this.state.errorStack && (
+            <div style={{ marginBottom: "16px", color: "#20B2AA" }}>
+              <strong>Component stack:</strong>
+              {"\n"}
+              {this.state.errorStack}
+            </div>
+          )}
           <button
             onClick={() => {
-              this.setState({ hasError: false, error: null });
+              this.setState({ hasError: false, error: null, errorStack: null });
               window.location.reload();
             }}
             style={{

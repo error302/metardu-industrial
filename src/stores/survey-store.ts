@@ -191,7 +191,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
               vendor: manifest.drone_model ?? undefined,
               pointCount: manifest.image_count,
             };
-            if (manifest.bounds) {
+            if (manifest.bounds && manifest.bounds.length >= 4) {
               updated.bounds = {
                 min_x: manifest.bounds[0],
                 min_y: manifest.bounds[1],
@@ -224,7 +224,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
             updated.crsWkt = h.crs_wkt;
           } else if (result.kind === "geo-tiff") {
             const h: GeoTiffHeaderRpc = result.header;
-            if (h.bounds) {
+            if (h.bounds && h.bounds.length >= 4) {
               updated.bounds = {
                 min_x: h.bounds[0],
                 min_y: h.bounds[1],
