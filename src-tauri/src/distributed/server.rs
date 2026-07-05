@@ -59,6 +59,23 @@ pub fn global_server_state() -> &'static Mutex<ServerState> {
 }
 
 pub async fn start_coordinator_server(app: AppHandle, port: u16) -> Result<(), String> {
+    // Security: bind to 127.0.0.1 only. The previous code bound to
+    // 0.0.0.0 (all interfaces) with no auth — anyone on the LAN could
+    // connect as a "worker", receive work chunks (which may contain
+    // proprietary mine/marine data), and inject false results. Loopback
+    // binding keeps the coordinator private to the local machine. If
+    // a real distributed deployment is needed, add TLS + a pre-shared
+    // worker token — never expose this on 0.0.0.0 unauthenticated.
+    //
+    // Also fix correctness: the previous code set is_running=true
+    // BEFORE attempting the bind. If bind failed (port in use), the
+    // state was stuck "running" with no actual listener — the user
+    // was locked out until app restart. Now we bind first and only
+    // flip is_running after a successful bind.
+    let listener = TcpListener::bind(format!("127.0.0.1:{port}"))
+        .await
+        .map_err(|e| format!("failed to bind TCP port {port} on 127.0.0.1: {e}"))?;
+
     {
         let mut state = global_server_state().lock().map_err(|e| e.to_string())?;
         if state.is_running {
@@ -67,10 +84,6 @@ pub async fn start_coordinator_server(app: AppHandle, port: u16) -> Result<(), S
         state.is_running = true;
         state.port = port;
     }
-
-    let listener = TcpListener::bind(format!("0.0.0.0:{port}"))
-        .await
-        .map_err(|e| format!("failed to bind TCP port {port}: {e}"))?;
 
     tokio::spawn(async move {
         loop {

@@ -128,6 +128,18 @@ pub async fn start_stream_listener(
     app: tauri::AppHandle,
     config: StreamConfig,
 ) -> Result<(), String> {
+    // Security: bind to 127.0.0.1 only. The previous code bound to
+    // 0.0.0.0 (all interfaces) with no auth — anyone on the LAN could
+    // inject fake StreamPings and pollute the live bathymetric surface.
+    // Loopback binding keeps the stream private to the local machine.
+    //
+    // Also fix correctness: bind BEFORE setting is_running=true so a
+    // failed bind doesn't leave the state stuck "running".
+    let port = config.port;
+    let sock = UdpSocket::bind(format!("127.0.0.1:{port}"))
+        .await
+        .map_err(|e| format!("failed to bind UDP port {port} on 127.0.0.1: {e}"))?;
+
     {
         let mut state = global_stream_state().lock().map_err(|e| e.to_string())?;
         if state.is_running {
@@ -139,11 +151,6 @@ pub async fn start_stream_listener(
         state.pings_received = 0;
         state.bytes_received = 0;
     }
-
-    let port = config.port;
-    let sock = UdpSocket::bind(format!("0.0.0.0:{port}"))
-        .await
-        .map_err(|e| format!("failed to bind UDP port {port}: {e}"))?;
 
     let buffer_size = config.buffer_size;
     let flush_interval = std::time::Duration::from_millis(config.flush_interval_ms);

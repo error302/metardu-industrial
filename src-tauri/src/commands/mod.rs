@@ -130,7 +130,11 @@ pub enum FileProbeResult {
 ///   3. Frontend adds to survey store + renders bounds on canvas
 #[tauri::command]
 pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
-    let path_buf = PathBuf::from(&path);
+    // Security: validate the path before any filesystem access.
+    // Rejects paths into ~/.ssh, ~/.aws, browser dirs, etc.
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating path for probe_file", path, e))?;
+    let path = path_buf.to_string_lossy().to_string();
     let lower = path_buf
         .extension()
         .and_then(|e| e.to_str())
@@ -198,7 +202,8 @@ pub fn probe_file(path: String) -> Result<FileProbeResult, String> {
 /// Each point is 3 × f32 = 12 bytes. For 1M points = 12MB (vs ~40MB JSON).
 #[tauri::command]
 pub fn read_las_points_binary(path: String, max_points: u64) -> Result<Vec<u8>, String> {
-    let path_buf = PathBuf::from(&path);
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating path for read_las_points_binary", path, e))?;
     let points = read_las_points(&path_buf, max_points)
         .map_err(|e| ctx!("reading LAS points (binary path)", path, e))?;
 
@@ -216,7 +221,8 @@ pub fn read_las_points_binary(path: String, max_points: u64) -> Result<Vec<u8>, 
 /// but prefer read_las_points_binary for >100K points.
 #[tauri::command]
 pub fn read_las_points_cmd(path: String, max_points: u64) -> Result<Vec<(f64, f64, f64)>, String> {
-    let path_buf = PathBuf::from(&path);
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating path for read_las_points_cmd", path, e))?;
     read_las_points(&path_buf, max_points)
         .map_err(|e| ctx!("reading LAS points (JSON path)", path, e))
 }

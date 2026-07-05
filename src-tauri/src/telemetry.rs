@@ -243,7 +243,16 @@ pub fn record_event(
         event_name: event_name.into(),
         duration_ms,
         success,
-        error: error.map(|s| s.into()),
+        // Security: sanitize file paths from error messages before
+        // storing in telemetry. The ctx!() macro embeds full file paths
+        // into error strings (e.g. "reading LAS for '/home/user/survey.las':
+        // I/O error"). The telemetry module's privacy policy explicitly
+        // says we NEVER send file paths — but without sanitization, a
+        // failed IPC call's path would be uploaded once the HTTP
+        // endpoint is wired. We strip everything after ` for '` and
+        // before the trailing `':` to remove the path while keeping
+        // the operation + error type.
+        error: error.map(|s| sanitize_error_for_telemetry(s).into()),
         license_tier: license_tier.into(),
     };
 
@@ -420,6 +429,95 @@ fn now_ms() -> u64 {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as u64
+}
+
+/// Sanitize an error string for telemetry storage.
+///
+/// Strips file paths that the `ctx!()` macro embeds in error messages.
+/// The ctx!() format is:
+///   "{module}: {operation} for '{input}': {err}"
+/// where `{input}` is typically a file path. We replace the path with
+/// `<redacted>` so the operation + error type are preserved (useful
+/// for debugging) but the specific file path is not (privacy).
+///
+/// Example:
+///   "commands::mining::probe_file: validating path for '/home/user/survey.las': I/O error"
+/// → "commands::mining::probe_file: validating path for <redacted>: I/O error"
+///
+/// This also mitigates a side-channel: without sanitization, a
+/// compromised frontend could probe arbitrary paths and observe whether
+/// the error says "Not found" vs "Permission denied" to enumerate the
+/// filesystem via telemetry.
+fn sanitize_error_for_telemetry(s: &str) -> String {
+    // Replace the contents of ` for '...'` with ` for <redacted>`.
+    // We match on the single-quote delimiters that ctx!() uses.
+    // If the string doesn't match the pattern (no path embedded),
+    // return it unchanged.
+    if let Some(start) = s.find(" for '") {
+        if let Some(end) = s[start + 6..].find("': ") {
+            let path_start = start + 6;
+            let path_end = start + 6 + end;
+            let mut result = String::with_capacity(s.len());
+            result.push_str(&s[..path_start]);
+            result.push_str("<redacted>");
+            result.push_str(&s[path_end..]);
+            return result;
+        }
+    }
+    // Also redact any absolute paths that appear without the ` for '`
+    // wrapper (e.g. in nested error messages). Match /home/, /Users/,
+    // C:\Users, /tmp/ — the common prefixes.
+    let mut result = s.to_string();
+    for prefix in &["/home/", "/Users/", "C:\\Users\\", "/tmp/"] {
+        while let Some(idx) = result.find(prefix) {
+            // Find the end of the path (next space, quote, or end of string)
+            let rest = &result[idx..];
+            let end = rest
+                .find(|c: char| c == ' ' || c == '\'' || c == '"' || c == '\n')
+                .unwrap_or(rest.len());
+            result.replace_range(idx..idx + end, "<redacted>");
+        }
+    }
+    result
+}
+
+#[cfg(test)]
+mod sanitization_tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitize_ctx_error_with_path() {
+        let input =
+            "commands::mining::probe_file: validating path for '/home/user/secret.las': I/O error";
+        let result = sanitize_error_for_telemetry(input);
+        assert!(result.contains("<redacted>"));
+        assert!(!result.contains("/home/user/secret.las"));
+        assert!(result.contains("probe_file"));
+        assert!(result.contains("I/O error"));
+    }
+
+    #[test]
+    fn test_sanitize_error_without_path_unchanged() {
+        let input = "commands::mining::compute_volumes: computing volumes: grid is empty";
+        let result = sanitize_error_for_telemetry(input);
+        assert_eq!(result, input);
+    }
+
+    #[test]
+    fn test_sanitize_bare_absolute_path() {
+        let input = "failed to read /home/user/.ssh/id_rsa";
+        let result = sanitize_error_for_telemetry(input);
+        assert!(result.contains("<redacted>"));
+        assert!(!result.contains("/home/user/.ssh/id_rsa"));
+    }
+
+    #[test]
+    fn test_sanitize_windows_path() {
+        let input = "error reading C:\\Users\\admin\\Documents\\survey.tif";
+        let result = sanitize_error_for_telemetry(input);
+        assert!(result.contains("<redacted>"));
+        assert!(!result.contains("C:\\Users\\admin"));
+    }
 }
 
 fn generate_anonymous_id() -> String {

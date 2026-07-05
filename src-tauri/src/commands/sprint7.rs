@@ -9,6 +9,7 @@ use crate::telemetry::{
 };
 use serde::Deserialize;
 use std::path::PathBuf;
+use tauri::Manager; // for app.path()
 
 // ──────────────────────────────────────────────────────────────────
 // License Manager
@@ -53,20 +54,32 @@ pub fn get_license_status_cmd(license_path: Option<String>) -> Result<LicenseSta
 /// Activate a license from a pasted license string (alternative to file path).
 #[tauri::command]
 pub fn activate_license_cmd(
+    app: tauri::AppHandle,
     license_content: String,
     save_path: Option<String>,
 ) -> Result<LicenseStatus, String> {
     let status =
         parse_license(&license_content).map_err(|e| ctx_no_input!("parsing license", e))?;
 
-    // Optionally save the license to disk for future runs
-    if let Some(path) = save_path {
-        let path_buf = PathBuf::from(&path);
-        if let Some(parent) = path_buf.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        std::fs::write(&path_buf, &license_content)
-            .map_err(|e| ctx!("saving license to disk", path, e))?;
+    // Optionally save the license to disk for future runs.
+    //
+    // Security: the save_path comes from the frontend and was previously
+    // passed to std::fs::write with no validation — a compromised frontend
+    // could overwrite ~/.bashrc, drop a binary in ~/.local/bin/, or plant
+    // a .desktop autostart entry. Now we ignore the user-supplied path
+    // and always write to the app's data directory (e.g.
+    // ~/.local/share/metardu-industrial/license.json on Linux,
+    // %APPDATA%\metardu-industrial\license.json on Windows).
+    if let Some(_user_path) = save_path {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
+        std::fs::create_dir_all(&app_data_dir)
+            .map_err(|e| format!("failed to create app data dir: {e}"))?;
+        let license_path = app_data_dir.join("license.json");
+        std::fs::write(&license_path, &license_content)
+            .map_err(|e| ctx!("saving license to app data dir", license_path.display(), e))?;
     }
 
     Ok(status)

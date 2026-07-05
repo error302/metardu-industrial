@@ -304,8 +304,23 @@ pub fn read_points(path: &Path, max_points: u64) -> Result<Vec<(f64, f64, f64)>,
         header.num_point_records.min(max_points)
     };
 
-    let mut points = Vec::with_capacity(count as usize);
-    if count == 0 {
+    // Security: clamp the allocation against malicious headers. A 100-byte
+    // LAS file with point_count = u64::MAX in the header would cause
+    // Vec::with_capacity(usize::MAX) → instant OOM/abort. We cap the
+    // allocation at what the file could actually contain: file_size /
+    // record_length. For a legitimate 100M-point LAS (1.2 GB), this
+    // still allows the full read; for a malicious 100-byte file claiming
+    // 18 quintillion points, it caps at ~8 points.
+    let file_size = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+    let max_feasible = if header.point_data_record_length > 0 {
+        file_size / header.point_data_record_length as u64
+    } else {
+        0
+    };
+    let safe_count = count.min(max_feasible);
+
+    let mut points = Vec::with_capacity(safe_count as usize);
+    if safe_count == 0 {
         return Ok(points);
     }
 

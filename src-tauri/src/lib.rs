@@ -38,6 +38,7 @@ mod marine;
 mod mining;
 mod ml;
 mod modules;
+mod path_validation;
 #[allow(dead_code)]
 mod performance;
 mod pipelines;
