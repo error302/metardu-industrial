@@ -148,10 +148,34 @@ pub fn classify_ground(
 
     // Build cloth grid
     let res = params.cloth_resolution;
-    let cols = ((max_x - min_x) / res).ceil() as usize + 1;
-    let rows = ((max_y - min_y) / res).ceil() as usize + 1;
+    let mut cols = ((max_x - min_x) / res).ceil() as usize + 1;
+    let mut rows = ((max_y - min_y) / res).ceil() as usize + 1;
     if cols == 0 || rows == 0 {
         return Err(CsfError::TooFewPoints(points.len()));
+    }
+
+    // Safety: cap the cloth grid size to prevent OOM/hang on large
+    // extents. A 0.5m cloth resolution on a 3.3km × 4.6km survey
+    // (common for airborne lidar) would create 6600 × 9200 = 60.7M
+    // cloth particles × 500 iterations = 30 billion operations —
+    // the app would appear frozen for minutes.
+    //
+    // The cap is 500×500 = 250K particles (reasonable simulation
+    // time of <1s). If the requested grid exceeds this, we
+    // automatically increase the resolution so the grid fits.
+    // This trades accuracy for responsiveness on large extents —
+    // the surveyor can always crop the point cloud to a smaller
+    // area for finer-grained classification.
+    const MAX_CLOTH_DIM: usize = 500;
+    let max_dim = cols.max(rows);
+    if max_dim > MAX_CLOTH_DIM {
+        let scale = max_dim as f64 / MAX_CLOTH_DIM as f64;
+        let new_res = res * scale;
+        cols = ((max_x - min_x) / new_res).ceil() as usize + 1;
+        rows = ((max_y - min_y) / new_res).ceil() as usize + 1;
+        // Clamp again to be safe
+        cols = cols.min(MAX_CLOTH_DIM);
+        rows = rows.min(MAX_CLOTH_DIM);
     }
 
     // Inverted terrain: max_z - z, so high points become low and vice versa.
