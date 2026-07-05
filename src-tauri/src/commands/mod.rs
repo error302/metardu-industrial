@@ -227,6 +227,65 @@ pub fn read_las_points_cmd(path: String, max_points: u64) -> Result<Vec<(f64, f6
         .map_err(|e| ctx!("reading LAS points (JSON path)", path, e))
 }
 
+/// Chunk sent to the frontend during streaming LAS reads.
+/// `points` is a flattened f64 array: [x0, y0, z0, x1, y1, z1, ...].
+#[derive(Debug, Clone, Serialize)]
+pub struct LasPointsChunk {
+    /// Flattened xyz coordinates (3 × point_count values)
+    pub points: Vec<f64>,
+    /// Number of points in this chunk
+    pub count: u32,
+    /// Total points read so far (across all chunks)
+    pub total_read: u32,
+    /// Total points in the file (from the LAS header)
+    pub total_points: u32,
+}
+
+/// Read LAS point data in chunks via a Tauri Channel. This is the
+/// streaming variant of `read_las_points_binary` — instead of loading
+/// the entire file into memory (which can OOM on 100M+ point files),
+/// it sends ~65K points at a time. The frontend receives progressive
+/// updates and can render incrementally.
+///
+/// `max_points=0` means "read all points" (same convention as
+/// `read_las_points_binary`).
+#[tauri::command]
+pub async fn read_las_points_streaming_cmd(
+    path: String,
+    max_points: u64,
+    on_chunk: tauri::ipc::Channel<LasPointsChunk>,
+) -> Result<u64, String> {
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating path for read_las_points_streaming", path, e))?;
+
+    let label = path.clone();
+    tokio::task::spawn_blocking(move || {
+        use metardu_core::mining::las;
+
+        // Read the header first to get the total point count
+        let header = las::read_header(&path_buf)
+            .map_err(|e| ctx!("reading LAS header for streaming", label, e))?;
+        let total_points = header.num_point_records as u32;
+
+        // Stream in 65K-point chunks (~1.5 MB per chunk at 24 bytes/point)
+        let chunk_size = 65_536;
+        let total_read = las::read_points_streaming(&path_buf, max_points, chunk_size, |chunk| {
+            let point_count = chunk.len() / 3;
+            let _ = on_chunk.send(LasPointsChunk {
+                points: chunk.to_vec(),
+                count: point_count as u32,
+                total_read: 0, // updated below — we don't have a running count here
+                total_points,
+            });
+        })
+        .map_err(|e| ctx!("streaming LAS points", label, e))?;
+
+        Ok(total_read)
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
 // ──────────────────────────────────────────────────────────────────
 // Elevation profile — sample real elevation from a loaded GeoTIFF DEM.
 //

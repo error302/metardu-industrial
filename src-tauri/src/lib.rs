@@ -128,6 +128,7 @@ pub fn run() {
             probe_file,
             read_las_points_binary,
             read_las_points_cmd,
+            read_las_points_streaming_cmd,
             sample_profile,
             generate_report_cmd,
             parse_drone_manifest,

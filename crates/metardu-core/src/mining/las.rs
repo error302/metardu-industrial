@@ -356,6 +356,120 @@ pub fn read_points(path: &Path, max_points: u64) -> Result<Vec<(f64, f64, f64)>,
     Ok(points)
 }
 
+/// Read point records from a LAS/LAZ file in chunks, calling `on_chunk`
+/// for each batch. This is the streaming variant of `read_points` —
+/// instead of collecting all points into a single Vec (which can OOM
+/// on 100M+ point files), it processes the file in fixed-size chunks
+/// and lets the caller decide what to do with each batch.
+///
+/// **Chunk size:** `chunk_size` points per call. 65_536 is a good
+/// default — at 24 bytes/point (3 × f64) that's ~1.5 MB per chunk,
+/// small enough for IPC transfer and GC-friendly.
+///
+/// **Returns:** total number of points read.
+///
+/// **Callback signature:** `on_chunk(&[f64])` where the slice is a
+/// flattened xyz array: `[x0, y0, z0, x1, y1, z1, ...]`. Flattened
+/// f64 is chosen over `Vec<(f64,f64,f64)>` so the caller can
+/// directly interpret it as a `Float64Array` without tuple unpacking.
+///
+/// Same security clamps as `read_points`: `max_points=0` means "all",
+/// and the allocation is capped at `file_size / record_length` to
+/// prevent OOM from malicious headers.
+pub fn read_points_streaming<F>(
+    path: &Path,
+    max_points: u64,
+    chunk_size: usize,
+    mut on_chunk: F,
+) -> Result<u64, LasError>
+where
+    F: FnMut(&[f64]),
+{
+    let header = read_header(path)?;
+    if header.point_data_record_length < 12 {
+        return Err(LasError::PointRecordTooShort(
+            header.point_data_record_length,
+        ));
+    }
+    let count = if max_points == 0 {
+        header.num_point_records
+    } else {
+        header.num_point_records.min(max_points)
+    };
+
+    // Security: same OOM clamp as read_points
+    let file_size = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+    let max_feasible = if header.point_data_record_length > 0 {
+        file_size / header.point_data_record_length as u64
+    } else {
+        0
+    };
+    let safe_count = count.min(max_feasible);
+    if safe_count == 0 {
+        return Ok(0);
+    }
+
+    let point_size = header.point_data_record_length as usize;
+    let mut buf = vec![0u8; point_size];
+    let chunk_size = chunk_size.max(1); // at least 1 point per chunk
+    let mut chunk: Vec<f64> = Vec::with_capacity(chunk_size * 3);
+    let mut total_read: u64 = 0;
+
+    // Macro to flush a chunk via the callback
+    macro_rules! flush_chunk {
+        () => {
+            if !chunk.is_empty() {
+                on_chunk(&chunk);
+                chunk.clear();
+            }
+        };
+    }
+
+    if header.is_laz {
+        let payload = header
+            .laz_vlr_payload
+            .clone()
+            .ok_or(LasError::MissingLazVlr)?;
+        let vlr = laz::LazVlr::from_buffer(&payload)
+            .map_err(|e| LasError::LazDecompression(e.to_string()))?;
+        let mut file = File::open(path)?;
+        file.seek(SeekFrom::Start(header.offset_to_point_data))?;
+        let mut decompressor = laz::LasZipDecompressor::new(file, vlr)
+            .map_err(|e| LasError::LazDecompression(e.to_string()))?;
+        for _ in 0..safe_count {
+            decompressor
+                .decompress_one(&mut buf)
+                .map_err(|e| LasError::LazDecompression(e.to_string()))?;
+            let (x, y, z) = decode_xyz(&buf, &header);
+            chunk.push(x);
+            chunk.push(y);
+            chunk.push(z);
+            total_read += 1;
+            if chunk.len() >= chunk_size * 3 {
+                flush_chunk!();
+            }
+        }
+    } else {
+        let mut file = File::open(path)?;
+        file.seek(SeekFrom::Start(header.offset_to_point_data))?;
+        for _ in 0..safe_count {
+            file.read_exact(&mut buf)?;
+            let (x, y, z) = decode_xyz(&buf, &header);
+            chunk.push(x);
+            chunk.push(y);
+            chunk.push(z);
+            total_read += 1;
+            if chunk.len() >= chunk_size * 3 {
+                flush_chunk!();
+            }
+        }
+    }
+    // Flush any remaining points in the last partial chunk
+    flush_chunk!();
+
+    Ok(total_read)
+}
+
 /// Decode the (x, y, z) coordinates from a single point record buffer.
 fn decode_xyz(buf: &[u8], header: &LasHeader) -> (f64, f64, f64) {
     let x_raw = i32::from_le_bytes(buf[0..4].try_into().unwrap());
@@ -495,6 +609,55 @@ mod tests {
             header.num_point_records as usize,
             "max_points=0 must read ALL points, not zero"
         );
+    }
+
+    #[test]
+    fn test_streaming_reads_all_points() {
+        // The streaming variant must read the same points as the
+        // batch variant. We compare the total count + the actual
+        // coordinate values.
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        write_minimal_las(tmp.path());
+        let batch_points = read_points(tmp.path(), 0).unwrap();
+
+        let mut streamed: Vec<f64> = Vec::new();
+        let total = read_points_streaming(tmp.path(), 0, 2, |chunk| {
+            streamed.extend_from_slice(chunk);
+        })
+        .unwrap();
+
+        assert_eq!(total, batch_points.len() as u64);
+        assert_eq!(streamed.len(), batch_points.len() * 3);
+        for (i, p) in batch_points.iter().enumerate() {
+            assert!((streamed[i * 3] - p.0).abs() < 1e-10, "x mismatch at {i}");
+            assert!(
+                (streamed[i * 3 + 1] - p.1).abs() < 1e-10,
+                "y mismatch at {i}"
+            );
+            assert!(
+                (streamed[i * 3 + 2] - p.2).abs() < 1e-10,
+                "z mismatch at {i}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_streaming_respects_max_points() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        write_minimal_las(tmp.path());
+
+        let mut chunk_count = 0;
+        let mut total_points = 0;
+        let total = read_points_streaming(tmp.path(), 2, 1, |chunk| {
+            chunk_count += 1;
+            total_points += chunk.len() / 3;
+        })
+        .unwrap();
+
+        assert_eq!(total, 2);
+        assert_eq!(total_points, 2);
+        // With chunk_size=1 and 2 points, we should get exactly 2 chunks
+        assert_eq!(chunk_count, 2);
     }
 
     #[test]

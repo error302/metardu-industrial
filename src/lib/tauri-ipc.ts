@@ -373,6 +373,44 @@ export async function readLasPointsBinary(
   return new Uint8Array(bytes);
 }
 
+/** A chunk of LAS point data received during streaming reads. */
+export interface LasPointsChunk {
+  /** Flattened xyz coordinates: [x0, y0, z0, x1, y1, z1, ...] */
+  points: number[];
+  /** Number of points in this chunk */
+  count: number;
+  /** Total points read so far (across all chunks) */
+  total_read: number;
+  /** Total points in the file (from the LAS header) */
+  total_points: number;
+}
+
+/**
+ * Read LAS points in chunks via a Tauri Channel. This is the streaming
+ * variant of `readLasPointsBinary` — instead of loading the entire
+ * file into memory (which can OOM on 100M+ point files), it sends
+ * ~65K points at a time. The `onChunk` callback is called for each
+ * batch, allowing progressive rendering.
+ *
+ * `maxPoints=0` means "read all points".
+ *
+ * Returns the total number of points read.
+ */
+export async function readLasPointsStreaming(
+  path: string,
+  maxPoints: number,
+  onChunk: (chunk: LasPointsChunk) => void,
+): Promise<number | null> {
+  if (!isTauri()) return null;
+  const channel = new Channel<LasPointsChunk>();
+  channel.onmessage = onChunk;
+  return invoke<number>("read_las_points_streaming_cmd", {
+    path,
+    maxPoints,
+    onChunk: channel,
+  });
+}
+
 // ──────────────────────────────────────────────────────────────────
 // ODM (OpenDroneMap) subprocess integration
 
