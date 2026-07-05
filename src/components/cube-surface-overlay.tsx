@@ -128,6 +128,8 @@ export function CubeSurfaceOverlay({ map, surface }: CubeSurfaceOverlayProps) {
   const minDepth = Math.min(...validDepths);
   const maxDepth = Math.max(...validDepths);
 
+  if (!surface) return null;
+
   return (
     <div className="pointer-events-none absolute bottom-12 left-3 z-20 rounded-md border border-navy-border bg-navy-base/90 px-3 py-2 backdrop-blur">
       <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-steel-light">
