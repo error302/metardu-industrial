@@ -665,49 +665,44 @@ async fn execute_step(
         }
 
         PipelineAction::ShellCommand => {
+            // ⚠️ SECURITY: arbitrary shell execution removed.
+            //
+            // The ShellCommand action used to run `sh -c <command>` with
+            // the `command` parameter taken verbatim from the pipeline
+            // definition. Pipeline definitions are JSON-serialized structs
+            // that can arrive from the frontend, from saved `.metardu`
+            // project files, or from a pipeline shared between surveyors.
+            // There was no allowlist, no shell-escaping, and no user
+            // confirmation prompt — anyone who could invoke
+            // `run_pipeline_cmd` could execute arbitrary shell commands
+            // with the user's full privileges.
+            //
+            // We now refuse to run shell commands and return an error
+            // instead. If you need to shell out to an external tool
+            // (ODM, GDAL, etc.), use a dedicated action type that
+            // validates the binary path, passes arguments as an argv
+            // array (never through a shell), and requires explicit user
+            // opt-in per tool. See `run_odm_pipeline` for the safe
+            // pattern.
             let cmd = match param_str(params, "command") {
                 Ok(c) => c,
                 Err(e) => return (PipelineStatus::Failed, outputs, logs, Some(e)),
             };
-            logs.push(format!("Executing: {cmd}"));
-            // Use tokio::process for async shell command
-            let output = tokio::process::Command::new("sh")
-                .arg("-c")
-                .arg(&cmd)
-                .output()
-                .await;
-
-            match output {
-                Ok(output) => {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    if !stdout.is_empty() {
-                        logs.push(stdout.trim().to_string());
-                    }
-                    if !stderr.is_empty() {
-                        logs.push(format!("[stderr] {}", stderr.trim()));
-                    }
-                    if output.status.success() {
-                        outputs.insert(
-                            "exit_code".into(),
-                            serde_json::json!(output.status.code().unwrap_or(0)),
-                        );
-                        outputs.insert(
-                            "stdout".into(),
-                            serde_json::Value::String(stdout.trim().to_string()),
-                        );
-                        (PipelineStatus::Complete, outputs, logs, None)
-                    } else {
-                        (
-                            PipelineStatus::Failed,
-                            outputs,
-                            logs,
-                            Some(format!("exit code: {}", output.status.code().unwrap_or(-1))),
-                        )
-                    }
-                }
-                Err(e) => (PipelineStatus::Failed, outputs, logs, Some(e.to_string())),
-            }
+            logs.push(format!(
+                "REFUSED: ShellCommand action is disabled for security. \
+                 Attempted command: {cmd}"
+            ));
+            (
+                PipelineStatus::Failed,
+                outputs,
+                logs,
+                Some(
+                    "ShellCommand action is disabled — see SECURITY.md. \
+                     Use a dedicated action type (e.g. OdmPipeline) that \
+                     validates the binary and passes args as an argv array."
+                        .to_string(),
+                ),
+            )
         }
     }
 }

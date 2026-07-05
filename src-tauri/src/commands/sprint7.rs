@@ -74,10 +74,11 @@ pub fn activate_license_cmd(
 
 /// Generate a license file (admin/sales tool — not for end users).
 ///
-/// This is exposed so we can build a separate `metardu-license-tool`
-/// binary that the sales team uses to issue licenses. End users never
-/// need this command.
-#[tauri::command]
+/// ⚠️ NOT exposed via IPC — it's a forge oracle that would let any
+/// frontend code (or a compromised plugin) mint an Enterprise
+/// license. Kept as a library function so the standalone
+/// `metardu-license-tool` binary can call it. See SECURITY.md.
+#[allow(dead_code)]
 pub fn generate_license_cmd(payload: LicensePayload) -> String {
     crate::license::generate_license_file(&payload)
 }

@@ -271,7 +271,10 @@ fn render_html(spec: &ReportSpec) -> String {
         spec.report_type.footer()
     ));
     if let Some(hash) = &spec.provenance_hash {
-        h.push_str(&format!("<div class='prov'>Provenance: {}</div>", hash));
+        h.push_str(&format!(
+            "<div class='prov'>Provenance: {}</div>",
+            esc(hash)
+        ));
     }
     h.push_str("</div></body></html>");
     h

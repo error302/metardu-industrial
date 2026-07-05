@@ -209,11 +209,11 @@ pub fn generate_deliverable_package(
 
                         manifest_rows.push_str(&format!(
                             "<tr><td><strong>{}</strong></td><td>{}</td><td>{} KB</td><td><code>{}</code></td><td>{}</td></tr>",
-                            src.description,
+                            esc_html(&src.description),
                             src.file_type.label(),
                             size / 1024,
                             hash_short,
-                            filename
+                            esc_html(&filename)
                         ));
 
                         BundledFile {
@@ -230,7 +230,7 @@ pub fn generate_deliverable_package(
                         // Empty file
                         manifest_rows.push_str(&format!(
                             "<tr><td>{}</td><td>{}</td><td>0 KB</td><td>—</td><td>{} (empty)</td></tr>",
-                            src.description, src.file_type.label(), filename
+                            esc_html(&src.description), src.file_type.label(), esc_html(&filename)
                         ));
                         BundledFile {
                             description: src.description.clone(),
@@ -247,9 +247,9 @@ pub fn generate_deliverable_package(
                         warnings.push(msg);
                         manifest_rows.push_str(&format!(
                             "<tr><td>{}</td><td>{}</td><td>—</td><td>FAILED</td><td>{}</td></tr>",
-                            src.description,
+                            esc_html(&src.description),
                             src.file_type.label(),
-                            filename
+                            esc_html(&filename)
                         ));
                         BundledFile {
                             description: src.description.clone(),
@@ -268,9 +268,9 @@ pub fn generate_deliverable_package(
                 warnings.push(msg);
                 manifest_rows.push_str(&format!(
                     "<tr><td>{}</td><td>{}</td><td>—</td><td>MISSING</td><td>{}</td></tr>",
-                    src.description,
+                    esc_html(&src.description),
                     src.file_type.label(),
-                    filename
+                    esc_html(&filename)
                 ));
                 BundledFile {
                     description: src.description.clone(),

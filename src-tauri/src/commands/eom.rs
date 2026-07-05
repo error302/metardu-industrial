@@ -195,7 +195,13 @@ pub async fn verify_eom_license_cmd(
     .map_err(|e| format!("task join error: {e}"))?
 }
 
-#[tauri::command]
+/// Sign a license with a freshly-generated keypair.
+///
+/// ⚠️ NOT exposed via IPC — this is a signing oracle and CPU-DoS
+/// vector (RSA-2048 keygen per call). Kept as a library function so
+/// the standalone `metardu-eom-cli` binary can call it. See
+/// SECURITY.md.
+#[allow(dead_code)]
 pub async fn sign_eom_license_cmd(claims: LicenseClaims) -> Result<LicenseFile, String> {
     tokio::task::spawn_blocking(move || {
         let (priv_key, _pub_key) =
@@ -673,6 +679,9 @@ pub async fn get_ntrip_status_cmd() -> Result<NtripStatus, String> {
             last_message_type: None,
             last_error: None,
             uptime_secs: 0,
+            last_message_epoch_ms: None,
+            reconnect_attempts: 0,
+            reconnecting: false,
         },
     })
 }

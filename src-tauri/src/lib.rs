@@ -67,24 +67,23 @@ use commands::{
     eom::check_license_status_cmd, eom::consume_report_cmd, eom::detect_machine_fingerprint_cmd,
     eom::generate_eom_report_cmd, eom::get_ntrip_status_cmd, eom::import_dxf_surface_cmd,
     eom::is_eom_watch_folder_running, eom::run_eom_pipeline_cmd, eom::run_triage_cmd,
-    eom::sign_eom_license_cmd, eom::start_eom_watch_folder, eom::start_ntrip_cmd,
-    eom::stop_eom_watch_folder, eom::stop_ntrip_cmd, eom::verify_eom_license_cmd,
-    generate_report_cmd, get_settings, init_module, is_proj_available, list_modules,
-    marine::check_s44_compliance_cmd, marine::compute_cross_sections_cmd,
-    marine::compute_dredge_audit_cmd, marine::compute_tpu_batch, marine::export_s57,
-    marine::generate_cube_surface_cmd, marine::parse_svp_cmd, mining::classify_ground,
-    mining::compute_volumes_cmd, mining::parse_drone_manifest, ml::analyze_fragmentation_cmd,
-    ml::classify_habitat_cmd, monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
+    eom::start_eom_watch_folder, eom::start_ntrip_cmd, eom::stop_eom_watch_folder,
+    eom::stop_ntrip_cmd, eom::verify_eom_license_cmd, generate_report_cmd, get_settings,
+    init_module, is_proj_available, list_modules, marine::check_s44_compliance_cmd,
+    marine::compute_cross_sections_cmd, marine::compute_dredge_audit_cmd,
+    marine::compute_tpu_batch, marine::export_s57, marine::generate_cube_surface_cmd,
+    marine::parse_svp_cmd, mining::classify_ground, mining::compute_volumes_cmd,
+    mining::parse_drone_manifest, ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
+    monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
     pipelines::get_odm_status, pipelines::run_odm_pipeline, probe_file, read_las_points_binary,
     read_las_points_cmd, sample_profile, save_settings, sprint6::accepted_indices_cmd,
     sprint6::brush_reject_cmd, sprint6::compute_target_height_cmd, sprint6::point_in_polygon_cmd,
     sprint6::read_sss_pings_cmd, sprint6::slice_by_polygon_cmd, sprint6::undo_brush_cmd,
-    sprint7::activate_license_cmd, sprint7::check_feature_cmd, sprint7::generate_license_cmd,
-    sprint7::get_license_status_cmd, sprint7::get_pending_crashes_cmd,
-    sprint7::get_recent_events_cmd, sprint7::get_telemetry_config_cmd,
-    sprint7::get_telemetry_stats_cmd, sprint7::init_telemetry_cmd,
-    sprint7::mark_crash_submitted_cmd, sprint7::record_crash_cmd,
+    sprint7::activate_license_cmd, sprint7::check_feature_cmd, sprint7::get_license_status_cmd,
+    sprint7::get_pending_crashes_cmd, sprint7::get_recent_events_cmd,
+    sprint7::get_telemetry_config_cmd, sprint7::get_telemetry_stats_cmd,
+    sprint7::init_telemetry_cmd, sprint7::mark_crash_submitted_cmd, sprint7::record_crash_cmd,
     sprint7::record_telemetry_event_cmd, sprint7::run_benchmarks_cmd,
     sprint7::update_telemetry_config_cmd, sprint8::add_file_to_project_cmd,
     sprint8::add_recent_report_cmd, sprint8::check_for_updates_cmd,
@@ -181,7 +180,11 @@ pub fn run() {
             // Sprint 7 — License + Telemetry + Benchmarks
             get_license_status_cmd,
             activate_license_cmd,
-            generate_license_cmd,
+            // ⚠️ generate_license_cmd is NOT exposed via IPC — it's a
+            // forge oracle that would let any frontend code (or a
+            // compromised plugin) mint an Enterprise license. The
+            // function is still callable from the standalone
+            // metardu-license-tool binary for the sales team.
             check_feature_cmd,
             init_telemetry_cmd,
             update_telemetry_config_cmd,
@@ -221,7 +224,9 @@ pub fn run() {
             generate_eom_report_cmd,
             detect_machine_fingerprint_cmd,
             verify_eom_license_cmd,
-            sign_eom_license_cmd,
+            // ⚠️ sign_eom_license_cmd is NOT exposed via IPC — it's a
+            // signing oracle + CPU-DoS vector (RSA-2048 keygen per call).
+            // License signing belongs on the issuing authority only.
             check_license_status_cmd,
             consume_report_cmd,
             // EOM Watch Folder (zero-touch ingest)

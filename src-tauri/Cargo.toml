@@ -28,6 +28,7 @@ serde_yaml = "0.9"
 libloading = "0.8"
 metardu-core = { path = "../crates/metardu-core" }
 sha2 = "0.10"
+base64 = "0.22"
 
 # Geospatial core — opt-in via the 'geo' feature flag.
 # These crates require system libs (libproj-dev, libgdal-dev) that aren't
