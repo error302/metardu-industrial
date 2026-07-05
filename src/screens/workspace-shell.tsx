@@ -19,7 +19,6 @@ import {
   Folder,
   FileBox,
   Layers,
-  Database,
   Settings,
   HelpCircle,
   Minus,
@@ -821,33 +820,31 @@ function LeftSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
+        {/* ── Project ── */}
         <SidebarSection title="Project" icon={<Folder className="h-3 w-3" />}>
           <SidebarItem
             icon={<FileBox className="h-3 w-3" />}
             label="Project Manager"
             onClick={onOpenProject}
           />
-          <SidebarItem icon={<Layers className="h-3 w-3" />} label="Layers" indent onClick={onOpenProject} />
-          <SidebarItem icon={<Database className="h-3 w-3" />} label="Data sources" indent onClick={onOpenProject} />
-          <SidebarItem icon={<FolderOpen className="h-3 w-3" />} label="Mission Triage" onClick={onOpenTriage} />
+          <SidebarItem
+            icon={<FolderOpen className="h-3 w-3" />}
+            label="Mission Triage"
+            onClick={onOpenTriage}
+          />
         </SidebarSection>
 
+        {/* ── Mining ── */}
         {domain !== "marine" && (
           <SidebarSection title="Mining" icon={<Activity className="h-3 w-3" />}>
-            <SidebarItem label="UAV Surveys" indent onClick={onOpenOdm} />
-            <SidebarItem label="TLS Stations" indent onClick={onOpenCsf} />
-            <SidebarItem label="Stockpiles" indent onClick={onOpenStockpileAudit} />
-            <SidebarItem label="Blast Designs" indent onClick={onOpenBlastReport} />
-            <SidebarItem label="4D Monitoring" indent onClick={onOpenMonitoring} />
-            <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
               icon={<Terminal className="h-3 w-3" />}
-              label="ODM Pipeline"
+              label="ODM Photogrammetry"
               onClick={onOpenOdm}
             />
             <SidebarItem
               icon={<Layers3 className="h-3 w-3" />}
-              label="Classify (CSF)"
+              label="Classify Ground (CSF)"
               onClick={onOpenCsf}
             />
             <SidebarItem
@@ -856,14 +853,9 @@ function LeftSidebar({
               onClick={onOpenVolumeCalc}
             />
             <SidebarItem
-              icon={<History className="h-3 w-3" />}
-              label="4D Monitoring"
-              onClick={onOpenMonitoring}
-            />
-            <SidebarItem
-              icon={<Brain className="h-3 w-3" />}
-              label="ML Classification"
-              onClick={onOpenMl}
+              icon={<ShieldCheck className="h-3 w-3" />}
+              label="EOM Volumetric Auditor"
+              onClick={onOpenEomAuditor}
             />
             <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
@@ -881,6 +873,11 @@ function LeftSidebar({
               label="Highwall Monitoring"
               onClick={onOpenHighwall}
             />
+            <SidebarItem
+              icon={<History className="h-3 w-3" />}
+              label="4D Monitoring"
+              onClick={onOpenMonitoring}
+            />
             <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
               icon={<Cpu className="h-3 w-3" />}
@@ -888,19 +885,16 @@ function LeftSidebar({
               onClick={onOpenMachineControl}
             />
             <SidebarItem
-              icon={<ShieldCheck className="h-3 w-3" />}
-              label="EOM Volumetric Auditor"
-              onClick={onOpenEomAuditor}
+              icon={<Brain className="h-3 w-3" />}
+              label="ML Classification"
+              onClick={onOpenMl}
             />
           </SidebarSection>
         )}
 
+        {/* ── Marine ── */}
         {domain !== "mining" && (
-          <SidebarSection title="Marine" icon={<Activity className="h-3 w-3" />}>
-            <SidebarItem label="Survey Lines" indent onClick={onOpenCube} />
-            <SidebarItem label="SVP Casts" indent onClick={onOpenSvp} />
-            <SidebarItem label="Tide Gauges" indent onClick={onOpenTidalSpline} />
-            <div className="my-1.5 border-t border-navy-border" />
+          <SidebarSection title="Marine" icon={<Waves className="h-3 w-3" />}>
             <SidebarItem
               icon={<Waves className="h-3 w-3" />}
               label="CUBE Surface"
@@ -921,6 +915,7 @@ function LeftSidebar({
               label="S-57 Export"
               onClick={onOpenS57}
             />
+            <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
               icon={<Waves className="h-3 w-3" />}
               label="SVP Editor"
@@ -932,9 +927,9 @@ function LeftSidebar({
               onClick={onOpenVesselConfig}
             />
             <SidebarItem
-              icon={<Brain className="h-3 w-3" />}
-              label="ML Classification"
-              onClick={onOpenMl}
+              icon={<Waves className="h-3 w-3" />}
+              label="SSS Waterfall"
+              onClick={onOpenSss}
             />
             <div className="my-1.5 border-t border-navy-border" />
             <SidebarItem
@@ -948,17 +943,6 @@ function LeftSidebar({
               onClick={onOpenCrossSection}
             />
             <SidebarItem
-              icon={<Package className="h-3 w-3" />}
-              label="Deliverable Package"
-              onClick={onOpenDeliverable}
-            />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="SSS Waterfall"
-              onClick={onOpenSss}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
               icon={<Activity className="h-3 w-3" />}
               label="Density Gates"
               onClick={onOpenDensityGates}
@@ -968,11 +952,21 @@ function LeftSidebar({
               label="Tidal Spline Corrector"
               onClick={onOpenTidalSpline}
             />
+            <SidebarItem
+              icon={<Brain className="h-3 w-3" />}
+              label="ML Classification"
+              onClick={onOpenMl}
+            />
           </SidebarSection>
         )}
 
-        {/* QC Tools — cross-cutting */}
-        <SidebarSection title="QC Tools" icon={<Layers3 className="h-3 w-3" />}>
+        {/* ── Deliverables ── */}
+        <SidebarSection title="Deliverables" icon={<Package className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<Package className="h-3 w-3" />}
+            label="Deliverable Package"
+            onClick={onOpenDeliverable}
+          />
           <SidebarItem
             icon={<Scissors className="h-3 w-3" />}
             label="3D Slice Editor"
@@ -980,7 +974,16 @@ function LeftSidebar({
           />
         </SidebarSection>
 
-        {/* Enterprise */}
+        {/* ── Automation ── */}
+        <SidebarSection title="Automation" icon={<GitBranch className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<GitBranch className="h-3 w-3" />}
+            label="Pipeline Editor"
+            onClick={onOpenPipeline}
+          />
+        </SidebarSection>
+
+        {/* ── Enterprise ── */}
         <SidebarSection title="Enterprise" icon={<Shield className="h-3 w-3" />}>
           <SidebarItem
             icon={<Radio className="h-3 w-3" />}
@@ -1011,25 +1014,6 @@ function LeftSidebar({
             icon={<RefreshCw className="h-3 w-3" />}
             label="Check for Updates"
             onClick={onOpenUpdate}
-          />
-        </SidebarSection>
-
-        {/* Automation — cross-cutting */}
-        <SidebarSection title="Automation" icon={<GitBranch className="h-3 w-3" />}>
-          <SidebarItem
-            icon={<GitBranch className="h-3 w-3" />}
-            label="Pipelines"
-            onClick={onOpenPipeline}
-          />
-          <SidebarItem
-            icon={<FolderOpen className="h-3 w-3" />}
-            label="Watch Folders"
-            onClick={onOpenPipeline}
-          />
-          <SidebarItem
-            icon={<Clock className="h-3 w-3" />}
-            label="Scheduled Jobs"
-            onClick={onOpenPipeline}
           />
         </SidebarSection>
       </div>
