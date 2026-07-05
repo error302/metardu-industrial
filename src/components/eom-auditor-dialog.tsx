@@ -97,6 +97,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
   const [currentLasPath, setCurrentLasPath] = useState("");
   const [previousLasPath, setPreviousLasPath] = useState("");
   const [referenceElevation, setReferenceElevation] = useState(0);
+  const [autoDetectBaseline, setAutoDetectBaseline] = useState(true);
   const [cellSize, setCellSize] = useState(DEFAULT_DEM_PARAMS.cell_size);
   const [benchInterval, setBenchInterval] = useState(5);
   const [customer, setCustomer] = useState("");
@@ -173,6 +174,8 @@ export function EomAuditorDialog({ open, onClose }: Props) {
       dem_params: { ...DEFAULT_DEM_PARAMS, cell_size: cellSize },
       bench_interval: benchInterval,
       max_points: 5_000_000,
+      auto_detect_baseline: autoDetectBaseline,
+      design_surface: null,
     };
 
     try {
@@ -392,14 +395,34 @@ export function EomAuditorDialog({ open, onClose }: Props) {
                 onDropdownChange={setPreviousLasPath}
               />
 
-              {/* Reference elevation + cell size + bench interval */}
+              {/* Reference elevation mode + cell size + bench interval */}
               <div className="grid grid-cols-3 gap-2">
-                <NumberField
-                  label="Reference elev (m)"
-                  value={referenceElevation}
-                  step={0.1}
-                  onChange={setReferenceElevation}
-                />
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+                    Reference elev (m)
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={autoDetectBaseline}
+                      onChange={(e) => setAutoDetectBaseline(e.target.checked)}
+                      className="h-3 w-3"
+                      title="Auto-detect ground elevation using RANSAC"
+                    />
+                    <input
+                      type="number"
+                      value={referenceElevation}
+                      step={0.1}
+                      onChange={(e) => setReferenceElevation(parseFloat(e.target.value) || 0)}
+                      disabled={autoDetectBaseline}
+                      className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
+                      placeholder={autoDetectBaseline ? "auto" : "0.0"}
+                    />
+                  </div>
+                  <div className="mt-0.5 text-[9px] text-steel-gray">
+                    {autoDetectBaseline ? "✓ RANSAC auto-detect" : "Manual elevation"}
+                  </div>
+                </div>
                 <NumberField
                   label="Cell size (m)"
                   value={cellSize}

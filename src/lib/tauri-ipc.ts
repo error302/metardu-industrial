@@ -2165,6 +2165,11 @@ export interface DemParamsRpc {
   min_points: number;
 }
 
+/** Design surface reference for terrain volume comparison. */
+export type DesignSurfaceRef =
+  | { Flat: number }
+  | { Dem: { data: number[]; ncols: number; nrows: number; cell_size: number; nodata: number } };
+
 export interface EomInputRpc {
   current_las_path: string;
   previous_las_path: string | null;
@@ -2173,6 +2178,10 @@ export interface EomInputRpc {
   dem_params: DemParamsRpc;
   bench_interval: number;
   max_points: number;
+  /** Optional design surface for terrain volume comparison. */
+  design_surface?: DesignSurfaceRef | null;
+  /** When true, use RANSAC auto-detected ground elevation. */
+  auto_detect_baseline?: boolean;
 }
 
 export interface BenchVolumeRpc {
