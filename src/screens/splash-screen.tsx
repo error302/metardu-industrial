@@ -1,24 +1,27 @@
 /**
- * Splash Screen
- * Shown on cold start for ~2.5s. Animated theodolite lens rotates as
- * the brand identity establishes. Progress bar fills mining (top) and
- * marine (bottom) of the split lens simultaneously — dual-domain metaphor.
+ * Splash Screen — Professional Edition
  *
- * Responsive: logo scales down on narrow viewports, footer is anchored
- * to the viewport (not the inner content box) so it always sits at the
- * bottom of the screen.
+ * Redesigned for a polished, enterprise-grade first impression:
+ *   - Animated SVG theodolite reticle (survey instrument metaphor)
+ *   - Glassmorphic card with subtle border glow
+ *   - Stepped progress with monospace stage labels
+ *   - Subtle animated grid + scanline background
+ *   - Clean typographic hierarchy
+ *   - Dual-domain accent (mining yellow → industrial orange → marine teal)
+ *
+ * The splash runs for ~2.5s on cold start, establishing brand identity
+ * before the module loading screen takes over.
  */
 
 import { useEffect, useState } from "react";
-import { BrandLogo } from "@/components/brand-logo";
-import { colors, APP_VERSION, APP_BUILD } from "@/lib/tokens";
+import { colors, APP_VERSION, APP_BUILD, APP_NAME } from "@/lib/tokens";
 import { useAppStore } from "@/stores/app-store";
 import { useViewport } from "@/lib/use-viewport";
 
 const STAGES = [
-  { label: "Loading brand assets", duration: 300 },
-  { label: "Initializing Tauri runtime", duration: 400 },
-  { label: "Establishing IPC bridge", duration: 350 },
+  { label: "Initializing runtime", duration: 350 },
+  { label: "Establishing IPC bridge", duration: 400 },
+  { label: "Loading geospatial core", duration: 350 },
   { label: "Preparing workspace", duration: 300 },
 ];
 
@@ -60,59 +63,316 @@ export function SplashScreen() {
     };
   }, [setPhase]);
 
-  // Logo size adapts: 180px on wide, 120px on narrow, 96px on very narrow
-  const logoSize = isVeryNarrow ? 96 : isNarrow ? 120 : 180;
-  const progressWidth = isVeryNarrow ? 240 : isNarrow ? 280 : 288;
+  const logoSize = isVeryNarrow ? 100 : isNarrow ? 130 : 160;
+  const cardWidth = isVeryNarrow ? 300 : isNarrow ? 340 : 380;
 
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-navy-base">
-      {/* Subtle survey grid background */}
-      <div className="bg-survey-grid absolute inset-0 opacity-30" />
+    <div
+      className="relative flex h-full w-full items-center justify-center overflow-hidden"
+      style={{ background: colors.navyBase }}
+    >
+      {/* ── Background layers ── */}
+      {/* Animated grid */}
+      <div className="absolute inset-0 opacity-[0.15]">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(${colors.navyBorder} 1px, transparent 1px),
+              linear-gradient(90deg, ${colors.navyBorder} 1px, transparent 1px)
+            `,
+            backgroundSize: "40px 40px",
+            maskImage:
+              "radial-gradient(ellipse at center, black 0%, transparent 70%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse at center, black 0%, transparent 70%)",
+          }}
+        />
+      </div>
 
-      {/* Radial vignette to focus center */}
+      {/* Slow horizontal scanline */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-x-0 h-px opacity-40"
         style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 0%, rgba(10, 25, 47, 0.85) 70%)",
+          background: `linear-gradient(90deg, transparent, ${colors.industrialOrange}40, transparent)`,
+          animation: "splash-scan 4s ease-in-out infinite",
         }}
       />
 
-      {/* Centered brand block */}
-      <div className="relative z-10 flex flex-col items-center px-6">
-        <BrandLogo size={logoSize} animated showWordmark />
+      {/* Radial vignette */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at center, transparent 0%, ${colors.navyBase}EE 70%, ${colors.navyBase} 100%)`,
+        }}
+      />
 
-        {/* Version + build */}
-        <div className="mt-6 font-mono text-[10px] tracking-wider text-steel-gray">
-          v{APP_VERSION} · Build {APP_BUILD}
+      {/* ── Main card ── */}
+      <div
+        className="relative z-10 flex flex-col items-center px-8 py-10"
+        style={{
+          width: cardWidth,
+          background: `linear-gradient(180deg, ${colors.navyPanel}F2 0%, ${colors.navyBase}F2 100%)`,
+          border: `1px solid ${colors.navyBorder}`,
+          borderRadius: "12px",
+          boxShadow: `
+            0 0 0 1px ${colors.industrialOrange}08,
+            0 20px 60px -10px ${colors.navyBase}CC,
+            0 0 80px -20px ${colors.industrialOrange}20
+          `,
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        {/* ── Animated theodolite reticle ── */}
+        <TheodoliteReticle size={logoSize} />
+
+        {/* ── Brand name + tagline ── */}
+        <div className="mt-6 text-center">
+          <h1
+            className="font-semibold tracking-[0.15em] text-white"
+            style={{ fontSize: isVeryNarrow ? 16 : 18 }}
+          >
+            {APP_NAME.toUpperCase()}
+          </h1>
+          <div
+            className="mt-1.5 font-mono tracking-[0.25em]"
+            style={{
+              fontSize: 9,
+              color: colors.steelGray,
+            }}
+          >
+            GEODETIC · BATHYMETRIC · INDUSTRIAL
+          </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-8" style={{ width: progressWidth }}>
-          <div className="mb-2 flex items-center justify-between text-[11px] font-mono">
-            <span className="text-steel-light truncate">
+        {/* ── Divider ── */}
+        <div
+          className="my-6 h-px w-full"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${colors.navyBorder}, transparent)`,
+          }}
+        />
+
+        {/* ── Progress section ── */}
+        <div className="w-full">
+          {/* Stage label + percentage */}
+          <div className="mb-2 flex items-center justify-between">
+            <span
+              className="font-mono tracking-wider"
+              style={{ fontSize: 10, color: colors.steelLight }}
+            >
               {STAGES[stageIdx]?.label ?? "Ready"}
             </span>
-            <span style={{ color: colors.industrialOrange }} className="ml-2 tabular-nums">
-              {Math.round(progress)}%
+            <span
+              className="font-mono tabular-nums font-semibold"
+              style={{ fontSize: 11, color: colors.industrialOrange }}
+            >
+              {Math.round(progress).toString().padStart(2, "0")}%
             </span>
           </div>
-          <div className="h-1 w-full overflow-hidden rounded-full bg-navy-border">
+
+          {/* Progress track */}
+          <div
+            className="relative h-[3px] w-full overflow-hidden rounded-full"
+            style={{ background: colors.navyBorder }}
+          >
             <div
-              className="h-full rounded-full transition-[width] duration-100 ease-out"
+              className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 ease-out"
               style={{
                 width: `${progress}%`,
                 background: `linear-gradient(90deg, ${colors.miningYellow} 0%, ${colors.industrialOrange} 50%, ${colors.marineTurquoise} 100%)`,
+                boxShadow: `0 0 8px ${colors.industrialOrange}60`,
               }}
             />
           </div>
+
+          {/* Stage indicators */}
+          <div className="mt-3 flex justify-between">
+            {STAGES.map((_, i) => (
+              <div
+                key={i}
+                className="flex flex-col items-center"
+                style={{ flex: 1 }}
+              >
+                <div
+                  className="h-1 w-1 rounded-full transition-colors duration-200"
+                  style={{
+                    background:
+                      i < stageIdx
+                        ? colors.pass
+                        : i === stageIdx
+                          ? colors.industrialOrange
+                          : colors.navyBorder,
+                    boxShadow:
+                      i === stageIdx
+                        ? `0 0 6px ${colors.industrialOrange}`
+                        : "none",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Footer: version + build ── */}
+        <div
+          className="mt-8 flex w-full items-center justify-between font-mono"
+          style={{ fontSize: 9, color: colors.steelGray }}
+        >
+          <span>v{APP_VERSION}</span>
+          <span>Build {APP_BUILD}</span>
         </div>
       </div>
 
-      {/* Footer — anchored to viewport bottom, not the inner content box */}
-      <div className="absolute bottom-6 left-0 right-0 z-10 px-4 text-center text-[10px] tracking-[0.2em] text-steel-gray/60">
-        GEODETIC · BATHYMETRIC · INDUSTRIAL
+      {/* ── Bottom anchor: copyright ── */}
+      <div
+        className="absolute bottom-5 left-0 right-0 z-10 text-center font-mono"
+        style={{ fontSize: 9, color: `${colors.steelGray}80`, letterSpacing: "0.15em" }}
+      >
+        © 2026 MetaRDU INDUSTRIAL · MIT LICENSE
       </div>
+
+      {/* ── Keyframe animations ── */}
+      <style>{`
+        @keyframes splash-scan {
+          0%, 100% { transform: translateY(0); opacity: 0; }
+          10% { opacity: 0.4; }
+          50% { transform: translateY(100vh); opacity: 0.4; }
+          60% { opacity: 0; }
+        }
+        @keyframes splash-rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes splash-rotate-reverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        @keyframes splash-pulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        @keyframes splash-blink {
+          0%, 100% { opacity: 0.2; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/**
+ * Animated SVG theodolite reticle — the survey instrument metaphor.
+ *
+ * Three concentric rings rotating in alternating directions, with
+ * crosshair ticks and a center reticle. Subtle, professional, and
+ * clearly survey-related without being cartoonish.
+ */
+function TheodoliteReticle({ size }: { size: number }) {
+  const stroke = colors.industrialOrange;
+  const strokeDim = `${colors.industrialOrange}40`;
+  const miningStroke = colors.miningYellow;
+  const marineStroke = colors.marineTurquoise;
+
+  return (
+    <div
+      style={{ width: size, height: size }}
+      className="relative"
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 200 200"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Outer ring — slow rotation, mining yellow */}
+        <g style={{ animation: "splash-rotate 12s linear infinite", transformOrigin: "100px 100px" }}>
+          <circle
+            cx="100"
+            cy="100"
+            r="92"
+            stroke={miningStroke}
+            strokeWidth="1"
+            strokeDasharray="2 8"
+            opacity="0.5"
+          />
+          {/* Cardinal ticks (N/E/S/W) */}
+          {[0, 90, 180, 270].map((angle) => (
+            <line
+              key={angle}
+              x1="100"
+              y1="4"
+              x2="100"
+              y2="14"
+              stroke={miningStroke}
+              strokeWidth="2"
+              opacity="0.8"
+              transform={`rotate(${angle} 100 100)`}
+            />
+          ))}
+        </g>
+
+        {/* Middle ring — faster rotation, industrial orange */}
+        <g style={{ animation: "splash-rotate-reverse 8s linear infinite", transformOrigin: "100px 100px" }}>
+          <circle
+            cx="100"
+            cy="100"
+            r="75"
+            stroke={stroke}
+            strokeWidth="1.5"
+            strokeDasharray="40 12 8 12"
+            opacity="0.7"
+          />
+          {/* Intercardinal ticks (NE/SE/SW/NW) */}
+          {[45, 135, 225, 315].map((angle) => (
+            <line
+              key={angle}
+              x1="100"
+              y1="22"
+              x2="100"
+              y2="30"
+              stroke={stroke}
+              strokeWidth="1.5"
+              opacity="0.6"
+              transform={`rotate(${angle} 100 100)`}
+            />
+          ))}
+        </g>
+
+        {/* Inner ring — fastest rotation, marine teal */}
+        <g style={{ animation: "splash-rotate 5s linear infinite", transformOrigin: "100px 100px" }}>
+          <circle
+            cx="100"
+            cy="100"
+            r="55"
+            stroke={marineStroke}
+            strokeWidth="1"
+            strokeDasharray="3 6"
+            opacity="0.6"
+          />
+        </g>
+
+        {/* Crosshair — static */}
+        <line x1="100" y1="40" x2="100" y2="160" stroke={strokeDim} strokeWidth="1" />
+        <line x1="40" y1="100" x2="160" y2="100" stroke={strokeDim} strokeWidth="1" />
+
+        {/* Center reticle — pulsing */}
+        <g style={{ animation: "splash-pulse 2s ease-in-out infinite", transformOrigin: "100px 100px" }}>
+          <circle cx="100" cy="100" r="20" stroke={stroke} strokeWidth="1.5" fill="none" opacity="0.5" />
+          <circle cx="100" cy="100" r="12" stroke={stroke} strokeWidth="1" fill="none" opacity="0.8" />
+          <circle cx="100" cy="100" r="3" fill={stroke} />
+        </g>
+
+        {/* Blinking status LED at top */}
+        <circle
+          cx="100"
+          cy="8"
+          r="2"
+          fill={colors.pass}
+          style={{ animation: "splash-blink 1.5s ease-in-out infinite" }}
+        />
+      </svg>
     </div>
   );
 }
