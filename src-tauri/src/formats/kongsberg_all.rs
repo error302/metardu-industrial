@@ -59,6 +59,9 @@ pub enum DatagramType {
     NetworkAttitude,
     /// 0x6F — Network attitude velocity
     NetworkAttitudeVelocity,
+    /// 0x57 — Water column (WC) datagram — raw water column samples per beam
+    /// Used for object detection (fish schools, wrecks, gas plumes)
+    WaterColumn,
     /// Any other type byte
     Unknown(u8),
 }
@@ -81,6 +84,7 @@ impl From<u8> for DatagramType {
             0x53 => DatagramType::SurfaceSpeed,
             0x6E => DatagramType::NetworkAttitude,
             0x6F => DatagramType::NetworkAttitudeVelocity,
+            0x57 => DatagramType::WaterColumn,
             _ => DatagramType::Unknown(b),
         }
     }
@@ -790,5 +794,238 @@ impl Timestamped for KongsbergAttitude {
 impl Timestamped for KongsbergPosition {
     fn timestamp(&self) -> f64 {
         self.timestamp
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Water Column datagram parsing — object detection in the water column
+// ──────────────────────────────────────────────────────────────────
+
+/// A water column sample — raw acoustic amplitude at a specific depth
+/// in a specific beam. Used for detecting objects in the water column:
+/// fish schools, wrecks, gas plumes, underwater structures.
+#[derive(Debug, Clone, Serialize)]
+pub struct WaterColumnSample {
+    /// Timestamp (Unix seconds)
+    pub timestamp: f64,
+    /// Ping number
+    pub ping_number: u32,
+    /// Beam number
+    pub beam_number: u16,
+    /// Range from transducer (meters)
+    pub range: f64,
+    /// Acoustic amplitude (dB)
+    pub amplitude_db: f64,
+}
+
+/// An object detected in the water column.
+#[derive(Debug, Clone, Serialize)]
+pub struct WaterColumnObject {
+    /// Object type
+    pub object_type: WaterColumnObjectType,
+    /// Center position (easting, northing) — approximate
+    pub position: (f64, f64),
+    /// Depth of the object center (meters, positive down)
+    pub depth: f64,
+    /// Approximate size (meters)
+    pub size_m: f64,
+    /// Detection confidence (0-1)
+    pub confidence: f64,
+    /// Ping number where detected
+    pub ping_number: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WaterColumnObjectType {
+    /// Fish school — diffuse, mid-water, high backscatter
+    FishSchool,
+    /// Wreck/obstruction — solid, on or near seafloor
+    Wreck,
+    /// Gas plume — rising from seafloor
+    GasPlume,
+    /// Underwater structure — cable, pipeline, etc.
+    Structure,
+    /// Unknown — needs manual review
+    Unknown,
+}
+
+/// Parse a Kongsberg .all water column datagram (type 0x57).
+///
+/// Water column datagrams contain raw acoustic amplitude samples
+/// for each beam at each range bin. This is the raw data that can
+/// be used for object detection.
+///
+/// Returns a vector of (beam_number, range, amplitude) samples.
+fn parse_water_column_datagram(
+    payload: &[u8],
+    ping_number: u32,
+) -> Option<Vec<WaterColumnSample>> {
+    if payload.len() < 20 {
+        return None;
+    }
+
+    let timestamp = u32::from_le_bytes([payload[0], payload[1], payload[2], payload[3]]) as f64
+        + u16::from_le_bytes([payload[4], payload[5]]) as f64 / 1000.0;
+
+    // Water column datagram format (simplified):
+    //   - Date (4 bytes)
+    //   - Time fraction (2 bytes)
+    //   - Ping counter (2 bytes)
+    //   - System serial (2 bytes)
+    //   - Sound speed (2 bytes)
+    //   - Sample rate (2 bytes)
+    //   - Number of beams (2 bytes)
+    //   - Samples per beam (2 bytes)
+    //   - Per-beam: beam number (2) + range to first sample (2) + samples (N bytes)
+
+    let n_beams = u16::from_le_bytes([payload[14], payload[15]]) as usize;
+    let samples_per_beam = u16::from_le_bytes([payload[16], payload[17]]) as usize;
+
+    if n_beams == 0 || n_beams > 1024 || samples_per_beam == 0 || samples_per_beam > 10000 {
+        return None;
+    }
+
+    let mut samples = Vec::new();
+    let mut offset = 18; // After the fixed header
+
+    for beam_idx in 0..n_beams {
+        if offset + 4 > payload.len() {
+            break;
+        }
+
+        let beam_number = u16::from_le_bytes([payload[offset], payload[offset + 1]]);
+        let range_start = u16::from_le_bytes([payload[offset + 2], payload[offset + 3]]) as f64 / 10.0; // decimeters → meters
+        offset += 4;
+
+        // Each sample is 1 byte (8-bit amplitude) or 2 bytes (16-bit)
+        // We detect by checking remaining bytes vs expected count
+        let bytes_per_sample = if n_beams * samples_per_beam * 2 + offset <= payload.len() {
+            2
+        } else {
+            1
+        };
+
+        for sample_idx in 0..samples_per_beam {
+            if offset + bytes_per_sample > payload.len() {
+                break;
+            }
+
+            let amplitude_raw = if bytes_per_sample == 2 {
+                u16::from_le_bytes([payload[offset], payload[offset + 1]])
+            } else {
+                u16::from(payload[offset])
+            };
+
+            // Convert raw count to dB (approximate — real conversion needs
+            // TVG correction and system gain, which varies by sonar model)
+            let amplitude_db = if amplitude_raw > 0 {
+                20.0 * (amplitude_raw as f64 / 65535.0).log10()
+            } else {
+                -100.0 // floor for zero amplitude
+            };
+
+            let range = range_start + sample_idx as f64 * 0.1; // 10cm per sample (typical)
+
+            samples.push(WaterColumnSample {
+                timestamp,
+                ping_number,
+                beam_number,
+                range,
+                amplitude_db,
+            });
+
+            offset += bytes_per_sample;
+        }
+    }
+
+    if samples.is_empty() {
+        None
+    } else {
+        Some(samples)
+    }
+}
+
+/// Detect objects in water column data using simple thresholding.
+///
+/// Algorithm: for each ping, find contiguous range bins where
+/// amplitude exceeds a threshold. If the contiguous block is
+/// more than `min_size_m` meters in range, classify it as an object.
+pub fn detect_water_column_objects(
+    samples: &[WaterColumnSample],
+    threshold_db: f64,
+    min_size_m: f64,
+) -> Vec<WaterColumnObject> {
+    let mut objects = Vec::new();
+    let mut current_pings: std::collections::HashMap<u32, Vec<&WaterColumnSample>> =
+        std::collections::HashMap::new();
+
+    // Group samples by ping
+    for s in samples {
+        current_pings.entry(s.ping_number).or_default().push(s);
+    }
+
+    // For each ping, find contiguous amplitude peaks
+    for (ping_number, ping_samples) in &current_pings {
+        let mut in_peak = false;
+        let mut peak_start = 0.0;
+        let mut peak_max = -100.0;
+        let mut peak_count = 0usize;
+        let mut peak_beam = 0u16;
+
+        for s in ping_samples.iter() {
+            if s.amplitude_db > threshold_db {
+                if !in_peak {
+                    in_peak = true;
+                    peak_start = s.range;
+                    peak_max = s.amplitude_db;
+                    peak_count = 1;
+                    peak_beam = s.beam_number;
+                } else {
+                    peak_max = peak_max.max(s.amplitude_db);
+                    peak_count += 1;
+                }
+            } else if in_peak {
+                // End of peak — check if it's big enough
+                let peak_size = s.range - peak_start;
+                if peak_size >= min_size_m {
+                    let object_type = classify_water_column_object(peak_max, peak_size, peak_start);
+                    objects.push(WaterColumnObject {
+                        object_type,
+                        position: (0.0, 0.0), // Would need position integration for real coords
+                        depth: peak_start,
+                        size_m: peak_size,
+                        confidence: ((peak_max - threshold_db) / 20.0).min(1.0),
+                        ping_number: *ping_number,
+                    });
+                }
+                in_peak = false;
+            }
+        }
+    }
+
+    objects
+}
+
+/// Classify a water column object based on its characteristics.
+fn classify_water_column_object(
+    peak_amplitude: f64,
+    size_m: f64,
+    depth_m: f64,
+) -> WaterColumnObjectType {
+    // Heuristic classification:
+    // - Mid-water (depth < 50m), large (>5m), moderate amplitude → fish school
+    // - Near seafloor (depth > 30m), compact (<5m), high amplitude → wreck
+    // - Rising from seafloor, diffuse → gas plume
+    // - Otherwise → unknown
+
+    if depth_m < 50.0 && size_m > 5.0 && peak_amplitude < -10.0 {
+        WaterColumnObjectType::FishSchool
+    } else if depth_m > 30.0 && size_m < 5.0 && peak_amplitude > -5.0 {
+        WaterColumnObjectType::Wreck
+    } else if depth_m > 20.0 && size_m > 3.0 {
+        WaterColumnObjectType::GasPlume
+    } else {
+        WaterColumnObjectType::Unknown
     }
 }

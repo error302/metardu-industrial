@@ -2505,3 +2505,227 @@ export async function getNtripStatus(): Promise<NtripStatusRpc | null> {
   }
   return invoke<NtripStatusRpc>("get_ntrip_status_cmd");
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Phase 2 — Marine MBES, tidal datums, backscatter, QC dashboard
+// ──────────────────────────────────────────────────────────────────
+
+/** A sounding from a Kongsberg .all bathymetry datagram. */
+export interface KongsbergSoundingRpc {
+  timestamp: number;
+  ping_number: number;
+  beam_number: number;
+  depth: number;
+  across_track: number;
+  along_track: number;
+  beam_angle: number;
+  heave: number;
+  roll: number;
+  pitch: number;
+  heading: number;
+  sound_speed: number;
+  quality: number;
+  detection_info: number;
+}
+
+export interface KongsbergPositionRpc {
+  timestamp: number;
+  latitude: number;
+  longitude: number;
+  height: number;
+  quality: number;
+}
+
+export interface KongsbergAttitudeRpc {
+  timestamp: number;
+  roll: number;
+  pitch: number;
+  heave: number;
+  heading: number;
+}
+
+export interface AllSurveyDataRpc {
+  header: {
+    model: string;
+    model_id: number;
+    date: string;
+    seconds_since_epoch: number;
+    ping_count: number;
+    position_count: number;
+    attitude_count: number;
+    svp_count: number;
+    runtime_count: number;
+    total_datagrams: number;
+    first_timestamp: number | null;
+    last_timestamp: number | null;
+  };
+  soundings: KongsbergSoundingRpc[];
+  positions: KongsbergPositionRpc[];
+  attitudes: KongsbergAttitudeRpc[];
+  bounds: [number, number, number, number] | null;
+}
+
+/** Read a Kongsberg .all file and extract all bathymetry, position, and attitude data. */
+export async function readAllSurvey(path: string, maxPings: number): Promise<AllSurveyDataRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<AllSurveyDataRpc>("read_all_survey_cmd", { path, maxPings });
+}
+
+/** Apply a tidal datum conversion to an array of depths. */
+export async function convertTidalDatum(depths: number[], offsetM: number): Promise<number[]> {
+  if (!isTauri()) return depths.map(d => d + offsetM);
+  return invoke<number[]>("convert_tidal_datum_cmd", { depths, offsetM });
+}
+
+/** Backscatter sample for mosaicking. */
+export interface BackscatterSampleRpc {
+  across_track: number;
+  along_track: number;
+  intensity_db: number;
+  beam_angle: number;
+  timestamp: number;
+}
+
+export interface MosaicParamsRpc {
+  cell_size: number;
+  apply_lambert_correction: boolean;
+  method: string;
+}
+
+export interface BackscatterMosaicRpc {
+  ncols: number;
+  nrows: number;
+  cell_size: number;
+  bounds: [number, number, number, number];
+  data: number[];
+  nodata: number;
+  valid_cells: number;
+  min_db: number;
+  max_db: number;
+}
+
+/** Create a backscatter mosaic from MBES backscatter samples. */
+export async function createBackscatterMosaic(
+  samples: BackscatterSampleRpc[],
+  params: MosaicParamsRpc,
+): Promise<BackscatterMosaicRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<BackscatterMosaicRpc>("create_backscatter_mosaic_cmd", { samples, params });
+}
+
+/** QC statistics for a set of soundings. */
+export interface QcStatsRpc {
+  total_soundings: number;
+  accepted_soundings: number;
+  rejected_soundings: number;
+  coverage_area_m2: number;
+  avg_density_per_m2: number;
+  min_depth: number;
+  max_depth: number;
+  mean_depth: number;
+  std_depth: number;
+  mean_beam_angle: number;
+  max_beam_angle: number;
+  avg_beams_per_ping: number;
+  ping_count: number;
+  s44_order: string;
+  density_compliance_pct: number;
+  uncertainty_compliance_pct: number;
+}
+
+/** Compute QC statistics for a set of soundings. */
+export async function computeQcStats(
+  soundings: (number | number | number | number | number | number)[][],
+  cellSize: number,
+  s44Order: string,
+): Promise<QcStatsRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<QcStatsRpc>("compute_qc_stats_cmd", { soundings, cellSize, s44Order });
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Mining surveyor tools — setout, mine grid, tunnel profile, safety
+// ──────────────────────────────────────────────────────────────────
+
+export interface SetoutPointRpc {
+  id: string;
+  easting: number;
+  northing: number;
+  elevation: number;
+  description: string;
+  pointType: string;
+}
+
+export interface SetoutResultRpc {
+  point: SetoutPointRpc;
+  bearing_deg: number;
+  distance_m: number;
+  delta_z: number;
+  slope_distance: number;
+  slope_angle_deg: number;
+}
+
+/** Compute setout (bearing, distance, slope) from a reference point to design points. */
+export async function computeSetout(
+  points: SetoutPointRpc[],
+  refEasting: number,
+  refNorthing: number,
+  refElevation: number,
+): Promise<SetoutResultRpc[]> {
+  if (!isTauri()) return [];
+  return invoke<SetoutResultRpc[]>("compute_setout_cmd", {
+    points, refEasting, refNorthing, refElevation,
+  });
+}
+
+export interface MineGridRpc {
+  name: string;
+  origin_easting: number;
+  origin_northing: number;
+  rotation_deg: number;
+  scale_factor: number;
+  parent_crs: string;
+}
+
+/** Convert mine grid coordinates to parent CRS. */
+export async function mineGridToCrs(
+  grid: MineGridRpc, gridEasting: number, gridNorthing: number,
+): Promise<[number, number]> {
+  if (!isTauri()) return [gridEasting + grid.origin_easting, gridNorthing + grid.origin_northing];
+  return invoke<[number, number]>("mine_grid_to_crs_cmd", { grid, gridEasting, gridNorthing });
+}
+
+/** Convert parent CRS coordinates to mine grid. */
+export async function crsToMineGrid(
+  grid: MineGridRpc, crsEasting: number, crsNorthing: number,
+): Promise<[number, number]> {
+  if (!isTauri()) return [crsEasting - grid.origin_easting, crsNorthing - grid.origin_northing];
+  return invoke<[number, number]>("crs_to_mine_grid_cmd", { grid, crsEasting, crsNorthing });
+}
+
+export interface TunnelProfileRpc {
+  chainage: number;
+  points: [number, number][];
+  design_profile: [number, number][] | null;
+}
+
+export interface TunnelProfileResultRpc {
+  area: number;
+  design_area: number | null;
+  overbreak: number | null;
+  underbreak: number | null;
+  max_width: number;
+  max_height: number;
+}
+
+/** Analyze a tunnel profile: compute area, overbreak/underbreak. */
+export async function analyzeTunnelProfile(profile: TunnelProfileRpc): Promise<TunnelProfileResultRpc | null> {
+  if (!isTauri()) return null;
+  return invoke<TunnelProfileResultRpc>("analyze_tunnel_profile_cmd", { profile });
+}
+
+/** Generate a safety inspection report. */
+export async function generateSafetyReport(inspection: unknown): Promise<string> {
+  if (!isTauri()) return "Browser mode — safety report requires the native Tauri shell";
+  return invoke<string>("generate_safety_report_cmd", { inspection });
+}
