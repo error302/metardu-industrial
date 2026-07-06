@@ -24,7 +24,7 @@ import OSM from "ol/source/OSM";
 import { fromLonLat, transformExtent } from "ol/proj";
 import { MousePosition, ScaleLine, FullScreen, Zoom } from "ol/control";
 import { createStringXY } from "ol/coordinate";
-import Graticule from "ol/layer/Graticule";
+// Graticule import removed — OL Graticule crashes on null projection extent
 import { Style, Stroke, Fill, Text as TextStyle } from "ol/style";
 import Feature from "ol/Feature";
 import Polygon from "ol/geom/Polygon";
@@ -86,16 +86,10 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
           source: new OSM(),
           opacity: 0.65,
         }),
-        new Graticule({
-          strokeStyle: new Stroke({
-            color: `${accent}40`,
-            width: 1,
-          }),
-          showLabels: true,
-          wrapX: false,
-          lonLabelPosition: 0.5,
-          latLabelPosition: 0.95,
-        }),
+        // Graticule removed — it crashes on certain projections when
+        // the projection extent is null. The graticule is cosmetic
+        // (grid lines on the map) and not essential for functionality.
+        // Can be re-added with a safe wrapper once OL fixes the issue.
         surveyLayer,
       ],
       view,
