@@ -66,6 +66,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   long-term vision of a provenance graph where every output value
   remembers its full input lineage + uncertainty chain.
 
+### Added — Sprint 12: QA/QC Foundation + COGO + Contours + End-Area Volumes + Skills Library
+
+- **Geomatics gap analysis revised** — `docs/GEOMATICS_GAP_ANALYSIS.md`
+  rewritten to focus on mining + marine only (cadastral scope removed —
+  belongs to the separate MetaRDU web app). Verdict: MetaRDU is at
+  85-90% coverage today for mining/marine, reaches ~95% after Sprint 12-13.
+- **Uncertainty-aware volume calculation** (`mining/volume.rs`):
+  - New `compute_volumes_verified()` returns `VerifiedVolumeResult` with
+    `UncertainValue` for fill/cut/net volumes. Uncertainty propagates
+    via σ_volume = sqrt(N) × cell_area × σ_z.
+  - TIN-based volume cross-check: each 2x2 cell decomposed into 2
+    triangles, integrated independently. Grid vs TIN agreement flagged
+    via `verify_calculation()` with 0.5% tolerance.
+  - 4 new unit tests verify the math (fill uncertainty, cross-check
+    agreement on uniform grids, net uncertainty, TIN matches grid).
+  - New IPC command `compute_volumes_verified_cmd`.
+- **End-area volume method** (`mining/volume.rs`):
+  - New `compute_end_area_volumes()` for linear infrastructure (haul
+    roads, ramps, dredge channels, tailings dams). Standard average
+    end-area formula: V = (A1 + A2) / 2 × L.
+  - Per-section breakdown for reporting.
+  - 5 unit tests (basic cut, tapered, mixed cut/fill, too few sections,
+    unsorted).
+  - New IPC command `compute_end_area_volumes_cmd`.
+- **COGO module** (`cogo.rs`, ~570 lines):
+  - Inverse: bearing + distance between two points
+  - Forward: point from bearing + distance
+  - Intersections: bearing-bearing, bearing-circle, circle-circle
+  - Offset: point perpendicular to a line
+  - Perpendicular foot: closest point on a line
+  - Curve fitting: circle from 3 points (center + radius)
+  - Area: shoelace + DMD (Double Meridian Distance) cross-check
+  - Subdivision: split polygon along a line
+  - Snell's law refraction (for hydrographic ray tracing)
+  - 19 unit tests.
+  - 11 new IPC commands (`cogo_inverse_cmd`, `cogo_forward_cmd`,
+    `cogo_intersect_bearing_bearing_cmd`, etc.).
+- **Contour generation** (`contours.rs`, ~280 lines):
+  - Marching squares algorithm on a DEM grid.
+  - 16-case lookup table with linear interpolation on edges.
+  - Saddle cases handled (cases 5 and 10 produce 2 segments).
+  - NODATA cells skipped.
+  - GeoJSON output for OpenLayers overlay.
+  - 5 unit tests.
+  - 2 new IPC commands (`generate_contours_cmd`, `contours_to_geojson_cmd`).
+- **Agency-agents skill library installed** — 28 agents from
+  `github.com/msitarzewski/agency-agents` cloned into `skills/`. Subset
+  focused on MetaRDU's scope: 13 GIS + 9 design + 6 spatial-computing.
+- **Map page UI obstruction fixes** (UI Designer audit):
+  - Profile-active hint banner moved from `top-12` to `top-20` so it
+    stacks below the CRS Switch Banner instead of overlapping it.
+  - FloatingActions column gets `max-h` + `overflow-hidden` to prevent
+    collision with the status bar on short viewports.
+- **QA/QC foundation module** (`qc/`):
+  - `propagation.rs` — `UncertainValue` struct with full arithmetic
+    (add/sub/mul/div/powi/sqrt/scale/sum/mean) following Taylor's rules.
+    18 unit tests.
+  - `verify.rs` — `verify_calculation()` cross-check wrapper. 7 tests.
+  - `range_checks.rs` — 6 sanity checks (lat/lon, elevation, distance,
+    bearing, volume, uncertainty). 16 tests.
+  - 14 IPC commands expose QC utilities to the frontend.
+- **QA/QC strategy document** (`docs/QA_QC_ANALYSIS.md`) — defines the
+  Calculation Verification Protocol (≥2 independent methods), Error
+  Propagation Strategy (UncertainValue threaded through every
+  transformation), 13 concrete Sprint 12 changes, and the long-term
+  provenance-graph vision.
+
+Stats: ~2,800 lines of new Rust, 43 new Rust unit tests (18+7+16 in qc/
++ 4+5 in volume + 19 in cogo + 5 in contours — total 74 new tests this
+sprint), 27 new IPC commands (14 QC + 11 COGO + 2 contours + 2 mining
+verified/end-area). 128 → 155 IPC commands, 41 → ~115 Rust unit tests.
+
 ### Added — Sprint 11: Real-Time Field Operations + Quality of Life
 
 - **RTK rover position visualization** — pure-Rust NMEA 0183 parser

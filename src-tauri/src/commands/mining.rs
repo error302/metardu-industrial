@@ -305,3 +305,58 @@ pub async fn compute_stockpile_change_cmd(
     .await
     .map_err(|e| format!("task join error: {e}"))?
 }
+
+/// Compute volumes with uncertainty propagation + grid/TIN cross-check.
+///
+/// Wraps `compute_volumes_verified` so the frontend can request a
+/// defensible volume result that carries ± uncertainty and a
+/// verification flag.
+#[tauri::command]
+pub async fn compute_volumes_verified_cmd(
+    current_path: String,
+    reference_path: String,
+    sigma_z_m: f64,
+) -> Result<crate::mining::volume::VerifiedVolumeResult, String> {
+    use crate::formats::read_geotiff_header;
+    let cur_path = PathBuf::from(&current_path);
+    let ref_path = PathBuf::from(&reference_path);
+    let cur_label = current_path.clone();
+    let ref_label = reference_path.clone();
+
+    tokio::task::spawn_blocking(move || -> Result<crate::mining::volume::VerifiedVolumeResult, String> {
+        let cur_header = read_geotiff_header(&cur_path)
+            .map_err(|e| ctx!("reading current DEM header", cur_label, e))?;
+        let cur_grid = read_dem_grid(&cur_path, &cur_header)
+            .map_err(|e| ctx!("reading current DEM grid", cur_label, e))?;
+        let ref_grid = if reference_path.starts_with("flat:") {
+            let z: f64 = reference_path.strip_prefix("flat:").and_then(|s| s.parse().ok())
+                .ok_or_else(|| format!("invalid flat:Z reference: '{}'", reference_path))?;
+            vec![z; cur_grid.len()]
+        } else {
+            let ref_header = read_geotiff_header(&ref_path)
+                .map_err(|e| ctx!("reading reference DEM header", ref_label, e))?;
+            read_dem_grid(&ref_path, &ref_header)
+                .map_err(|e| ctx!("reading reference DEM grid", ref_label, e))?
+        };
+        let cell_w = if let Some(ps) = cur_header.model_pixel_scale { ps[0] } else { 1.0 };
+        let cell_h = if let Some(ps) = cur_header.model_pixel_scale { ps[1] } else { 1.0 };
+        crate::mining::volume::compute_volumes_verified(
+            &cur_grid, &ref_grid, cell_w, cell_h, 0.0, sigma_z_m,
+        ).map_err(|e| format!("verified volume failed: {e}"))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+/// Compute cut/fill volumes using the average end-area method.
+///
+/// Takes a list of cross-sections (chainage + cut area + fill area)
+/// and computes per-segment + total volumes. Used for haul roads,
+/// ramps, dredge channels, tailings dams.
+#[tauri::command]
+pub fn compute_end_area_volumes_cmd(
+    sections: Vec<crate::mining::volume::CrossSection>,
+) -> Result<crate::mining::volume::EndAreaVolumeResult, String> {
+    crate::mining::volume::compute_end_area_volumes(&sections)
+        .map_err(|e| format!("end-area volume failed: {e}"))
+}

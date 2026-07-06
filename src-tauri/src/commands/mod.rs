@@ -17,6 +17,9 @@ pub mod sprint6;
 pub mod sprint7;
 pub mod sprint8;
 pub mod streaming;
+// Sprint 12 — COGO + contours
+pub mod cogo;
+pub mod contours;
 
 use crate::formats::{
     read_geotiff_header, read_kongsberg_all_header, read_las_header, read_las_points,

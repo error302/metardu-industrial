@@ -24,6 +24,8 @@ mod automation;
 #[allow(dead_code)]
 mod benchmarks;
 mod commands;
+mod contours;
+mod cogo;
 #[allow(dead_code)]
 mod deliverable;
 #[allow(dead_code)]
@@ -82,6 +84,7 @@ use commands::{
     mining::compute_setout_cmd, mining::mine_grid_to_crs_cmd, mining::crs_to_mine_grid_cmd,
     mining::analyze_tunnel_profile_cmd, mining::generate_safety_report_cmd,
     mining::parse_drone_manifest, mining::compute_stockpile_change_cmd,
+    mining::compute_volumes_verified_cmd, mining::compute_end_area_volumes_cmd,
     ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
     monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
@@ -92,6 +95,12 @@ use commands::{
     qc::uncertain_value_sum_cmd, qc::uncertain_value_mean_cmd,
     qc::check_lat_lon_cmd, qc::check_elevation_cmd, qc::check_distance_cmd,
     qc::check_bearing_cmd, qc::check_volume_cmd, qc::check_uncertainty_cmd,
+    cogo::cogo_inverse_cmd, cogo::cogo_forward_cmd, cogo::cogo_intersect_bearing_bearing_cmd,
+    cogo::cogo_intersect_bearing_circle_cmd, cogo::cogo_intersect_circle_circle_cmd,
+    cogo::cogo_offset_from_line_cmd, cogo::cogo_perpendicular_foot_cmd,
+    cogo::cogo_circle_from_3_points_cmd, cogo::cogo_area_cmd, cogo::cogo_split_polygon_cmd,
+    cogo::cogo_snell_refract_cmd,
+    contours::generate_contours_cmd, contours::contours_to_geojson_cmd,
     realtime::start_rover_stream_cmd, realtime::stop_rover_stream_cmd,
     realtime::get_rover_position_cmd, realtime::get_rover_trail_cmd,
     realtime::get_rover_status_cmd, realtime::fetch_noaa_tide_cmd,
