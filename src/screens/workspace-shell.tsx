@@ -644,6 +644,26 @@ export function WorkspaceShell() {
           />
           <FileDropOverlay domain={activeDomain} />
           <CrsSwitchBanner />
+          {/* Top-center notification stack — Sprint 11 UI fix.
+              Previously the CRS banner and the profile-active hint both
+              anchored to `left-1/2 top-12 z-30` and overwrote each other
+              when both were visible. Now the profile hint is rendered
+              *below* the CRS banner via a separate top-20 anchor so they
+              stack vertically instead of fighting for the same pixels. */}
+          {profileActive && (
+            <div
+              className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-md border px-3 py-1.5 text-[11px] backdrop-blur max-w-[90%]"
+              style={{
+                background: "rgba(10, 25, 47, 0.95)",
+                borderColor: `${domainAccent[activeDomain].primary}60`,
+                color: colors.steelLight,
+              }}
+            >
+              {profileLine
+                ? "Profile drawn — click again to redraw"
+                : "Click two points on the map to draw a profile line"}
+            </div>
+          )}
           <FloatingActions
             onToggleSidebar={() => {
               if (viewport.isVeryNarrow) setDrawerSidebarOpen((v) => !v);
@@ -664,20 +684,6 @@ export function WorkspaceShell() {
             isStreaming={isStreaming}
             onPings={(pings) => setStreamPings((prev) => [...prev.slice(-5000), ...pings])}
           />
-          {profileActive && (
-            <div
-              className="pointer-events-none absolute left-1/2 top-12 z-30 -translate-x-1/2 rounded-md border px-3 py-1.5 text-[11px] backdrop-blur max-w-[90%]"
-              style={{
-                background: "rgba(10, 25, 47, 0.95)",
-                borderColor: `${domainAccent[activeDomain].primary}60`,
-                color: colors.steelLight,
-              }}
-            >
-              {profileLine
-                ? "Profile drawn — click again to redraw"
-                : "Click two points on the map to draw a profile line"}
-            </div>
-          )}
         </main>
         {rightPanelOpen && (
           <RightPanel
@@ -1685,8 +1691,12 @@ function FloatingActions({
   // Reusable button class — keeps the action buttons visually consistent.
   const baseBtn =
     "rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur transition-colors hover:bg-navy-elevated hover:text-white";
+  // FloatingActions column — top-right. On very narrow widths the column
+  // collapses vertically; max-height prevents it from running into the
+  // status bar. z-20 sits below FileDropOverlay (z-30) so buttons don't
+  // capture clicks during file drag.
   return (
-    <div className="absolute right-2 sm:right-3 top-2 sm:top-3 flex flex-col gap-1 z-20">
+    <div className="absolute right-2 sm:right-3 top-2 sm:top-3 flex flex-col gap-1 z-20 max-h-[calc(100vh-100px)] overflow-hidden">
       <button
         onClick={onToggleRight}
         title="Toggle right panel"

@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 12: QA/QC Foundation + Skills Library + UI Obstruction Fixes
+
+- **Agency-agents skill library installed** — 28 agents from
+  `github.com/msitarzewski/agency-agents` cloned into
+  `/home/z/my-project/skills/agency-agents/`. Subset focused on MetaRDU's
+  scope:
+  - 13 GIS agents (solution engineer, spatial data engineer, QA engineer,
+    cartography, 3D scene, BIM, drone reality mapping, etc.)
+  - 9 design agents (UI designer, UX architect, UX researcher, brand
+    guardian, inclusive visuals, etc.)
+  - 6 spatial-computing agents (XR interface, visionOS, macOS Metal, etc.)
+  - `INDEX.md` documents the install so other agents can discover and
+    activate any agent by reading its `.md` file.
+- **Map page UI obstruction fixes** (UI Designer audit):
+  - Profile-active hint banner moved from `top-12` (overlapping the CRS
+    Switch Banner's anchor) to `top-20` so they stack vertically instead
+    of fighting for the same pixels.
+  - FloatingActions column gets `max-h-[calc(100vh-100px)] overflow-hidden`
+    so it can't run into the status bar on short viewports.
+  - Code comment documents the z-index layering (FloatingActions z-20
+    sits below FileDropOverlay z-30 so buttons don't capture clicks
+    during drag).
+- **QA/QC foundation module** (`src-tauri/src/qc/`):
+  - `propagation.rs` — `UncertainValue` struct with 1-sigma uncertainty
+    + confidence level. Arithmetic (add/sub/mul/div/powi/sqrt/scale/
+    add_constant/sum/mean) follows Taylor's propagation rules. 18 unit
+    tests verify the math, including the volume-propagation example
+    from the QA/QC analysis doc (1000 cells × 1m² × 0.1m σ_z →
+    σ_volume = sqrt(1000) × 0.1 ≈ 3.16 m³).
+  - `verify.rs` — `verify_calculation()` wrapper runs primary + secondary
+    independent calculations and flags disagreement beyond a tolerance
+    percentage. `VerifiedCalculation` struct carries the agreement flag,
+    relative diff %, and warning messages. 7 unit tests.
+  - `range_checks.rs` — sanity checks for gross input errors:
+    `check_lat_lon`, `check_elevation` (against regional MSL),
+    `check_distance` (instrument range), `check_bearing` (0-360°),
+    `check_volume` (excessive magnitude), `check_uncertainty` (negative
+    or excessive sigma). Each returns `RangeCheckResult` with pass/fail +
+    message. 16 unit tests.
+  - 14 new IPC commands expose the QC utilities to the frontend so
+    dialogs can format uncertainty ("12,345 ± 6 m³ (95%)") and validate
+    user inputs before sending them to the calculation engine.
+- **Geomatics engineer gap analysis** (`docs/GEOMATICS_GAP_ANALYSIS.md`):
+  Audit of MetaRDU's coverage for cadastral / topographic / engineering
+  survey work. Verdict: MetaRDU is strong for mining + marine (85-95%
+  coverage), partial for topo + engineering (60-80%), and missing for
+  cadastral (0%). Lists 15 specific gaps ranked by frequency of need,
+  with build-vs-integrate recommendations. Top 5 to build in Sprint 12-13:
+  COGO module, Least-Squares Adjustment engine, total station raw import,
+  contour generation, end-area volume method.
+- **QA/QC strategy document** (`docs/QA_QC_ANALYSIS.md`):
+  Audit of existing calculation checks (what's tested, what's not),
+  defines the Calculation Verification Protocol (every critical calc
+  gets ≥2 independent methods), defines the Error Propagation Strategy
+  (UncertainValue threaded through every transformation), lists 13
+  concrete Sprint 12 changes (~2,400 lines, 3-4 days), and lays out the
+  long-term vision of a provenance graph where every output value
+  remembers its full input lineage + uncertainty chain.
+
 ### Added — Sprint 11: Real-Time Field Operations + Quality of Life
 
 - **RTK rover position visualization** — pure-Rust NMEA 0183 parser

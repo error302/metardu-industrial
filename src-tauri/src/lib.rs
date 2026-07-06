@@ -46,6 +46,7 @@ mod plugin_marketplace;
 #[allow(dead_code)]
 mod plugins;
 mod project;
+mod qc;
 mod realtime;
 mod report_engine;
 mod slice_editor;
@@ -85,6 +86,12 @@ use commands::{
     monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
     pipelines::get_odm_status, pipelines::run_odm_pipeline, probe_file, read_las_points_binary,
+    qc::format_uncertain_value_cmd, qc::uncertain_value_ci_95_cmd,
+    qc::uncertain_value_add_cmd, qc::uncertain_value_sub_cmd,
+    qc::uncertain_value_mul_cmd, qc::uncertain_value_div_cmd,
+    qc::uncertain_value_sum_cmd, qc::uncertain_value_mean_cmd,
+    qc::check_lat_lon_cmd, qc::check_elevation_cmd, qc::check_distance_cmd,
+    qc::check_bearing_cmd, qc::check_volume_cmd, qc::check_uncertainty_cmd,
     realtime::start_rover_stream_cmd, realtime::stop_rover_stream_cmd,
     realtime::get_rover_position_cmd, realtime::get_rover_trail_cmd,
     realtime::get_rover_status_cmd, realtime::fetch_noaa_tide_cmd,
