@@ -36,6 +36,28 @@
   --color-fail: #EF4444;
   --color-info: #3B82F6;
 
+  /* ── BACKWARD COMPATIBILITY ALIASES ──
+   * These map old Tailwind utility names (bg-navy-base, text-steel-light,
+   * etc.) to the new slate palette. Without these, every component that
+   * uses bg-navy-base / text-steel-gray / border-navy-border would
+   * render with no styling.
+   */
+  --color-navy-base: #0F172A;
+  --color-navy-panel: #1E293B;
+  --color-navy-elevated: #334155;
+  --color-navy-border: #475569;
+  --color-industrial-orange: #F97316;
+  --color-industrial-orange-dim: #C2410C;
+  --color-steel-gray: #64748B;
+  --color-steel-light: #94A3B8;
+  --color-mining-yellow: #FBBF24;
+  --color-mining-burnt: #D97706;
+  --color-mining-terrain: #78350F;
+  --color-marine-deep: #1E40AF;
+  --color-marine-turquoise: #2DD4BF;
+  --color-marine-cyan: #06B6D4;
+  --color-investigate: #F59E0B;
+
   /* Typography */
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;

@@ -540,7 +540,7 @@ export function WorkspaceShell() {
           />
         )}
       </div>
-      <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} />
+      <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} map={mapInstance} />
       {/* ── Lazy-loaded dialogs ──
           Wrapped in a single <Suspense> with fallback={null}. Each
           dialog only renders content when `open` is true, so the
@@ -1497,9 +1497,11 @@ function FloatingActions({
 
 /* ──────────────────────────────────────────────────────────── */
 
-function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
+function StatusBar({ domain, epsg, map }: { domain: DomainMode; epsg: string; map: Map | null }) {
   const accent = domainAccent[domain].primary;
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(11, 19));
+  const [coords, setCoords] = useState<string>("—");
+  const [scale, setScale] = useState<string>("—");
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1508,35 +1510,55 @@ function StatusBar({ domain, epsg }: { domain: DomainMode; epsg: string }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  // Live cursor coordinates — the #1 feature that makes a GIS app feel professional
+  useEffect(() => {
+    if (!map) return;
+    const onMouseMove = (e: { coordinate: number[] }) => {
+      const [x, y] = e.coordinate;
+      setCoords(`${x.toFixed(6)}, ${y.toFixed(6)}`);
+      const res = map.getView().getResolution();
+      if (res) {
+        // Scale = resolution * 96 dpi / 0.0254 m/inch
+        const scaleVal = Math.round(res * 96 / 0.0254);
+        setScale(`1:${scaleVal.toLocaleString()}`);
+      }
+    };
+    map.on("pointermove", onMouseMove);
+    return () => { map.un("pointermove", onMouseMove); };
+  }, [map]);
+
   return (
-    <footer className="flex h-7 items-center justify-between gap-2 border-t border-navy-border bg-navy-panel px-2 sm:px-3 text-[11px] overflow-hidden">
-      <div className="no-scrollbar flex items-center gap-2 sm:gap-4 overflow-x-auto">
-        <span className="flex items-center gap-1.5 text-steel-light flex-shrink-0">
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ background: colors.pass }}
-          />
-          Ready
-        </span>
-        <span className="flex items-center gap-1 text-steel-gray flex-shrink-0">
-          <MapPin className="h-3 w-3" style={{ color: accent }} />
-          <span className="font-mono text-steel-light">{epsg}</span>
-        </span>
-        <span className="hidden sm:flex items-center gap-1 text-steel-gray flex-shrink-0">
-          <Crosshair className="h-3 w-3" />
-          <span style={{ color: accent }}>{domainAccent[domain].label}</span>
-        </span>
-        <span className="hidden md:flex items-center gap-1 text-steel-gray/60 flex-shrink-0">
-          <kbd className="rounded border border-navy-border bg-navy-base px-1 py-0.5 font-mono text-[9px]">⌘K</kbd>
-          <span>Commands</span>
-        </span>
+    <footer className="status-bar">
+      <div className="status-bar-item" style={{ color: colors.pass }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: colors.pass }} />
+        Ready
       </div>
-      <div className="flex items-center gap-2 sm:gap-4 text-steel-gray flex-shrink-0">
-        <span className="hidden sm:flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          <span className="font-mono tabular-nums">{utcTime}Z</span>
-        </span>
-        <span className="font-mono text-steel-gray/60">v{APP_VERSION}</span>
+      <div className="status-bar-item">
+        <Crosshair className="h-3 w-3" style={{ color: accent }} />
+        <span style={{ color: colors.white }}>{coords}</span>
+      </div>
+      <div className="status-bar-item">
+        <span style={{ color: colors.textMuted ?? colors.steelGray }}>Scale:</span>
+        <span style={{ color: colors.steelLight }}>{scale}</span>
+      </div>
+      <div className="status-bar-item">
+        <MapPin className="h-3 w-3" style={{ color: accent }} />
+        <span style={{ color: colors.steelLight }}>{epsg}</span>
+      </div>
+      <div className="status-bar-item">
+        <span style={{ color: accent }}>{domainAccent[domain].label}</span>
+      </div>
+      <div className="flex-1" />
+      <div className="status-bar-item">
+        <kbd className="rounded border px-1 py-0.5 font-mono text-[9px]" style={{ borderColor: colors.navyBorder, background: colors.navyBase }}>Ctrl+K</kbd>
+        <span style={{ color: colors.steelGray }}>Commands</span>
+      </div>
+      <div className="status-bar-item">
+        <Clock className="h-3 w-3" />
+        <span className="tabular-nums">{utcTime}Z</span>
+      </div>
+      <div className="status-bar-item" style={{ color: colors.steelGray }}>
+        v{APP_VERSION}
       </div>
     </footer>
   );
