@@ -1,39 +1,40 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   MetaRDU Industrial — Design System
-   Tokens extracted directly from the MetaRDU Industrial logo.
-   Navy base (#0A192F), industrial orange (#FFA500) primary accent,
-   mining yellow (#FFC107) and marine turquoise (#20B2AA) domain accents.
+   MetaRDU Industrial — Professional GIS Dark Theme
+   Based on QGIS/CloudCompare dark mode patterns.
+   Slate chrome, data is the only saturated color.
    ========================================================================= */
 
 @theme {
-  /* Brand core */
-  --color-navy-base: #0a192f;
-  --color-navy-panel: #0f1f3a;
-  --color-navy-elevated: #142a4a;
-  --color-navy-border: #1e2a3f;
-  --color-industrial-orange: #ffa500;
-  --color-industrial-orange-dim: #b8771a;
-  --color-white: #ffffff;
-  --color-steel-gray: #94a3b8;
-  --color-steel-light: #cbd5e1;
+  /* Slate chrome ramp */
+  --color-base: #0F172A;
+  --color-panel: #1E293B;
+  --color-elevated: #334155;
+  --color-border: #475569;
+  --color-border-light: #64748B;
 
-  /* Mining mode */
-  --color-mining-yellow: #ffc107;
-  --color-mining-burnt: #ffb347;
-  --color-mining-terrain: #8b4513;
+  /* Text */
+  --color-white: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
 
-  /* Marine mode */
-  --color-marine-deep: #1e3a8a;
-  --color-marine-turquoise: #20b2aa;
-  --color-marine-cyan: #06b6d4;
+  /* Accent */
+  --color-accent: #F97316;
+  --color-accent-dim: #C2410C;
+  --color-accent-light: #FB923C;
 
-  /* Semantic states */
-  --color-pass: #10b981;
-  --color-investigate: #f59e0b;
-  --color-fail: #ef4444;
-  --color-info: #3b82f6;
+  /* Domain */
+  --color-mining: #FBBF24;
+  --color-mining-dim: #D97706;
+  --color-marine: #2DD4BF;
+  --color-marine-dim: #0F766E;
+
+  /* Status */
+  --color-pass: #22C55E;
+  --color-warn: #F59E0B;
+  --color-fail: #EF4444;
+  --color-info: #3B82F6;
 
   /* Typography */
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
@@ -54,60 +55,40 @@
 
 :root {
   color-scheme: dark;
-  --background: var(--color-navy-base);
+  --background: var(--color-base);
   --foreground: var(--color-white);
-  --accent: var(--color-industrial-orange);
+  --accent: var(--color-accent);
 }
 
-/* Daylight high-contrast theme — for outdoor field use (direct sunlight) */
+/* Daylight high-contrast theme */
 :root[data-theme="light"] {
   color-scheme: light;
-  --background: #FFFFFF;
-  --foreground: #0A192F;
-  --accent: #D97706; /* darker orange for contrast on white */
-
-  /* Override navy backgrounds with white/light gray */
-  --color-navy-base: #F8FAFC;
-  --color-navy-panel: #FFFFFF;
-  --color-navy-elevated: #E2E8F0;
-  --color-navy-border: #CBD5E1;
-
-  /* Override text colors for dark-on-light.
-   * --color-white is used as "primary text" throughout the app —
-   * in light mode it becomes dark navy so all text-white/text-*
-   * utilities and inline styles switch correctly. */
-  --color-white: #0A192F;
-  --color-steel-gray: #475569;
-  --color-steel-light: #334155;
-
-  /* Keep orange but darken for WCAG AA contrast on white (4.5:1) */
-  --color-industrial-orange: #C2410C;
-  --color-industrial-orange-dim: #9A3412;
-
-  /* Domain accents — darkened for contrast on light backgrounds */
-  --color-mining-yellow: #A16207;
-  --color-mining-burnt: #C2410C;
-  --color-mining-terrain: #78350F;
-  --color-marine-deep: #1E40AF;
-  --color-marine-turquoise: #0F766E;
-  --color-marine-cyan: #0E7490;
-
-  /* Semantic — darkened for contrast on light backgrounds */
-  --color-pass: #15803D;
-  --color-fail: #DC2626;
-  --color-investigate: #B45309;
-  --color-info: #1D4ED8;
-
-  /* Survey grid — darker on light bg */
-  --color-survey-grid: #CBD5E1;
-
-  /* Fix body bg/fg */
   --background: #F8FAFC;
-  --foreground: #0A192F;
+  --foreground: #0F172A;
+  --accent: #C2410C;
+  --color-base: #F8FAFC;
+  --color-panel: #FFFFFF;
+  --color-elevated: #E2E8F0;
+  --color-border: #CBD5E1;
+  --color-border-light: #94A3B8;
+  --color-white: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-accent: #C2410C;
+  --color-accent-dim: #9A3412;
+  --color-accent-light: #EA580C;
+  --color-mining: #A16207;
+  --color-mining-dim: #78350F;
+  --color-marine: #0F766E;
+  --color-marine-dim: #115E59;
+  --color-pass: #15803D;
+  --color-warn: #B45309;
+  --color-fail: #DC2626;
+  --color-info: #1D4ED8;
 }
 
 * {
-  border-color: var(--color-navy-border);
+  border-color: var(--color-border);
 }
 
 html,
@@ -116,10 +97,9 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  background: var(--color-navy-base);
+  background: var(--color-base);
   color: var(--color-white);
   font-family: var(--font-sans);
-  /* Base font size — 14px for better readability across the workspace */
   font-size: 14px;
   font-feature-settings: "cv11", "ss01", "ss03";
   -webkit-font-smoothing: antialiased;
@@ -127,260 +107,304 @@ body,
   overflow: hidden;
 }
 
-/* =========================================================================
-   Component-level base styles
-   These ensure consistent sizing/typography regardless of Tailwind utilities
-   applied at the call site. Kept here so the design system has a single
-   source of truth for the workspace shell.
-   ========================================================================= */
-
-/* Sidebar navigation items — slightly larger font for readability */
-.sidebar-item {
-  font-size: 13px;
-}
-
-/* Title bar — 44px for comfortable touch/click targets */
-.title-bar {
-  height: 44px;
-}
-
-/* "New Survey" primary action — bolder, slightly larger */
-.new-survey-btn {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-/* Monospaced coordinate readouts */
+/* ── Typography ── */
 .font-mono,
 .mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle survey grid background pattern */
-.bg-survey-grid {
-  background-image:
-    linear-gradient(to right, rgba(30, 42, 63, 0.4) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 42, 63, 0.4) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-/* Marine sonar pattern — denser, smaller cells */
-.bg-sonar-grid {
-  background-image:
-    linear-gradient(to right, rgba(32, 178, 170, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(32, 178, 170, 0.08) 1px, transparent 1px);
-  background-size: 16px 16px;
-}
-
-/* Scrollbar — wider and higher-contrast for better visibility on dark navy */
+/* ── Scrollbar — professional dark style ── */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-navy-base);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-navy-elevated);
-  border: 2px solid var(--color-navy-base);
-  border-radius: 6px;
+  background: var(--color-border);
+  border-radius: 4px;
   min-height: 32px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-steel-gray);
-}
-::-webkit-scrollbar-corner {
-  background: var(--color-navy-base);
+  background: var(--color-border-light);
 }
 
 /* Selection */
 ::selection {
-  background: var(--color-industrial-orange);
-  color: var(--color-navy-base);
+  background: var(--color-accent);
+  color: var(--color-base);
 }
 
-/* Focus ring */
+/* Focus ring — subtle, professional */
 :focus-visible {
-  outline: 2px solid var(--color-industrial-orange);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 1px;
+}
+
+/* =========================================================================
+   Component styles
+   ========================================================================= */
+
+/* Sidebar items — professional density */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+  user-select: none;
+}
+.sidebar-item:hover {
+  background: var(--color-elevated);
+  color: var(--color-white);
+}
+.sidebar-item.is-active {
+  background: var(--color-elevated);
+  color: var(--color-accent);
+  border-left: 2px solid var(--color-accent);
+  padding-left: 8px;
+}
+.sidebar-item .sidebar-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.sidebar-item:hover .sidebar-icon,
+.sidebar-item.is-active .sidebar-icon {
+  opacity: 1;
+}
+
+/* Sidebar section headers */
+.sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  padding: 12px 10px 4px;
+  user-select: none;
+}
+
+/* Title bar */
+.title-bar {
+  height: 40px;
+}
+
+/* Status bar — live coordinates, scale, CRS */
+.status-bar {
+  height: 28px;
+  background: var(--color-panel);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
+.status-bar-item {
+  padding: 0 12px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.status-bar-item:last-child {
+  border-right: none;
+}
+
+/* Layer tree */
+.layer-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 100ms;
+}
+.layer-tree-item:hover {
+  background: var(--color-elevated);
+  color: var(--color-white);
+}
+.layer-tree-item.is-selected {
+  background: var(--color-elevated);
+  color: var(--color-accent);
+}
+.layer-tree-item .visibility-toggle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+.layer-tree-item:hover .visibility-toggle {
+  opacity: 1;
+}
+
+/* Panel headers */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  background: var(--color-panel);
+}
+
+/* Toolbar buttons */
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 100ms, color 100ms;
+}
+.toolbar-btn:hover {
+  background: var(--color-elevated);
+  color: var(--color-white);
+}
+.toolbar-btn.is-active {
+  background: var(--color-accent-dim);
+  color: var(--color-white);
+}
+
+/* Card */
+.card {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Input fields */
+.input-field {
+  background: var(--color-base);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--color-white);
+  outline: none;
+  transition: border-color 150ms;
+  width: 100%;
+}
+.input-field:focus {
+  border-color: var(--color-accent);
+}
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Primary button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-accent);
+  color: var(--color-base);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.btn-primary:hover {
+  background: var(--color-accent-dim);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Secondary button */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--color-elevated);
+  color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.btn-secondary:hover {
+  background: var(--color-border);
 }
 
 /* =========================================================================
    Animations
    ========================================================================= */
 
-@keyframes lens-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes lens-fill-mining {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes lens-fill-marine {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse-orange {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@keyframes signal-arc {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slide-in-right {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.animate-lens-rotate {
-  animation: lens-rotate 4s linear infinite;
-}
-.animate-lens-fill-mining {
-  animation: lens-fill-mining 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-.animate-lens-fill-marine {
-  animation: lens-fill-marine 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-.animate-pulse-orange {
-  animation: pulse-orange 1.6s ease-in-out infinite;
-}
-.animate-signal-arc {
-  animation: signal-arc 2s ease-out infinite;
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out forwards;
-}
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out forwards;
+  animation: fade-in 0.3s ease-out forwards;
 }
 
-/* Shimmer for loading states */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 165, 0, 0.1) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s linear infinite;
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in {
+  animation: scale-in 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Status dot — for module load indicators */
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
-.status-dot--pending {
-  background: var(--color-steel-gray);
-}
-.status-dot--loading {
-  background: var(--color-industrial-orange);
-  animation: pulse-orange 1s ease-in-out infinite;
-}
-.status-dot--ok {
-  background: var(--color-pass);
-}
-.status-dot--fail {
-  background: var(--color-fail);
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* =========================================================================
-   Responsive helpers — used by workspace shell + screens
+   Responsive helpers
    ========================================================================= */
 
-/* Sidebar transition — smooth width + opacity when entering/leaving
-   icon-only mode and drawer mode. */
 .sidebar-transition {
   transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1),
     transform 220ms cubic-bezier(0.4, 0, 0.2, 1),
     opacity 180ms ease-out;
 }
 
-/* Drawer backdrop — used when sidebar becomes an overlay on very narrow widths */
-.drawer-backdrop {
-  background: rgba(5, 12, 24, 0.6);
-  backdrop-filter: blur(2px);
-  animation: fade-in 200ms ease-out forwards;
-}
-
-/* Icon-only sidebar rail — labels hidden, just icons centered */
 .sidebar-rail .sidebar-item {
   justify-content: center;
   padding-left: 0;
   padding-right: 0;
 }
-.sidebar-rail .sidebar-item span:not(.sidebar-item-icon) {
+.sidebar-rail .sidebar-item span:not(.sidebar-icon) {
   display: none;
 }
 .sidebar-rail .sidebar-section-label {
   display: none;
 }
 
-/* Hide scrollbars on horizontal scroll regions (status bar wrap) */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -389,159 +413,13 @@ body,
   scrollbar-width: none;
 }
 
-/* Truncate utility — for ellipsized text in narrow layouts */
-.truncate-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Subtle scale-in animation for dialogs and panels */
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.animate-scale-in {
-  animation: scale-in 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Focusable card hover — for sidebar items, dialog rows, etc. */
-.focusable-row {
-  transition: background-color 150ms ease-out, border-color 150ms ease-out,
-    transform 150ms ease-out;
-}
-.focusable-row:hover {
-  transform: translateX(1px);
-}
-.focusable-row:active {
-  transform: translateX(0);
-}
-
-/* Active accent bar — for selected sidebar items */
-.accent-bar-left {
-  position: relative;
-}
-.accent-bar-left::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: var(--color-industrial-orange);
-  opacity: 0;
-  transition: opacity 150ms ease-out;
-}
-.accent-bar-left.is-active::before {
-  opacity: 1;
-}
-
-/* Reduced motion — respect user OS preference */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* Container queries support — used by map canvas to adapt OL controls */
-@container map-canvas (max-width: 480px) {
-  .ol-zoom {
-    top: 8px !important;
-    left: 8px !important;
-  }
-  .ol-full-screen {
-    top: 8px !important;
-    left: 48px !important;
-  }
-  .metardu-mouse-position {
-    font-size: 10px !important;
-    padding: 3px 6px !important;
-    max-width: calc(100% - 16px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-/* Long-press tooltip for icon-only sidebar — show label on hover */
-.sidebar-rail .sidebar-item {
-  position: relative;
-}
-.sidebar-rail .sidebar-item:hover .sidebar-tooltip {
-  opacity: 1;
-  transform: translateX(0);
-}
-.sidebar-tooltip {
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translate(-4px, -50%);
-  background: var(--color-navy-elevated);
-  color: var(--color-white);
-  border: 1px solid var(--color-navy-border);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  z-index: 50;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* Dialog overlay scroll lock — when any dialog is open, prevent body scroll */
-body.has-open-dialog {
-  overflow: hidden;
-}
-
-/* Smaller font scale on very narrow viewports — keeps workspace usable */
-@media (max-width: 640px) {
-  html,
-  body,
-  #root {
-    font-size: 13px;
-  }
-  .title-bar {
-    height: 40px;
-  }
-}
-
-/* Print-friendly: hide non-essential UI when printing reports */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-}
-
-/* ── Density: compact mode ── */
+/* ── Density ── */
 :root[data-density="compact"] {
   font-size: 12px;
 }
 :root[data-density="compact"] .sidebar-item {
-  font-size: 11px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-}
-:root[data-density="compact"] .title-bar {
-  height: 36px;
-}
-:root[data-density="compact"] .new-survey-btn {
-  font-size: 11px;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 /* ── Reduced motion ── */
@@ -549,6 +427,65 @@ body.has-open-dialog {
 :root[data-reduced-motion="true"] *::before,
 :root[data-reduced-motion="true"] *::after {
   animation-duration: 0.001ms !important;
-  animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
+}
+
+/* Print */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* OL map controls — match dark theme */
+.ol-control {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 0 !important;
+}
+.ol-control button {
+  background: transparent !important;
+  color: var(--color-white) !important;
+  font-size: 14px !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+.ol-control button:hover {
+  background: var(--color-accent) !important;
+  color: var(--color-base) !important;
+}
+.ol-scale-line {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-secondary) !important;
+}
+.ol-scale-line-inner {
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-text-secondary) !important;
+  font-family: var(--font-mono) !important;
+}
+.ol-zoom {
+  top: 12px !important;
+  left: 12px !important;
+}
+.ol-full-screen {
+  top: 12px !important;
+  left: 56px !important;
+}
+
+/* Mouse position readout — in status bar style */
+.metardu-mouse-position {
+  position: absolute !important;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }

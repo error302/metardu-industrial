@@ -1,50 +1,68 @@
 /**
  * MetaRDU Industrial — Design Tokens
- * Single source of truth for brand colors, extracted from the logo.
  *
- * Colors are raw hex values. Theme switching is handled via CSS
- * classes (data-theme attribute + CSS variable overrides in index.css).
- * Components that need theme-aware colors should use Tailwind classes
- * (bg-navy-base, text-white, etc.) which respect the CSS overrides.
+ * Professional GIS color system based on QGIS/CloudCompare dark themes.
+ * Neutral slate chrome so map data is the only saturated color.
  *
- * Inline styles using `colors.*` use raw hex — these do NOT change
- * with the theme. This is intentional: Canvas/SVG/OL contexts need
- * raw hex, and the `${colors.industrialOrange}40` alpha-append
- * pattern only works with raw hex, not CSS variables.
+ * Principles:
+ *   - Chrome uses a slate ramp (darker = lower elevation in UI hierarchy)
+ *   - One accent color (industrial orange) for active/selected states
+ *   - Status colors are reserved for semantics (red/amber/green/blue)
+ *   - Map canvas background is dark neutral
  */
 
 export const colors = {
-  navyBase: "#0A192F",
-  navyPanel: "#0F1F3A",
-  navyElevated: "#142A4A",
-  navyBorder: "#1E2A3F",
+  // ── Slate chrome ramp (dark → light) ──
+  // Use darker shades for lower UI layers (status bar), lighter for raised (panels)
+  base: "#0F172A",        // slate-900 — app background, map canvas bg
+  panel: "#1E293B",       // slate-800 — sidebars, panels, dialogs
+  elevated: "#334155",    // slate-700 — raised elements, hover states
+  border: "#475569",      // slate-600 — borders, dividers
+  borderLight: "#64748B", // slate-500 — lighter borders
 
-  industrialOrange: "#FFA500",
-  industrialOrangeDim: "#B8771A",
+  // ── Text ──
+  white: "#F1F5F9",       // slate-100 — primary text (not pure white, easier on eyes)
+  textSecondary: "#94A3B8", // slate-400 — secondary text
+  textMuted: "#64748B",   // slate-500 — muted/placeholder text
 
-  white: "#FFFFFF",
-  steelGray: "#6B7280",
-  steelLight: "#9CA3AF",
+  // ── Accent ──
+  accent: "#F97316",      // orange-500 — active/selected/primary action
+  accentDim: "#C2410C",   // orange-700 — hover/pressed
+  accentLight: "#FB923C", // orange-400 — focus rings
 
-  // Mining mode
-  miningYellow: "#FFC107",
-  miningBurnt: "#FFB347",
-  miningTerrain: "#8B4513",
+  // ── Domain colors (for mining/marine accents) ──
+  mining: "#FBBF24",      // amber-400
+  miningDim: "#D97706",   // amber-600
+  marine: "#2DD4BF",      // teal-400
+  marineDim: "#0F766E",   // teal-700
 
-  // Marine mode
-  marineDeep: "#1E3A8A",
-  marineTurquoise: "#20B2AA",
+  // ── Status semantics ──
+  pass: "#22C55E",        // green-500
+  passDim: "#15803D",
+  warn: "#F59E0B",        // amber-500
+  fail: "#EF4444",        // red-500
+  failDim: "#B91C1C",
+  info: "#3B82F6",        // blue-500
+
+  // ── Aliases for backward compatibility ──
+  navyBase: "#0F172A",
+  navyPanel: "#1E293B",
+  navyElevated: "#334155",
+  navyBorder: "#475569",
+  industrialOrange: "#F97316",
+  industrialOrangeDim: "#C2410C",
+  steelGray: "#64748B",
+  steelLight: "#94A3B8",
+  miningYellow: "#FBBF24",
+  miningBurnt: "#D97706",
+  miningTerrain: "#78350F",
+  marineDeep: "#1E40AF",
+  marineTurquoise: "#2DD4BF",
   marineCyan: "#06B6D4",
-
-  // Semantic
-  pass: "#10B981",
   investigate: "#F59E0B",
-  fail: "#EF4444",
-  info: "#3B82F6",
 } as const;
 
-/** Alias for rawColors — same values. Kept for backward compat
- * with components that already import rawColors. */
+/** Alias for rawColors — same values. */
 export const rawColors = colors;
 
 export type DomainMode = "mining" | "marine" | "both";
@@ -54,23 +72,22 @@ export const domainAccent: Record<
   { primary: string; secondary: string; label: string }
 > = {
   mining: {
-    primary: colors.miningYellow,
-    secondary: colors.miningBurnt,
+    primary: colors.mining,
+    secondary: colors.miningDim,
     label: "Mining",
   },
   marine: {
-    primary: colors.marineTurquoise,
-    secondary: colors.marineCyan,
+    primary: colors.marine,
+    secondary: colors.marineDim,
     label: "Marine",
   },
   both: {
-    primary: colors.industrialOrange,
-    secondary: colors.miningBurnt,
+    primary: colors.accent,
+    secondary: colors.miningDim,
     label: "Mining & Marine",
   },
 };
 
-/** Alias — same as domainAccent. Kept for backward compat. */
 export const rawDomainAccent = domainAccent;
 
 export const APP_VERSION = "0.1.0";
