@@ -160,3 +160,72 @@ pub async fn compute_cross_sections_cmd(
 ) -> Result<CrossSectionReport, String> {
     compute_cross_sections(&request).map_err(|e| ctx_no_input!("computing cross-sections", e))
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Phase 2 — MBES datagram parsing, tidal datums, backscatter, QC
+// ──────────────────────────────────────────────────────────────────
+
+use crate::formats::kongsberg_all::{read_all_survey, AllSurveyData};
+
+/// Read a Kongsberg .all file and extract all bathymetry, position, and
+/// attitude data. Returns soundings with depth, across/along-track,
+/// beam angle, quality, and interpolated attitude (roll/pitch/heave/heading).
+///
+/// `max_pings=0` means read all pings.
+#[tauri::command]
+pub async fn read_all_survey_cmd(
+    path: String,
+    max_pings: u32,
+) -> Result<AllSurveyData, String> {
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating path for MBES survey", path, e))?;
+    let label = path.clone();
+    tokio::task::spawn_blocking(move || {
+        read_all_survey(&path_buf, max_pings)
+            .map_err(|e| ctx!("reading Kongsberg .all survey", label, e))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+/// Apply a tidal datum conversion to an array of depths.
+#[tauri::command]
+pub fn convert_tidal_datum_cmd(
+    depths: Vec<f64>,
+    offset_m: f64,
+) -> Vec<f64> {
+    use crate::marine::tidal_datums::TidalDatumConversion;
+    let conversion = TidalDatumConversion {
+        from: crate::marine::tidal_datums::TidalDatum::Mllw,
+        to: crate::marine::tidal_datums::TidalDatum::Cd,
+        offset_m,
+        source: "user-specified".to_string(),
+    };
+    crate::marine::tidal_datums::convert_depths(&depths, &conversion)
+}
+
+/// Create a backscatter mosaic from MBES backscatter samples.
+#[tauri::command]
+pub async fn create_backscatter_mosaic_cmd(
+    samples: Vec<crate::marine::backscatter::BackscatterSample>,
+    params: crate::marine::backscatter::MosaicParams,
+) -> Result<crate::marine::backscatter::BackscatterMosaic, String> {
+    tokio::task::spawn_blocking(move || {
+        crate::marine::backscatter::create_mosaic(&samples, &params)
+            .map_err(|e| format!("backscatter mosaic failed: {e}"))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+/// Compute QC statistics for a set of soundings.
+/// Returns S-44 compliance, density, coverage, and quality stats.
+#[tauri::command]
+pub fn compute_qc_stats_cmd(
+    soundings: Vec<(f64, f64, f64, u8, f64, f64)>,
+    cell_size: f64,
+    s44_order: String,
+) -> Result<crate::marine::qc_dashboard::QcStats, String> {
+    crate::marine::qc_dashboard::compute_qc_stats(&soundings, cell_size, &s44_order)
+        .map_err(|e| format!("QC stats failed: {e}"))
+}

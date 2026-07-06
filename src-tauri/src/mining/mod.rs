@@ -23,6 +23,8 @@ pub mod machine_control;
 #[allow(dead_code)]
 pub mod monitoring_4d;
 #[allow(dead_code)]
+pub mod survey_tools;
+#[allow(dead_code)]
 pub mod volume;
 
 pub use csf::{classify_ground, CsfParams, CsfResult};

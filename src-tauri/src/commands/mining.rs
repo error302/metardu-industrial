@@ -211,3 +211,57 @@ pub fn derive_cell_meters(header: &crate::formats::GeoTiffHeader) -> (f64, f64) 
         (1.0, 1.0)
     }
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Mining surveyor tools — setting out, mine grid, tunnel profiles
+// ──────────────────────────────────────────────────────────────────
+
+/// Compute setout information (bearing, distance, slope) from a reference
+/// point to a list of design points. Used for field markout with a
+/// total station or RTK GPS.
+#[tauri::command]
+pub fn compute_setout_cmd(
+    points: Vec<crate::mining::survey_tools::SetoutPoint>,
+    ref_easting: f64,
+    ref_northing: f64,
+    ref_elevation: f64,
+) -> Vec<crate::mining::survey_tools::SetoutResult> {
+    crate::mining::survey_tools::compute_setout(&points, ref_easting, ref_northing, ref_elevation)
+}
+
+/// Convert mine grid coordinates to parent CRS coordinates.
+#[tauri::command]
+pub fn mine_grid_to_crs_cmd(
+    grid: crate::mining::survey_tools::MineGrid,
+    grid_easting: f64,
+    grid_northing: f64,
+) -> (f64, f64) {
+    crate::mining::survey_tools::mine_grid_to_crs(&grid, grid_easting, grid_northing)
+}
+
+/// Convert parent CRS coordinates to mine grid coordinates.
+#[tauri::command]
+pub fn crs_to_mine_grid_cmd(
+    grid: crate::mining::survey_tools::MineGrid,
+    crs_easting: f64,
+    crs_northing: f64,
+) -> (f64, f64) {
+    crate::mining::survey_tools::crs_to_mine_grid(&grid, crs_easting, crs_northing)
+}
+
+/// Analyze a tunnel profile: compute area, overbreak/underbreak vs design.
+#[tauri::command]
+pub fn analyze_tunnel_profile_cmd(
+    profile: crate::mining::survey_tools::TunnelProfile,
+) -> Result<crate::mining::survey_tools::TunnelProfileResult, String> {
+    crate::mining::survey_tools::analyze_tunnel_profile(&profile)
+        .map_err(|e| format!("tunnel profile analysis failed: {e}"))
+}
+
+/// Generate a safety inspection report.
+#[tauri::command]
+pub fn generate_safety_report_cmd(
+    inspection: crate::mining::survey_tools::SafetyInspection,
+) -> String {
+    crate::mining::survey_tools::generate_safety_report(&inspection)
+}
