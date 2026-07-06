@@ -68,6 +68,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Sprint 12: QA/QC Foundation + COGO + Contours + End-Area Volumes + Skills Library
 
+- **UI Designer audit + polish** (activated `skills/agency-agents/design/design-ui-designer.md`):
+  - **`DialogShell` reusable component** (`src/components/dialog-shell.tsx`) —
+    eliminates the 40-line boilerplate repeated across 45 dialogs.
+    Standardizes overlay, header (icon + title + subtitle + close),
+    scrollable body, footer (hint + actions), and max-height to `88vh`.
+  - **`DialogButton` component** — standardizes the 6 button-padding
+    variants (`px-3 py-1` / `px-3 py-1.5` / `px-4 py-1.5` / etc.) into
+    one `px-4 py-1.5 text-xs font-medium` with 5 semantic variants
+    (primary / secondary / danger / success / marine).
+  - **`EmptyState` component** — consistent "no data" display with icon
+    + title + description + optional CTA action.
+  - **`LoadingSkeleton` component** — shimmer placeholder for async
+    content, replaces bare "Loading..." text.
+  - **`KeyboardShortcutsHelp` overlay** — press `?` to see all
+    shortcuts. 4 categories (Global, Map, Panels, File), 18 shortcuts
+    total. `useKeyboardShortcutsHelp()` hook registers the `?` listener
+    and skips when typing in form fields.
+  - **`MapOverlays` component** — north arrow (rotates with map view)
+    + collapsible layer toggle panel. Replaces the missing OL
+    Graticule (which crashed on null projection extents). Layer toggle
+    shows visible/total count in collapsed state.
+  - **Status bar `?` shortcut button** — clickable, next to the
+    Ctrl+K Commands hint.
+  - **Sidebar "Shortcuts (?)" item** — in the footer, next to Help & Docs.
+  - **Command palette entry** — "Keyboard Shortcuts Help" with fuzzy
+    keywords (keyboard, shortcuts, help, hotkey, cheatsheet, ?).
+  - **CSS polish** (`src/index.css`): `kbd` element styling, `.dialog-btn`
+    utility class, `@keyframes shimmer` for loading skeletons,
+    `.empty-state` class, `@keyframes dialog-enter` for subtle entrance
+    animation, consistent `*:focus-visible` ring, `prefers-reduced-motion`
+    support for accessibility.
 - **Geomatics gap analysis revised** — `docs/GEOMATICS_GAP_ANALYSIS.md`
   rewritten to focus on mining + marine only (cadastral scope removed —
   belongs to the separate MetaRDU web app). Verdict: MetaRDU is at

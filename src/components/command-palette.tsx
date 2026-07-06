@@ -18,7 +18,7 @@ import {
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
   Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
-  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite,
+  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite, Keyboard,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -289,6 +289,8 @@ export function createCommandActions(callbacks: {
   // Sprint 11 — Real-time field ops
   onOpenRoverStream: () => void;
   onOpenTideGauge: () => void;
+  // Sprint 12 — UI polish
+  onOpenShortcuts: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -344,5 +346,7 @@ export function createCommandActions(callbacks: {
     // ── Sprint 11: Real-time field ops ──
     { id: "rover_stream", label: "RTK Rover Stream (NMEA over TCP)", category: "Field Tools · Real-time", keywords: ["rover", "rtk", "gnss", "nmea", "tcp", "position", "gga", "rmc", "live", "stream"], icon: <Satellite className={icon} />, action: callbacks.onOpenRoverStream },
     { id: "tide_gauge", label: "Tide Gauge (NOAA CO-OPS / TCP)", category: "Marine · Real-time", keywords: ["tide", "gauge", "noaa", "co-ops", "water", "level", "mlw", "correction", "bathymetry", "live"], icon: <Waves className={icon} />, action: callbacks.onOpenTideGauge },
+    // ── Sprint 12: UI polish ──
+    { id: "shortcuts", label: "Keyboard Shortcuts Help", category: "App · Help", keywords: ["keyboard", "shortcuts", "help", "hotkey", "cheatsheet", "?"], icon: <Keyboard className={icon} />, action: callbacks.onOpenShortcuts },
   ];
 }

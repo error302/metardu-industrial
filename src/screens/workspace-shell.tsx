@@ -59,6 +59,7 @@ import {
   SquareDashed,
   FileSearch,
   Satellite,
+  Keyboard,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -138,11 +139,15 @@ const StockpileChangeDialog = lazy(() => import("@/components/stockpile-change-d
 // Sprint 11 — Real-time field ops + QoL
 const RoverStreamDialog = lazy(() => import("@/components/rover-stream-dialog").then(m => ({ default: m.RoverStreamDialog })));
 const TideGaugeDialog = lazy(() => import("@/components/tide-gauge-dialog").then(m => ({ default: m.TideGaugeDialog })));
+// Sprint 12 — UI polish
+const KeyboardShortcutsHelp = lazy(() => import("@/components/keyboard-shortcuts-help").then(m => ({ default: m.KeyboardShortcutsHelp })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
 import { useUndoStore } from "@/stores/undo-store";
 import type { DialogKey } from "@/lib/project-templates";
+import { MapOverlays, type MapLayer } from "@/components/map-overlays";
+import { useKeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
 import {
   colors,
   domainAccent,
@@ -211,6 +216,15 @@ export function WorkspaceShell() {
   // Sprint 11 — Real-time field ops
   const [roverStreamOpen, setRoverStreamOpen] = useState(false);
   const [tideGaugeOpen, setTideGaugeOpen] = useState(false);
+  // Sprint 12 — UI polish: keyboard shortcuts overlay + map layer toggle
+  const shortcutsHelp = useKeyboardShortcutsHelp();
+  const [mapLayers, setMapLayers] = useState<MapLayer[]>([
+    { id: "pointcloud", label: "Point Cloud", visible: true, icon: "pointcloud" },
+    { id: "dem", label: "DEM Hillshade", visible: true, icon: "dem" },
+    { id: "cube", label: "CUBE Surface", visible: true, icon: "cube" },
+    { id: "stream", label: "Live Stream", visible: false, icon: "stream" },
+  ]);
+  const [mapRotation, setMapRotation] = useState(0);
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -229,6 +243,10 @@ export function WorkspaceShell() {
 
   const handleMapReady = useCallback((map: Map) => {
     setMapInstance(map);
+    // Sprint 12 — track map rotation for the north arrow overlay
+    const updateRotation = () => setMapRotation(map.getView().getRotation() || 0);
+    map.on("moveend", updateRotation);
+    updateRotation();
   }, []);
 
   const { line: profileLine, clear: clearProfile } = useProfileTool({
@@ -508,6 +526,7 @@ export function WorkspaceShell() {
     onOpenStockpileChange: () => setStockpileChangeOpen(true),
     onOpenRoverStream: () => setRoverStreamOpen(true),
     onOpenTideGauge: () => setTideGaugeOpen(true),
+    onOpenShortcuts: () => shortcutsHelp.setOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -583,6 +602,7 @@ export function WorkspaceShell() {
     onOpenStockpileChange: () => setStockpileChangeOpen(true),
     onOpenRoverStream: () => setRoverStreamOpen(true),
     onOpenTideGauge: () => setTideGaugeOpen(true),
+    onOpenShortcuts: () => shortcutsHelp.setOpen(true),
   };
 
   return (
@@ -634,6 +654,12 @@ export function WorkspaceShell() {
             domain={activeDomain}
             epsg={settings.defaultEpsg}
             onMapReady={handleMapReady}
+          />
+          {/* Sprint 12 — north arrow + layer toggle */}
+          <MapOverlays
+            rotation={mapRotation}
+            layers={mapLayers}
+            onToggleLayer={(id) => setMapLayers((prev) => prev.map((l) => l.id === id ? { ...l, visible: !l.visible } : l))}
           />
           <CubeSurfaceOverlay map={mapInstance} surface={cubeSurface} />
           <PointCloudLayer
@@ -701,7 +727,7 @@ export function WorkspaceShell() {
           />
         )}
       </div>
-      <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} map={mapInstance} />
+      <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} map={mapInstance} onOpenShortcuts={() => shortcutsHelp.setOpen(true)} />
       {/* ── Lazy-loaded dialogs ──
           Wrapped in a single <Suspense> with fallback={null}. Each
           dialog only renders content when `open` is true, so the
@@ -780,6 +806,8 @@ export function WorkspaceShell() {
       {/* ── Sprint 11: Real-time field ops ── */}
       <RoverStreamDialog open={roverStreamOpen} onClose={() => setRoverStreamOpen(false)} />
       <TideGaugeDialog open={tideGaugeOpen} onClose={() => setTideGaugeOpen(false)} />
+      {/* Sprint 12 — keyboard shortcuts overlay */}
+      <KeyboardShortcutsHelp open={shortcutsHelp.open} onClose={() => shortcutsHelp.setOpen(false)} />
       </Suspense>
     </div>
   );
@@ -930,6 +958,7 @@ function LeftSidebar({
   onOpenStockpileChange,
   onOpenRoverStream,
   onOpenTideGauge,
+  onOpenShortcuts,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -980,6 +1009,7 @@ function LeftSidebar({
   onOpenStockpileChange: () => void;
   onOpenRoverStream: () => void;
   onOpenTideGauge: () => void;
+  onOpenShortcuts: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1285,6 +1315,11 @@ function LeftSidebar({
           onClick={onOpenSettings}
         />
         <SidebarItem icon={<HelpCircle className="h-3 w-3" />} label="Help & Docs" onClick={onOpenSettings} />
+        <SidebarItem
+          icon={<Keyboard className="h-3 w-3" />}
+          label="Shortcuts (?)"
+          onClick={onOpenShortcuts}
+        />
       </div>
     </aside>
   );
@@ -1761,7 +1796,7 @@ function FloatingActions({
 
 /* ──────────────────────────────────────────────────────────── */
 
-function StatusBar({ domain, epsg, map }: { domain: DomainMode; epsg: string; map: Map | null }) {
+function StatusBar({ domain, epsg, map, onOpenShortcuts }: { domain: DomainMode; epsg: string; map: Map | null; onOpenShortcuts: () => void }) {
   const accent = domainAccent[domain].primary;
   const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(11, 19));
   const [coords, setCoords] = useState<string>("—");
@@ -1847,6 +1882,15 @@ function StatusBar({ domain, epsg, map }: { domain: DomainMode; epsg: string; ma
         <kbd className="rounded border px-1 py-0.5 font-mono text-[9px]" style={{ borderColor: colors.navyBorder, background: colors.navyBase }}>Ctrl+K</kbd>
         <span style={{ color: colors.steelGray }}>Commands</span>
       </div>
+      <button
+        className="status-bar-item cursor-pointer hover:text-white"
+        onClick={onOpenShortcuts}
+        title="Show keyboard shortcuts (?)"
+        style={{ color: colors.steelGray }}
+      >
+        <kbd className="rounded border px-1 py-0.5 font-mono text-[9px]" style={{ borderColor: colors.navyBorder, background: colors.navyBase }}>?</kbd>
+        <span>Shortcuts</span>
+      </button>
       <div className="status-bar-item">
         <Clock className="h-3 w-3" />
         <span className="tabular-nums">{utcTime}Z</span>

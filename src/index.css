@@ -511,3 +511,134 @@ body,
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
+
+/* ────────────────────────────────────────────────────────────
+   Sprint 12 — UI polish additions
+   ──────────────────────────────────────────────────────────── */
+
+/* Keyboard shortcut <kbd> elements — consistent styling */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1;
+  background: var(--color-base);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 2px 5px;
+  color: var(--color-white);
+  box-shadow: 0 1px 0 var(--color-border);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Status bar button — clickable items in the status bar */
+.status-bar-item.button-like {
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.status-bar-item.button-like:hover {
+  color: var(--color-white) !important;
+}
+
+/* Map overlay — north arrow + layer toggle */
+.map-overlay-north {
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Layer toggle panel — collapsible */
+.layer-toggle-panel {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Dialog button — utility class for consistent sizing */
+.dialog-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 100ms ease;
+  white-space: nowrap;
+}
+.dialog-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.dialog-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.dialog-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Loading skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-elevated) 0%,
+    var(--color-panel) 50%,
+    var(--color-elevated) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Empty state — centered, muted */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* Subtle dialog entrance animation */
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dialog-enter {
+  animation: dialog-enter 150ms ease-out;
+}
+
+/* Tooltip helper — native title attribute is too slow; this is for
+   custom hover tooltips if we add them later */
+.tooltip-trigger {
+  position: relative;
+  cursor: help;
+}
+
+/* Focus ring — consistent across all interactive elements */
+*:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Reduce motion — respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
