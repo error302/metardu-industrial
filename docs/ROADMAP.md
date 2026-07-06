@@ -400,30 +400,63 @@ Compare two LAS surveys of the same stockpile from different epochs and produce 
 
 ---
 
+## Sprint 11: Real-Time Field Operations + Quality of Life — ✅ IN PROGRESS
+
+**Theme**: Make the app usable during active field surveys — RTK rover visualization, live tide gauge ingest — plus the two quality-of-life gaps that most affect operator trust (project templates for onboarding, undo/redo for destructive operations). This is the first sprint that lets the operator use MetaRDU *while the survey is happening*, not just after the data lands.
+
+### 41. RTK Rover Position Visualization ✅
+
+Consumes NMEA sentences from a TCP source (typical field setup: a serial-to-TCP bridge like `com2tcp` on Windows, or a direct TCP port from a base station) and decodes GGA, RMC, and GLL sentences for live position. Optionally applies NTRIP RTCM corrections (the existing NTRIP client from Sprint 9 already provides correction streaming). The rover position is rendered on the OpenLayers map as a moving dot with a 60-second position trail, plus a status bar showing fix quality, satellite count, HDOP, and age-of-differential.
+
+**Why it matters**: A surveyor walking a stockpile with a rover rod needs to see their position relative to the design peg or the stockpile boundary. Without live position, they're guessing. With it, they can mark a blast-hole collar to ±2 cm in real time.
+
+**Implementation**: New `realtime/nmea.rs` module — pure-Rust NMEA 0183 sentence parser with checksum validation, supports GGA / RMC / GLL / GSA / VTG. New `realtime/rover.rs` with a TCP client that streams sentences and updates a shared position struct. New IPC commands: `start_rover_stream`, `stop_rover_stream`, `get_rover_position`, `get_rover_trail`. Frontend: `RoverPositionOverlay` map component with trail + accuracy circle, plus a `RoverStatusBar` indicator.
+
+### 42. Real-Time Tide Gauge Ingest ✅
+
+Connects to either NOAA CO-OPS API (US waters — free, no auth, returns 6-minute water level observations for any of ~200 stations) or a local TCP socket streaming a tide gauge's ASCII output. Builds a tide correction spline from the observations and applies it to loaded bathymetry soundings in real time, eliminating the post-survey tidal reduction step.
+
+**Why it matters**: A 30-minute harbor survey with a 1.5 m tide range has up to 0.75 m of vertical error if tide is ignored. Real-time tide correction means the surveyor can see corrected depths on the QC dashboard *during* the survey, not 4 hours later in the office.
+
+**Implementation**: New `realtime/tide.rs` module — async HTTP client for CO-OPS API (`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter`), plus a TCP socket mode for local gauges. Tide observations are spline-interpolated to the sounding timestamps using the existing `tidal_spline.rs` module. New IPC commands: `fetch_noaa_tide`, `parse_tide_tcp_stream`, `apply_tide_correction_cmd`. Frontend: `TideGaugeDialog` showing live tide graph + station metadata + apply-to-survey button.
+
+### 43. Project Templates ✅
+
+Predefined project templates that pre-load the right combination of dialogs and settings for common workflows. Eliminates the "what do I click first?" friction for new operators and standardizes workflows across a survey team.
+
+**Templates**:
+- **Stockpile Audit** — opens Stockpile Audit wizard + Volume Calculator + Change Detection, sets domain to Mining, default CRS to mine grid
+- **Dredge Audit** — opens Dredge Audit wizard + Cross-Section Profiler + S-44 Compliance, sets domain to Marine, default CRS to project channel grid
+- **EOM Reconciliation** — opens EOM Auditor + EOM Wizard + Benchmark, sets domain to Mining
+- **Bathymetric Survey** — opens MBES Survey Reader + QC Dashboard + SVP Editor + Vessel Config, sets domain to Marine
+- **Blank Project** — current behavior, no preset
+
+**Implementation**: New `lib/project-templates.ts` with a typed `ProjectTemplate` interface (name, description, icon, domain, dialogsToOpen[], defaultEpsg, defaultDensity). `ProjectManagerDialog` extended with a template picker on the New Project screen. Selecting a template creates the project + fires the dialog-open callbacks in sequence.
+
+### 44. Global Undo/Redo Stack ✅
+
+A single global undo stack that wraps every destructive operation: file removal, CSF classification reset, slice reject/restore, project file deletion, layer visibility toggle. Ctrl+Z pops the stack and reverts; Ctrl+Y re-applies. Status bar shows the stack depth and a tooltip listing the next operation to be undone.
+
+**Why it matters**: On a survey vessel in 2 m seas, misclicks happen. Without undo, a misclick on "Remove File" means re-importing a 2 GB LAS. With undo, it's a single keypress. Trust in field use requires forgivable software.
+
+**Implementation**: New `stores/undo-store.ts` Zustand store with a `push(action)`, `undo()`, `redo()`, `canUndo`, `canRedo` API. Each action is `{ description: string, undo: () => void, redo: () => void }`. Workspace shell registers global Ctrl+Z / Ctrl+Y listener. Status bar shows "Undo: N operations" with hover tooltip. Initially wired to: file removal, slice reject, CSF reset — additional operations added incrementally.
+
+---
+
 ## Part 6: Future Sprint Themes (Strategic Backlog)
 
-These are NOT committed for Sprint 10 but represent the next 12 months of strategic direction.
+These represent the next 12 months of strategic direction. AI/ML augmentation has been removed from the roadmap — the field-surveyor market prefers deterministic, auditable algorithms over opaque ML models for compliance-critical workflows (EOM reconciliation, S-44 certification, dredge pay-volume).
 
-### Theme A: AI/ML Augmentation (Sprint 11+)
-
-| Feature | Effort | Impact |
-|---|---|---|
-| **Automatic point-cloud classification** (ground / vegetation / building / wire) via trained RandomForest on geometric features | Large | Eliminates manual CSF tuning for 80% of scenes |
-| **Anomaly detection** in MBES data (auto-flag fish, multipath, noise) | Medium | Reduces manual QC time by 60% |
-| **Stockpile change detection** with semantic segmentation (ore type classification) | Large | Enables grade-control reconciliation |
-| **Auto-triangulation** of drone imagery (no external ODM dependency) | Very Large | Closes the biggest external tool dependency |
-| **Bathymetric AI denoiser** (U-Net for soundings) | Large | Cuts manual cleaning time in half |
-
-### Theme B: Real-Time & Streaming (Sprint 12+)
+### Theme A: Real-Time & Streaming (Sprint 11+)
 
 | Feature | Effort | Impact |
 |---|---|---|
-| **RTK rover position visualization** in 3D (consume NTRIP + own GNSS) | Medium | Field-grade navigation aid |
+| **RTK rover position visualization** (consume NTRIP + own GNSS) | Medium | Field-grade navigation aid |
 | **Live MBES preview** (UDP Multicast listener for Kongsberg KM binary) | Large | On-vessel real-time QC |
 | **Real-time tide gauge ingest** (NOAA CO-OPS / local TCP) | Medium | Eliminates post-process tidal correction |
 | **WebRTC collaborative survey** (multi-operator shared view) | Very Large | Fleet-scale operations |
 
-### Theme C: Platform Expansion (Sprint 13+)
+### Theme B: Platform Expansion (Sprint 12+)
 
 | Feature | Effort | Impact |
 |---|---|---|
@@ -432,7 +465,7 @@ These are NOT committed for Sprint 10 but represent the next 12 months of strate
 | **Cloud sync** (project files + reports to S3-compatible storage) | Medium | Multi-site teams |
 | **Plugin SDK documentation** (rustdoc + tutorial) | Small | Vendor ecosystem |
 
-### Theme D: Standards & Compliance (Sprint 14+)
+### Theme C: Standards & Compliance (Sprint 13+)
 
 | Feature | Effort | Impact |
 |---|---|---|
@@ -442,7 +475,7 @@ These are NOT committed for Sprint 10 but represent the next 12 months of strate
 | **USACE EM 1110-1-1004 hydrographic QA** | Medium | US Army Corps compliance |
 | **LAS 1.4 PDRF 6/7 support** (current is 1.2/1.3) | Small | Modern point-cloud standard |
 
-### Theme E: Performance & Scale (Sprint 15+)
+### Theme D: Performance & Scale (Sprint 14+)
 
 | Feature | Effort | Impact |
 |---|---|---|
@@ -450,14 +483,11 @@ These are NOT committed for Sprint 10 but represent the next 12 months of strate
 | **GPU-accelerated CUBE** (compute shader) | Large | 10× faster surface generation |
 | **Streaming LAS reader** (channel-based, no full file load) | Medium | 5GB+ files on 8GB laptops |
 | **Memory-mapped GeoTIFF** (lazy tile loading) | Medium | Instant DEM pan/zoom |
-| **WASM-accelerated ML inference** (ONNX runtime) | Large | Cross-platform ML model serving |
 
-### Theme F: Quality of Life (Continuous)
+### Theme E: Quality of Life (Continuous)
 
 | Feature | Effort | Impact |
 |---|---|---|
-| **Undo/redo stack** for all destructive operations | Medium | Trust in field use |
-| **Project templates** (stockpile audit / dredge audit / EOM) | Small | Onboarding speed |
 | **In-app help system** (contextual tooltips + video links) | Medium | Self-serve learning |
 | **Snapshot/replay** of survey sessions | Medium | Training & audit |
 | **Bulk report export** (ZIP of all reports in a project) | Small | Quarterly reporting |

@@ -46,6 +46,7 @@ mod plugin_marketplace;
 #[allow(dead_code)]
 mod plugins;
 mod project;
+mod realtime;
 mod report_engine;
 mod slice_editor;
 #[allow(dead_code)]
@@ -84,6 +85,10 @@ use commands::{
     monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
     pipelines::get_odm_status, pipelines::run_odm_pipeline, probe_file, read_las_points_binary,
+    realtime::start_rover_stream_cmd, realtime::stop_rover_stream_cmd,
+    realtime::get_rover_position_cmd, realtime::get_rover_trail_cmd,
+    realtime::get_rover_status_cmd, realtime::fetch_noaa_tide_cmd,
+    realtime::parse_tide_tcp_chunk_cmd, realtime::apply_tide_correction_cmd,
     read_las_points_cmd, read_las_points_streaming_cmd, sample_profile, save_settings, sprint6::accepted_indices_cmd,
     sprint6::brush_reject_cmd, sprint6::compute_target_height_cmd, sprint6::point_in_polygon_cmd,
     sprint6::read_sss_pings_cmd, sprint6::slice_by_polygon_cmd, sprint6::undo_brush_cmd,

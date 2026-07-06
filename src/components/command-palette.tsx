@@ -18,7 +18,7 @@ import {
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
   Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
-  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch,
+  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -286,6 +286,9 @@ export function createCommandActions(callbacks: {
   onOpenMbesSurvey: () => void;
   // Sprint 10 — Stockpile change detection
   onOpenStockpileChange: () => void;
+  // Sprint 11 — Real-time field ops
+  onOpenRoverStream: () => void;
+  onOpenTideGauge: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -338,5 +341,8 @@ export function createCommandActions(callbacks: {
     { id: "mbes_survey", label: "MBES Survey Reader (Kongsberg .all)", category: "Marine · Field Tools", keywords: ["mbes", "kongsberg", "all", "bathymetry", "multibeam", "ingest", "sonar"], icon: <FileSearch className={icon} />, action: callbacks.onOpenMbesSurvey },
     // ── Sprint 10: Volumetric change detection ──
     { id: "stockpile_change", label: "Stockpile Change Detection (Cut/Fill)", category: "Mining · Revenue", keywords: ["stockpile", "change", "cut", "fill", "delta", "epoch", "reconcile", "progress"], icon: <History className={icon} />, action: callbacks.onOpenStockpileChange },
+    // ── Sprint 11: Real-time field ops ──
+    { id: "rover_stream", label: "RTK Rover Stream (NMEA over TCP)", category: "Field Tools · Real-time", keywords: ["rover", "rtk", "gnss", "nmea", "tcp", "position", "gga", "rmc", "live", "stream"], icon: <Satellite className={icon} />, action: callbacks.onOpenRoverStream },
+    { id: "tide_gauge", label: "Tide Gauge (NOAA CO-OPS / TCP)", category: "Marine · Real-time", keywords: ["tide", "gauge", "noaa", "co-ops", "water", "level", "mlw", "correction", "bathymetry", "live"], icon: <Waves className={icon} />, action: callbacks.onOpenTideGauge },
   ];
 }

@@ -58,6 +58,7 @@ import {
   Grid3x3,
   SquareDashed,
   FileSearch,
+  Satellite,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -134,9 +135,14 @@ const QcDashboardDialog = lazy(() => import("@/components/qc-dashboard-dialog").
 const MbesSurveyDialog = lazy(() => import("@/components/mbes-survey-dialog").then(m => ({ default: m.MbesSurveyDialog })));
 // Sprint 10 — Stockpile change detection
 const StockpileChangeDialog = lazy(() => import("@/components/stockpile-change-dialog").then(m => ({ default: m.StockpileChangeDialog })));
+// Sprint 11 — Real-time field ops + QoL
+const RoverStreamDialog = lazy(() => import("@/components/rover-stream-dialog").then(m => ({ default: m.RoverStreamDialog })));
+const TideGaugeDialog = lazy(() => import("@/components/tide-gauge-dialog").then(m => ({ default: m.TideGaugeDialog })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
+import { useUndoStore } from "@/stores/undo-store";
+import type { DialogKey } from "@/lib/project-templates";
 import {
   colors,
   domainAccent,
@@ -202,6 +208,9 @@ export function WorkspaceShell() {
   const [mbesSurveyOpen, setMbesSurveyOpen] = useState(false);
   // Sprint 10 — Stockpile change detection
   const [stockpileChangeOpen, setStockpileChangeOpen] = useState(false);
+  // Sprint 11 — Real-time field ops
+  const [roverStreamOpen, setRoverStreamOpen] = useState(false);
+  const [tideGaugeOpen, setTideGaugeOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -240,6 +249,81 @@ export function WorkspaceShell() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Ctrl+Z / Ctrl+Y for undo/redo — Sprint 11. Skipped when the user is
+  // typing in an input/textarea/select (so they can use the OS-native
+  // undo in form fields).
+  const undoFromStore = useUndoStore((s) => s.undo);
+  const redoFromStore = useUndoStore((s) => s.redo);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isEditable = tag === "input" || tag === "textarea" || tag === "select" || target?.isContentEditable;
+      if (isEditable) return;
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        undoFromStore();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        redoFromStore();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        // Ctrl+Shift+Z is also redo (common on Linux)
+        e.preventDefault();
+        redoFromStore();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undoFromStore, redoFromStore]);
+
+  // Project template → dialog opener (Sprint 11). Maps a DialogKey from
+  // the template picker to the appropriate set<Dialog>Open(true) call.
+  const handleOpenDialogs = useCallback((keys: DialogKey[]) => {
+    for (const k of keys) {
+      switch (k) {
+        case "stockpileAudit": setStockpileAuditOpen(true); break;
+        case "volumeCalc": setVolumeCalcOpen(true); break;
+        case "stockpileChange": setStockpileChangeOpen(true); break;
+        case "blastReport": setBlastReportOpen(true); break;
+        case "highwall": setHighwallOpen(true); break;
+        case "monitoring": setMonitoringOpen(true); break;
+        case "eomAuditor": setEomAuditorOpen(true); break;
+        case "eom": setEomOpen(true); break;
+        case "csf": setCsfOpen(true); break;
+        case "odm": setOdmOpen(true); break;
+        case "machineControl": setMachineControlOpen(true); break;
+        case "setout": setSetoutOpen(true); break;
+        case "mineGrid": setMineGridOpen(true); break;
+        case "tunnelProfile": setTunnelProfileOpen(true); break;
+        case "safetyReport": setSafetyReportOpen(true); break;
+        case "dredgeAudit": setDredgeAuditOpen(true); break;
+        case "crossSection": setCrossSectionOpen(true); break;
+        case "s44": setS44Open(true); break;
+        case "s44Cert": setS44CertOpen(true); break;
+        case "s57": setS57Open(true); break;
+        case "cube": setCubeOpen(true); break;
+        case "cubeDisambig": setCubeDisambigOpen(true); break;
+        case "svp": setSvpOpen(true); break;
+        case "vesselConfig": setVesselConfigOpen(true); break;
+        case "sss": setSssOpen(true); break;
+        case "densityGates": setDensityGatesOpen(true); break;
+        case "tidalSpline": setTidalSplineOpen(true); break;
+        case "tidalDatum": setTidalDatumOpen(true); break;
+        case "backscatter": setBackscatterOpen(true); break;
+        case "qcDashboard": setQcDashboardOpen(true); break;
+        case "mbesSurvey": setMbesSurveyOpen(true); break;
+        case "ml": setMlOpen(true); break;
+        case "pipeline": setPipelineOpen(true); break;
+        case "deliverable": setDeliverableOpen(true); break;
+        case "sliceEditor": setSliceEditorOpen(true); break;
+        case "benchmark": setBenchmarkOpen(true); break;
+        case "ntrip": setNtripOpen(true); break;
+        case "roverStream": setRoverStreamOpen(true); break;
+        case "tideGauge": setTideGaugeOpen(true); break;
+      }
+    }
   }, []);
 
   // Apply layout profile settings when layout changes
@@ -319,7 +403,9 @@ export function WorkspaceShell() {
       backscatterOpen ||
       qcDashboardOpen ||
       mbesSurveyOpen ||
-      stockpileChangeOpen;
+      stockpileChangeOpen ||
+      roverStreamOpen ||
+      tideGaugeOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -368,6 +454,8 @@ export function WorkspaceShell() {
     qcDashboardOpen,
     mbesSurveyOpen,
     stockpileChangeOpen,
+    roverStreamOpen,
+    tideGaugeOpen,
   ]);
 
   // Command palette actions
@@ -418,6 +506,8 @@ export function WorkspaceShell() {
     onOpenQcDashboard: () => setQcDashboardOpen(true),
     onOpenMbesSurvey: () => setMbesSurveyOpen(true),
     onOpenStockpileChange: () => setStockpileChangeOpen(true),
+    onOpenRoverStream: () => setRoverStreamOpen(true),
+    onOpenTideGauge: () => setTideGaugeOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -491,6 +581,8 @@ export function WorkspaceShell() {
     onOpenQcDashboard: () => setQcDashboardOpen(true),
     onOpenMbesSurvey: () => setMbesSurveyOpen(true),
     onOpenStockpileChange: () => setStockpileChangeOpen(true),
+    onOpenRoverStream: () => setRoverStreamOpen(true),
+    onOpenTideGauge: () => setTideGaugeOpen(true),
   };
 
   return (
@@ -653,7 +745,7 @@ export function WorkspaceShell() {
       <LicenseManagerDialog open={licenseOpen} onClose={() => setLicenseOpen(false)} />
       <BenchmarkDialog open={benchmarkOpen} onClose={() => setBenchmarkOpen(false)} />
       <TelemetryDialog open={telemetryOpen} onClose={() => setTelemetryOpen(false)} />
-      <ProjectManagerDialog open={projectOpen} onClose={() => setProjectOpen(false)} currentProject={currentProject} onProjectLoaded={(p) => setCurrentProject(p)} />
+      <ProjectManagerDialog open={projectOpen} onClose={() => setProjectOpen(false)} currentProject={currentProject} onProjectLoaded={(p) => setCurrentProject(p)} onOpenDialogs={handleOpenDialogs} />
       <UpdateCheckerDialog open={updateOpen} onClose={() => setUpdateOpen(false)} />
       <PluginMarketplaceDialog open={marketplaceOpen} onClose={() => setMarketplaceOpen(false)} />
       <DensityGatesTool open={densityGatesOpen} onClose={() => setDensityGatesOpen(false)} />
@@ -679,6 +771,9 @@ export function WorkspaceShell() {
       />
       {/* ── Sprint 10: Stockpile change detection ── */}
       <StockpileChangeDialog open={stockpileChangeOpen} onClose={() => setStockpileChangeOpen(false)} />
+      {/* ── Sprint 11: Real-time field ops ── */}
+      <RoverStreamDialog open={roverStreamOpen} onClose={() => setRoverStreamOpen(false)} />
+      <TideGaugeDialog open={tideGaugeOpen} onClose={() => setTideGaugeOpen(false)} />
       </Suspense>
     </div>
   );
@@ -827,6 +922,8 @@ function LeftSidebar({
   onOpenQcDashboard,
   onOpenMbesSurvey,
   onOpenStockpileChange,
+  onOpenRoverStream,
+  onOpenTideGauge,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -875,6 +972,8 @@ function LeftSidebar({
   onOpenQcDashboard: () => void;
   onOpenMbesSurvey: () => void;
   onOpenStockpileChange: () => void;
+  onOpenRoverStream: () => void;
+  onOpenTideGauge: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1102,6 +1201,11 @@ function LeftSidebar({
               label="Tidal Datum Converter"
               onClick={onOpenTidalDatum}
             />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="Tide Gauge (NOAA / TCP)"
+              onClick={onOpenTideGauge}
+            />
           </SidebarSection>
         )}
 
@@ -1134,6 +1238,11 @@ function LeftSidebar({
             icon={<Radio className="h-3 w-3" />}
             label="NTRIP Client"
             onClick={onOpenNtrip}
+          />
+          <SidebarItem
+            icon={<Satellite className="h-3 w-3" />}
+            label="RTK Rover Stream"
+            onClick={onOpenRoverStream}
           />
           <SidebarItem
             icon={<Key className="h-3 w-3" />}
@@ -1672,6 +1781,13 @@ function StatusBar({ domain, epsg, map }: { domain: DomainMode; epsg: string; ma
     return () => { map.un("pointermove", onMouseMove); };
   }, [map]);
 
+  // Undo stack indicator — Sprint 11
+  const undoDepth = useUndoStore((s) => s.undoStack.length);
+  const redoDepth = useUndoStore((s) => s.redoStack.length);
+  const peekUndoDesc = useUndoStore((s) => s.undoStack.length > 0 ? s.undoStack[s.undoStack.length - 1].description : null);
+  const undo = useUndoStore((s) => s.undo);
+  const redo = useUndoStore((s) => s.redo);
+
   return (
     <footer className="status-bar">
       <div className="status-bar-item" style={{ color: colors.pass }}>
@@ -1692,6 +1808,29 @@ function StatusBar({ domain, epsg, map }: { domain: DomainMode; epsg: string; ma
       </div>
       <div className="status-bar-item">
         <span style={{ color: accent }}>{domainAccent[domain].label}</span>
+      </div>
+      {/* Undo/Redo — Sprint 11 */}
+      <div className="status-bar-item" title={peekUndoDesc ? `Undo: ${peekUndoDesc}` : "No actions to undo"}>
+        <button
+          onClick={() => undo()}
+          disabled={undoDepth === 0}
+          className="rounded px-1 py-0.5 text-[10px] disabled:opacity-30 hover:bg-navy-elevated"
+          style={{ color: undoDepth > 0 ? colors.steelLight : colors.steelGray }}
+          title={peekUndoDesc ? `Undo: ${peekUndoDesc} (Ctrl+Z)` : "Nothing to undo"}
+        >
+          ↶ Undo
+        </button>
+        <span className="text-[10px]" style={{ color: colors.steelGray }}>{undoDepth}</span>
+        <button
+          onClick={() => redo()}
+          disabled={redoDepth === 0}
+          className="rounded px-1 py-0.5 text-[10px] disabled:opacity-30 hover:bg-navy-elevated"
+          style={{ color: redoDepth > 0 ? colors.steelLight : colors.steelGray }}
+          title={`Redo (Ctrl+Y)`}
+        >
+          ↷ Redo
+        </button>
+        <span className="text-[10px]" style={{ color: colors.steelGray }}>{redoDepth}</span>
       </div>
       <div className="flex-1" />
       <div className="status-bar-item">

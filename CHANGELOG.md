@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 11: Real-Time Field Operations + Quality of Life
+
+- **RTK rover position visualization** — pure-Rust NMEA 0183 parser
+  (`realtime/nmea.rs`, 8 unit tests) supports GGA / RMC / GLL / GSA / VTG
+  with checksum validation. TCP client (`realtime/rover.rs`) streams
+  sentences from a serial-to-TCP bridge and updates a shared position
+  struct + 60-second trail. Five IPC commands: `start_rover_stream_cmd`,
+  `stop_rover_stream_cmd`, `get_rover_position_cmd`, `get_rover_trail_cmd`,
+  `get_rover_status_cmd`. `RoverStreamDialog` shows live position, fix
+  quality, satellite count, HDOP, speed/course, position-trail sparkline,
+  and sentence counters. Frontend polls at 5 Hz.
+- **Real-time tide gauge ingest** — NOAA CO-OPS API client
+  (`realtime/tide.rs`, 9 unit tests) fetches 6-minute water level
+  observations for any of ~200 US tide stations. Linear interpolation
+  between observations; `apply_to_soundings()` corrects loaded
+  bathymetry in real time. Three IPC commands: `fetch_noaa_tide_cmd`,
+  `parse_tide_tcp_chunk_cmd`, `apply_tide_correction_cmd`.
+  `TideGaugeDialog` shows live tide graph with verified-vs-predicted
+  coloring, min/max/mean stats, popular-station quick-picks, and an
+  Apply-to-Soundings button. Added `reqwest` HTTP client dependency.
+- **Project templates** — `lib/project-templates.ts` defines 6 templates
+  (Blank, Stockpile Audit, Dredge Audit, EOM Reconciliation, Bathymetric
+  Survey, Highwall Monitoring). Each template specifies domain, default
+  EPSG, density, and dialogs to auto-open. `ProjectManagerDialog`
+  extended with a 2-column template picker grid showing icon, name,
+  description, and "Opens: …" list. Selecting a template fills in the
+  form fields and the new project name prefix. `onOpenDialogs` callback
+  in workspace-shell resolves `DialogKey` to `set<Dialog>Open(true)`
+  calls.
+- **Global undo/redo stack** — `stores/undo-store.ts` Zustand store
+  with `push`, `undo`, `redo`, `clear`, `canUndo`, `canRedo`, `peekUndo`,
+  `peekRedo`. Stack capped at 100 entries; redo stack cleared on every
+  new push. Workspace shell registers global Ctrl+Z (undo) and Ctrl+Y /
+  Ctrl+Shift+Z (redo) listeners, skipping when the user is typing in
+  input/textarea/select/contentEditable. Status bar shows clickable
+  Undo/Redo buttons with stack-depth counter and hover tooltip showing
+  the next operation's description.
+- **Roadmap updated** — AI/ML Augmentation theme removed (field-surveyor
+  market prefers deterministic, auditable algorithms for compliance
+  workflows). Sprint 11 section added with full scope. Future themes
+  re-lettered A (Real-Time) → B (Platform) → C (Standards) → D
+  (Performance) → E (Quality of Life).
+- **3 new sidebar entries** — RTK Rover Stream (Enterprise), Tide Gauge
+  (Marine), and Project Templates integrated into the existing Project
+  Manager. All 3 new dialogs also appear in the Ctrl+K command palette
+  with fuzzy-searchable keywords.
+
 ### Added — Sprint 10: Field-Tool Completion + Marine Depth
 
 - **Mining field tools** — 4 new dialogs wired to existing IPC commands:
