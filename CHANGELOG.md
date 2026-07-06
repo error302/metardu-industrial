@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 13: UI Priorities + UX/Backend Audits
+
+- **UX Researcher audit** (`docs/UX_RESEARCHER_AUDIT.md`) — cognitive
+  walkthrough of 5 common workflows + Nielsen's 10 heuristics. Found 12
+  friction points. Top 3 critical: 22 dialogs require typing file paths
+  (no Browse button), no progress bars for long ops, 24 number inputs
+  lack step/min/max. Overall Nielsen score: 3.0/5 → target 4.2/5.
+- **Backend Architect audit** (`docs/BACKEND_ARCHITECT_AUDIT.md`) —
+  reviewed 155 IPC commands + Rust backend. Found 10 issues. Top 3:
+  no IPC versioning, inconsistent error responses, no timeouts on 24
+  blocking commands.
+- **Tooltip component** (`src/components/tooltip.tsx`) — accessible
+  hover tooltip with instant show, 4 positions, aria-label support.
+- **Dark/light theme auto-switch** (`src/lib/theme-auto.ts`):
+  - `useTheme()` hook with sunrise/sunset calculation (NOAA algorithm)
+  - Auto mode uses saved lat/lon; falls back to 6am-6pm rule
+  - Re-evaluates every 5 minutes; persists mode in localStorage
+  - Sidebar "Toggle Theme" + command palette entry
+- **Saved view states** (`src/stores/saved-views-store.ts` +
+  `src/components/saved-views-dialog.tsx`):
+  - Save map extent + zoom + rotation + layers + domain + EPSG
+  - Up to 20 views in localStorage; rename/delete/restore
+  - Wired to OL map view via capture/restore callbacks
+- **Customizable toolbar** (`src/stores/toolbar-store.ts` +
+  `src/components/customizable-toolbar.tsx` +
+  `src/components/customize-toolbar-dialog.tsx`):
+  - Pin/unpin 25 actions to a top toolbar; default 5 pinned
+  - Persisted in localStorage; icon + label (label hidden on narrow)
+- **Drag-and-drop panel docking** — researched but deferred. Custom
+  impl ~2,000 lines; `dockview` adds 200KB. Existing Layout Profiles
+  cover 80% of value at 5% of cost.
+- **Engineering agents installed** — 34 engineering agents copied into
+  `skills/agency-agents/engineering/`.
+
+Stats: 6 new frontend files (~1,100 lines), 2 audit docs (~900 lines),
+3 new command palette actions, 3 new sidebar items. TypeScript clean.
+
 ### Added — Sprint 12: QA/QC Foundation + Skills Library + UI Obstruction Fixes
 
 - **Agency-agents skill library installed** — 28 agents from

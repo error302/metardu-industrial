@@ -18,7 +18,7 @@ import {
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
   Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
-  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite, Keyboard,
+  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite, Keyboard, Bookmark, Palette,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -291,6 +291,10 @@ export function createCommandActions(callbacks: {
   onOpenTideGauge: () => void;
   // Sprint 12 — UI polish
   onOpenShortcuts: () => void;
+  // Sprint 13 — UI priorities
+  onOpenSavedViews: () => void;
+  onOpenCustomizeToolbar: () => void;
+  onToggleTheme: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -348,5 +352,9 @@ export function createCommandActions(callbacks: {
     { id: "tide_gauge", label: "Tide Gauge (NOAA CO-OPS / TCP)", category: "Marine · Real-time", keywords: ["tide", "gauge", "noaa", "co-ops", "water", "level", "mlw", "correction", "bathymetry", "live"], icon: <Waves className={icon} />, action: callbacks.onOpenTideGauge },
     // ── Sprint 12: UI polish ──
     { id: "shortcuts", label: "Keyboard Shortcuts Help", category: "App · Help", keywords: ["keyboard", "shortcuts", "help", "hotkey", "cheatsheet", "?"], icon: <Keyboard className={icon} />, action: callbacks.onOpenShortcuts },
+    // ── Sprint 13: UI priorities ──
+    { id: "saved_views", label: "Saved Views", category: "App · Map", keywords: ["saved", "view", "bookmark", "extent", "zoom", "restore", "snapshot"], icon: <Bookmark className={icon} />, action: callbacks.onOpenSavedViews },
+    { id: "customize_toolbar", label: "Customize Toolbar", category: "App · UI", keywords: ["customize", "toolbar", "pin", "actions", "shortcuts", "favorites"], icon: <Settings className={icon} />, action: callbacks.onOpenCustomizeToolbar },
+    { id: "toggle_theme", label: "Toggle Theme (Dark/Light)", category: "App · UI", keywords: ["theme", "dark", "light", "daylight", "cabin", "toggle", "mode"], icon: <Palette className={icon} />, action: callbacks.onToggleTheme },
   ];
 }

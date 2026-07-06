@@ -60,6 +60,8 @@ import {
   FileSearch,
   Satellite,
   Keyboard,
+  Bookmark,
+  SunMoon,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -141,6 +143,9 @@ const RoverStreamDialog = lazy(() => import("@/components/rover-stream-dialog").
 const TideGaugeDialog = lazy(() => import("@/components/tide-gauge-dialog").then(m => ({ default: m.TideGaugeDialog })));
 // Sprint 12 — UI polish
 const KeyboardShortcutsHelp = lazy(() => import("@/components/keyboard-shortcuts-help").then(m => ({ default: m.KeyboardShortcutsHelp })));
+// Sprint 13 — UI priorities
+const SavedViewsDialog = lazy(() => import("@/components/saved-views-dialog").then(m => ({ default: m.SavedViewsDialog })));
+const CustomizeToolbarDialog = lazy(() => import("@/components/customize-toolbar-dialog").then(m => ({ default: m.CustomizeToolbarDialog })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
@@ -148,6 +153,8 @@ import { useUndoStore } from "@/stores/undo-store";
 import type { DialogKey } from "@/lib/project-templates";
 import { MapOverlays, type MapLayer } from "@/components/map-overlays";
 import { useKeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
+import { CustomizableToolbar } from "@/components/customizable-toolbar";
+import { useTheme } from "@/lib/theme-auto";
 import {
   colors,
   domainAccent,
@@ -225,6 +232,10 @@ export function WorkspaceShell() {
     { id: "stream", label: "Live Stream", visible: false, icon: "stream" },
   ]);
   const [mapRotation, setMapRotation] = useState(0);
+  // Sprint 13 — saved views + customize toolbar + theme
+  const [savedViewsOpen, setSavedViewsOpen] = useState(false);
+  const [customizeToolbarOpen, setCustomizeToolbarOpen] = useState(false);
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -527,7 +538,10 @@ export function WorkspaceShell() {
     onOpenRoverStream: () => setRoverStreamOpen(true),
     onOpenTideGauge: () => setTideGaugeOpen(true),
     onOpenShortcuts: () => shortcutsHelp.setOpen(true),
-  }), []);
+    onOpenSavedViews: () => setSavedViewsOpen(true),
+    onOpenCustomizeToolbar: () => setCustomizeToolbarOpen(true),
+    onToggleTheme: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+  }), [themeMode, setThemeMode]);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
   useEffect(() => {
@@ -603,6 +617,8 @@ export function WorkspaceShell() {
     onOpenRoverStream: () => setRoverStreamOpen(true),
     onOpenTideGauge: () => setTideGaugeOpen(true),
     onOpenShortcuts: () => shortcutsHelp.setOpen(true),
+    onOpenSavedViews: () => setSavedViewsOpen(true),
+    onToggleTheme: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
   };
 
   return (
@@ -618,6 +634,11 @@ export function WorkspaceShell() {
           else setSidebarOpen((v) => !v);
         }}
         onToggleRight={() => setRightPanelOpen((v) => !v)}
+      />
+      {/* Sprint 13 — customizable toolbar with pinned actions */}
+      <CustomizableToolbar
+        onOpenDialog={(key) => handleOpenDialogs([key as DialogKey])}
+        onCustomize={() => setCustomizeToolbarOpen(true)}
       />
       <div className="flex flex-1 overflow-hidden">
         {isInlineSidebar && (
@@ -808,6 +829,34 @@ export function WorkspaceShell() {
       <TideGaugeDialog open={tideGaugeOpen} onClose={() => setTideGaugeOpen(false)} />
       {/* Sprint 12 — keyboard shortcuts overlay */}
       <KeyboardShortcutsHelp open={shortcutsHelp.open} onClose={() => shortcutsHelp.setOpen(false)} />
+      {/* Sprint 13 — saved views + customize toolbar */}
+      <SavedViewsDialog
+        open={savedViewsOpen}
+        onClose={() => setSavedViewsOpen(false)}
+        onCapture={() => {
+          if (!mapInstance) return null;
+          const view = mapInstance.getView();
+          const center = view.getCenter();
+          if (!center) return null;
+          return {
+            center: [center[0], center[1]] as [number, number],
+            zoom: view.getZoom() ?? 1,
+            rotation: view.getRotation() ?? 0,
+            layers: Object.fromEntries(mapLayers.map((l) => [l.id, l.visible])),
+            domain: activeDomain,
+            epsg: settings.defaultEpsg,
+          };
+        }}
+        onRestore={(view) => {
+          if (!mapInstance) return;
+          const mapView = mapInstance.getView();
+          mapView.setCenter(view.center);
+          mapView.setZoom(view.zoom);
+          mapView.setRotation(view.rotation);
+          setMapLayers((prev) => prev.map((l) => ({ ...l, visible: view.layers[l.id] ?? l.visible })));
+        }}
+      />
+      <CustomizeToolbarDialog open={customizeToolbarOpen} onClose={() => setCustomizeToolbarOpen(false)} />
       </Suspense>
     </div>
   );
@@ -959,6 +1008,8 @@ function LeftSidebar({
   onOpenRoverStream,
   onOpenTideGauge,
   onOpenShortcuts,
+  onOpenSavedViews,
+  onToggleTheme,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -1010,6 +1061,8 @@ function LeftSidebar({
   onOpenRoverStream: () => void;
   onOpenTideGauge: () => void;
   onOpenShortcuts: () => void;
+  onOpenSavedViews: () => void;
+  onToggleTheme: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1319,6 +1372,16 @@ function LeftSidebar({
           icon={<Keyboard className="h-3 w-3" />}
           label="Shortcuts (?)"
           onClick={onOpenShortcuts}
+        />
+        <SidebarItem
+          icon={<Bookmark className="h-3 w-3" />}
+          label="Saved Views"
+          onClick={onOpenSavedViews}
+        />
+        <SidebarItem
+          icon={<SunMoon className="h-3 w-3" />}
+          label="Toggle Theme"
+          onClick={onToggleTheme}
         />
       </div>
     </aside>
