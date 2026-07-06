@@ -510,6 +510,109 @@ pub fn read_all_survey(
     })
 }
 
+/// Walk a Kongsberg .all file and extract water-column datagram summary
+/// statistics without materializing every sample (a single .all file can
+/// contain tens of millions of WC samples — too much to ship over IPC).
+///
+/// Returns a [`WaterColumnSummary`] with ping count, total samples, max
+/// samples per beam, and beams per ping (averaged). Use this for the
+/// real-time MBES reader UI; if the operator wants raw samples, they
+/// should call [`extract_water_column_samples`] with a ping range.
+pub fn extract_water_column_summary(path: &Path, max_pings: u32) -> Result<WaterColumnSummary, AllError> {
+    let mut file = File::open(path)?;
+    let mut start_header = [0u8; 4];
+    if file.read_exact(&mut start_header).is_err() {
+        return Err(AllError::Truncated);
+    }
+    if start_header[0] != 0x49 {
+        return Err(AllError::BadMagic(start_header[0]));
+    }
+    // Rewind so the datagram walker sees the start datagram
+    file.seek(SeekFrom::Start(0))?;
+
+    let mut ping_count: u32 = 0;
+    let mut total_samples: u64 = 0;
+    let mut max_samples_per_beam: u32 = 0;
+    let mut beams_total: u64 = 0;
+
+    loop {
+        // Each datagram: 4-byte length, 1-byte type, payload, 4-byte trailing length
+        let mut len_buf = [0u8; 4];
+        if file.read_exact(&mut len_buf).is_err() {
+            break; // EOF
+        }
+        let dg_len = u32::from_le_bytes(len_buf) as usize;
+        if dg_len < 5 || dg_len > 16 * 1024 * 1024 {
+            // Sanity check — datagrams are at most a few MB
+            break;
+        }
+        let mut type_and_payload = vec![0u8; dg_len];
+        if file.read_exact(&mut type_and_payload).is_err() {
+            break;
+        }
+        // Skip trailing 4-byte length
+        let mut trailing = [0u8; 4];
+        if file.read_exact(&mut trailing).is_err() {
+            break;
+        }
+
+        let type_byte = type_and_payload[0];
+        let payload = &type_and_payload[1..];
+        let dg_type = DatagramType::from(type_byte);
+
+        if dg_type == DatagramType::WaterColumn {
+            if max_pings > 0 && ping_count >= max_pings {
+                continue;
+            }
+            ping_count += 1;
+
+            // Parse just the header counts — don't materialize samples
+            if payload.len() >= 18 {
+                let n_beams = u16::from_le_bytes([payload[14], payload[15]]) as u32;
+                let samples_per_beam = u16::from_le_bytes([payload[16], payload[17]]) as u32;
+                if n_beams > 0 && n_beams <= 1024 && samples_per_beam > 0 && samples_per_beam <= 10000 {
+                    let ping_samples = (n_beams as u64) * (samples_per_beam as u64);
+                    total_samples = total_samples.saturating_add(ping_samples);
+                    if samples_per_beam > max_samples_per_beam {
+                        max_samples_per_beam = samples_per_beam;
+                    }
+                    beams_total = beams_total.saturating_add(n_beams as u64);
+                }
+            }
+        }
+    }
+
+    let beams_per_ping = if ping_count > 0 {
+        (beams_total / ping_count as u64) as u32
+    } else {
+        0
+    };
+
+    Ok(WaterColumnSummary {
+        ping_count,
+        total_samples,
+        max_samples_per_beam,
+        beams_per_ping,
+    })
+}
+
+/// Summary statistics for the water-column datagrams in a .all file.
+///
+/// Used by the MBES Survey Reader UI to show whether the file contains
+/// water-column data and how much, without shipping gigabytes of
+/// raw amplitude samples over IPC.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct WaterColumnSummary {
+    /// Number of water-column pings found
+    pub ping_count: u32,
+    /// Total number of samples across all pings and beams
+    pub total_samples: u64,
+    /// Maximum samples per beam observed in any ping
+    pub max_samples_per_beam: u32,
+    /// Average beams per ping
+    pub beams_per_ping: u32,
+}
+
 /// Parse a Kongsberg .all position datagram (type 0x50).
 ///
 /// Format (simplified — real format has more fields):

@@ -265,3 +265,43 @@ pub fn generate_safety_report_cmd(
 ) -> String {
     crate::mining::survey_tools::generate_safety_report(&inspection)
 }
+
+/// Compare two LAS surveys of the same stockpile and produce a per-cell
+/// cut/fill change-detection report.
+///
+/// `current_path` is the newer survey; `previous_path` is the baseline.
+/// Positive Δz (fill) means material was added; negative Δz (cut) means
+/// material was removed. The hotspot threshold flags cells where |Δz|
+/// exceeds the value, useful for spotting data errors or unexpected
+/// movement.
+#[tauri::command]
+pub async fn compute_stockpile_change_cmd(
+    current_path: String,
+    previous_path: String,
+    cell_size_m: f64,
+    hotspot_threshold_m: f64,
+) -> Result<crate::mining::change_detection::ChangeDetectionResult, String> {
+    let cur_path = crate::path_validation::validate_path(&current_path)
+        .map_err(|e| ctx!("validating current LAS path", current_path, e))?;
+    let prev_path = crate::path_validation::validate_path(&previous_path)
+        .map_err(|e| ctx!("validating previous LAS path", previous_path, e))?;
+    let cur_label = current_path.clone();
+    let prev_label = previous_path.clone();
+    tokio::task::spawn_blocking(move || {
+        crate::mining::change_detection::detect_stockpile_change(
+            &cur_path,
+            &prev_path,
+            cell_size_m,
+            hotspot_threshold_m,
+        )
+        .map_err(|e| {
+            ctx!(
+                "computing stockpile change",
+                format!("current={} previous={}", cur_label, prev_label),
+                e
+            )
+        })
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}

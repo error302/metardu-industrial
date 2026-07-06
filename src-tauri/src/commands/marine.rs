@@ -165,7 +165,7 @@ pub async fn compute_cross_sections_cmd(
 // Phase 2 — MBES datagram parsing, tidal datums, backscatter, QC
 // ──────────────────────────────────────────────────────────────────
 
-use crate::formats::kongsberg_all::{read_all_survey, AllSurveyData};
+use crate::formats::kongsberg_all::{read_all_survey, AllSurveyData, WaterColumnSummary, extract_water_column_summary};
 
 /// Read a Kongsberg .all file and extract all bathymetry, position, and
 /// attitude data. Returns soundings with depth, across/along-track,
@@ -183,6 +183,26 @@ pub async fn read_all_survey_cmd(
     tokio::task::spawn_blocking(move || {
         read_all_survey(&path_buf, max_pings)
             .map_err(|e| ctx!("reading Kongsberg .all survey", label, e))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+/// Extract water-column datagram summary statistics from a Kongsberg .all
+/// file. Returns counts only — raw amplitude samples can be tens of
+/// millions and are not shipped over IPC. Use this to populate the
+/// MBES Survey Reader's "Water Column" tab.
+#[tauri::command]
+pub async fn extract_water_column_summary_cmd(
+    path: String,
+    max_pings: u32,
+) -> Result<WaterColumnSummary, String> {
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating path for water column extraction", path, e))?;
+    let label = path.clone();
+    tokio::task::spawn_blocking(move || {
+        extract_water_column_summary(&path_buf, max_pings)
+            .map_err(|e| ctx!("extracting water column summary", label, e))
     })
     .await
     .map_err(|e| format!("task join error: {e}"))?

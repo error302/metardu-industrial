@@ -353,3 +353,124 @@ The commercial-productization sprint. Turns the open-source core into a revenue-
 - **119** total Tauri IPC commands (up from 89 — 30 new)
 - **33** dialogs (up from 30 — NTRIP client, Mission Triage, Machine Control Compiler)
 - **3** binaries: `metardu-industrial` + `metardu-worker` + **`metardu-verify`** (new, MIT-licensed)
+
+---
+
+## Sprint 10: Field-Tool Completion + Marine Depth — ✅ IN PROGRESS
+
+**Theme**: Wire up the field-engineering tools that exist on the Rust side but have no UI yet, complete the Kongsberg .all datagram coverage with the water-column datagram, and lay the groundwork for AI-assisted volumetric change detection.
+
+### Motivation
+
+After Sprint 9, the IPC layer advertises 119 commands, but 8 of them — covering all of `mining/survey_tools.rs` and the post-Sprint-7 marine QC/backscatter/tidal/MBES surface tools — have no dialogs. They are reachable only via the developer console. That means the most valuable everyday surveyor workflows (setting out, mine-grid transforms, tunnel profile, safety inspection, tidal-datum conversion, backscatter mosaicking, real-time QC, MBES survey ingest) are effectively invisible to the operator. Sprint 10 closes that gap and adds the one missing Kongsberg datagram (water column, type 0x4D) needed for full MBES data coverage.
+
+### 37. Mine Surveyor Tools — 4 Dialogs ✅
+
+| Tool | IPC Command | Use Case |
+|---|---|---|
+| Setting Out & Markout | `compute_setout_cmd` | Bearing, horizontal distance, slope distance, slope angle from a reference peg to each design point. Used for blast-hole collars, drill grids, bench toes, and peg recovery. |
+| Mine Grid Transform | `mine_grid_to_crs_cmd` / `crs_to_mine_grid_cmd` | Bidirectional local-grid ↔ parent-CRS conversion with rotation + scale. Required for any mine with a non-grid-aligned local coordinate system. |
+| Tunnel Profile Analyzer | `analyze_tunnel_profile_cmd` | Cross-sectional area, max width/height, overbreak/underbreak vs design profile. Per-chainage reporting for drive advance reconciliation. |
+| Safety Inspection Report | `generate_safety_report_cmd` | Hazard register with severity + risk level + recommended actions, formatted as a regulator-ready PDF. |
+
+### 38. Marine Tools — 4 Dialogs ✅
+
+| Tool | IPC Command | Use Case |
+|---|---|---|
+| Tidal Datum Converter | `convert_tidal_datum_cmd` | Convert depths between MLLW, MSL, CD, LAT, NAVD88 using a known offset. Required for any bathymetric deliverable crossing jurisdictional boundaries. |
+| Backscatter Mosaic | `create_backscatter_mosaic_cmd` | Gridded backscatter intensity mosaic (mean or max), optional Lambert incidence correction. Output is a GeoTIFF-ready intensity field for seabed classification. |
+| Real-Time QC Dashboard | `compute_qc_stats_cmd` | S-44 order compliance (Special / Order 1 / Order 2), sounding density per cell, coverage area, rejected-sounding ratio. Live histogram of depth distribution. |
+| MBES Survey Reader | `read_all_survey_cmd` | Kongsberg `.all` ingest with bathymetry + position + attitude extraction, survey bounds, ping count, and a depth-colorized point preview. |
+
+### 39. Water Column Datagram (Kongsberg Type 0x57) ✅
+
+Kongsberg `.all` files contain a water column datagram (type `0x57` — `W` for Water column) that records the full acoustic return through the water column — not just the first bottom return. This is essential for:
+
+- **Object detection in the water column** (marine mammals, fish schools, debris, mines)
+- **Water-column backscatter analysis** (suspended sediment, bubble plumes)
+- **Multiping quality control** (check for returns above the seabed that indicate noise or fish)
+
+**Implementation**: New `extract_water_column_summary()` in `formats/kongsberg_all.rs` walks the datagram stream and counts WC pings, total samples, max samples per beam, and average beams per ping — without materializing gigabytes of raw amplitude data. New `WaterColumnSummary` struct + `extract_water_column_summary_cmd` IPC command. The existing `parse_water_column_datagram()` and `detect_water_column_objects()` functions remain available for full sample extraction + object detection when the operator requests it.
+
+### 40. Stockpile Change Detection ✅
+
+Compare two LAS surveys of the same stockpile from different epochs and produce a per-cell heat map of volume change (cut/fill). Output: total cut volume, total fill volume, net change, hotspots where |Δ| exceeds a threshold. Foundation for monthly inventory reconciliation and progress claims.
+
+**Implementation**: New `mining/change_detection.rs` module — grid both surfaces at the same resolution, compute per-cell Δz, integrate, report by region. New `compute_stockpile_change_cmd` IPC + `StockpileChangeDialog` component.
+
+---
+
+## Part 6: Future Sprint Themes (Strategic Backlog)
+
+These are NOT committed for Sprint 10 but represent the next 12 months of strategic direction.
+
+### Theme A: AI/ML Augmentation (Sprint 11+)
+
+| Feature | Effort | Impact |
+|---|---|---|
+| **Automatic point-cloud classification** (ground / vegetation / building / wire) via trained RandomForest on geometric features | Large | Eliminates manual CSF tuning for 80% of scenes |
+| **Anomaly detection** in MBES data (auto-flag fish, multipath, noise) | Medium | Reduces manual QC time by 60% |
+| **Stockpile change detection** with semantic segmentation (ore type classification) | Large | Enables grade-control reconciliation |
+| **Auto-triangulation** of drone imagery (no external ODM dependency) | Very Large | Closes the biggest external tool dependency |
+| **Bathymetric AI denoiser** (U-Net for soundings) | Large | Cuts manual cleaning time in half |
+
+### Theme B: Real-Time & Streaming (Sprint 12+)
+
+| Feature | Effort | Impact |
+|---|---|---|
+| **RTK rover position visualization** in 3D (consume NTRIP + own GNSS) | Medium | Field-grade navigation aid |
+| **Live MBES preview** (UDP Multicast listener for Kongsberg KM binary) | Large | On-vessel real-time QC |
+| **Real-time tide gauge ingest** (NOAA CO-OPS / local TCP) | Medium | Eliminates post-process tidal correction |
+| **WebRTC collaborative survey** (multi-operator shared view) | Very Large | Fleet-scale operations |
+
+### Theme C: Platform Expansion (Sprint 13+)
+
+| Feature | Effort | Impact |
+|---|---|---|
+| **Mobile companion PWA** (iOS/Android field data capture + sync) | Large | Field-to-office workflow |
+| **Linux + macOS builds** (currently Windows-only tested) | Medium | Market expansion |
+| **Cloud sync** (project files + reports to S3-compatible storage) | Medium | Multi-site teams |
+| **Plugin SDK documentation** (rustdoc + tutorial) | Small | Vendor ecosystem |
+
+### Theme D: Standards & Compliance (Sprint 14+)
+
+| Feature | Effort | Impact |
+|---|---|---|
+| **S-102 export** (Bathymetric Surface Product) | Large | IHO next-gen compliance |
+| **S-101 export** (Electronic Navigational Chart) | Large | Future navigation chart standard |
+| **ISO 19115-2 metadata automation** | Medium | Survey delivery compliance |
+| **USACE EM 1110-1-1004 hydrographic QA** | Medium | US Army Corps compliance |
+| **LAS 1.4 PDRF 6/7 support** (current is 1.2/1.3) | Small | Modern point-cloud standard |
+
+### Theme E: Performance & Scale (Sprint 15+)
+
+| Feature | Effort | Impact |
+|---|---|---|
+| **Progressive LOD point-cloud rendering** (octree-based, 1B+ points) | Very Large | Game-changing for huge surveys |
+| **GPU-accelerated CUBE** (compute shader) | Large | 10× faster surface generation |
+| **Streaming LAS reader** (channel-based, no full file load) | Medium | 5GB+ files on 8GB laptops |
+| **Memory-mapped GeoTIFF** (lazy tile loading) | Medium | Instant DEM pan/zoom |
+| **WASM-accelerated ML inference** (ONNX runtime) | Large | Cross-platform ML model serving |
+
+### Theme F: Quality of Life (Continuous)
+
+| Feature | Effort | Impact |
+|---|---|---|
+| **Undo/redo stack** for all destructive operations | Medium | Trust in field use |
+| **Project templates** (stockpile audit / dredge audit / EOM) | Small | Onboarding speed |
+| **In-app help system** (contextual tooltips + video links) | Medium | Self-serve learning |
+| **Snapshot/replay** of survey sessions | Medium | Training & audit |
+| **Bulk report export** (ZIP of all reports in a project) | Small | Quarterly reporting |
+
+---
+
+## Part 7: Risk Register
+
+| Risk | Mitigation |
+|---|---|
+| GitHub PAT leaked in chat history | **Action required**: revoke + rotate immediately |
+| Recent Rust changes unverified on Windows (no GTK in sandbox) | Run `cargo check` on Windows before next release tag |
+| UI redesigned multiple times — user fatigue | Lock design system in `tokens.ts` + freeze layout until v1.0 |
+| Single-maintainer bus factor | Onboard second contributor + document architecture |
+| License signature key leaked | Rotate keypair + ship new pub key in next release |
+| No customer feedback loop | Ship free beta to 3 mines + 1 dredging contractor for 90 days |

@@ -15,6 +15,8 @@
 #[allow(dead_code)]
 pub mod csf;
 #[allow(dead_code)]
+pub mod change_detection;
+#[allow(dead_code)]
 pub mod drone_ingest;
 #[allow(dead_code)]
 pub mod highwall;

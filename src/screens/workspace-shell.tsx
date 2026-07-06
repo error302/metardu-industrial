@@ -55,6 +55,9 @@ import {
   Scissors,
   PanelLeft,
   PanelRight,
+  Grid3x3,
+  SquareDashed,
+  FileSearch,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -119,6 +122,18 @@ const PluginMarketplaceDialog = lazy(() => import("@/components/plugin-marketpla
 const DensityGatesTool = lazy(() => import("@/components/density-gates-tool").then(m => ({ default: m.DensityGatesTool })));
 const TidalSplineTool = lazy(() => import("@/components/tidal-spline-tool").then(m => ({ default: m.TidalSplineTool })));
 const MachineControlTool = lazy(() => import("@/components/machine-control-tool").then(m => ({ default: m.MachineControlTool })));
+// Sprint 10 — Mining field tools
+const SetoutToolDialog = lazy(() => import("@/components/setout-tool-dialog").then(m => ({ default: m.SetoutToolDialog })));
+const MineGridDialog = lazy(() => import("@/components/mine-grid-dialog").then(m => ({ default: m.MineGridDialog })));
+const TunnelProfileDialog = lazy(() => import("@/components/tunnel-profile-dialog").then(m => ({ default: m.TunnelProfileDialog })));
+const SafetyReportDialog = lazy(() => import("@/components/safety-report-dialog").then(m => ({ default: m.SafetyReportDialog })));
+// Sprint 10 — Marine field tools
+const TidalDatumDialog = lazy(() => import("@/components/tidal-datum-dialog").then(m => ({ default: m.TidalDatumDialog })));
+const BackscatterMosaicDialog = lazy(() => import("@/components/backscatter-mosaic-dialog").then(m => ({ default: m.BackscatterMosaicDialog })));
+const QcDashboardDialog = lazy(() => import("@/components/qc-dashboard-dialog").then(m => ({ default: m.QcDashboardDialog })));
+const MbesSurveyDialog = lazy(() => import("@/components/mbes-survey-dialog").then(m => ({ default: m.MbesSurveyDialog })));
+// Sprint 10 — Stockpile change detection
+const StockpileChangeDialog = lazy(() => import("@/components/stockpile-change-dialog").then(m => ({ default: m.StockpileChangeDialog })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
@@ -175,6 +190,18 @@ export function WorkspaceShell() {
   const [eomAuditorOpen, setEomAuditorOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
   const [ntripOpen, setNtripOpen] = useState(false);
+  // Sprint 10 — Mining field tools
+  const [setoutOpen, setSetoutOpen] = useState(false);
+  const [mineGridOpen, setMineGridOpen] = useState(false);
+  const [tunnelProfileOpen, setTunnelProfileOpen] = useState(false);
+  const [safetyReportOpen, setSafetyReportOpen] = useState(false);
+  // Sprint 10 — Marine field tools
+  const [tidalDatumOpen, setTidalDatumOpen] = useState(false);
+  const [backscatterOpen, setBackscatterOpen] = useState(false);
+  const [qcDashboardOpen, setQcDashboardOpen] = useState(false);
+  const [mbesSurveyOpen, setMbesSurveyOpen] = useState(false);
+  // Sprint 10 — Stockpile change detection
+  const [stockpileChangeOpen, setStockpileChangeOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -283,7 +310,16 @@ export function WorkspaceShell() {
       machineControlOpen ||
       eomAuditorOpen ||
       triageOpen ||
-      ntripOpen;
+      ntripOpen ||
+      setoutOpen ||
+      mineGridOpen ||
+      tunnelProfileOpen ||
+      safetyReportOpen ||
+      tidalDatumOpen ||
+      backscatterOpen ||
+      qcDashboardOpen ||
+      mbesSurveyOpen ||
+      stockpileChangeOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -323,6 +359,15 @@ export function WorkspaceShell() {
     eomAuditorOpen,
     triageOpen,
     ntripOpen,
+    setoutOpen,
+    mineGridOpen,
+    tunnelProfileOpen,
+    safetyReportOpen,
+    tidalDatumOpen,
+    backscatterOpen,
+    qcDashboardOpen,
+    mbesSurveyOpen,
+    stockpileChangeOpen,
   ]);
 
   // Command palette actions
@@ -364,6 +409,15 @@ export function WorkspaceShell() {
     onOpenEomAuditor: () => setEomAuditorOpen(true),
     onOpenTriage: () => setTriageOpen(true),
     onOpenNtrip: () => setNtripOpen(true),
+    onOpenSetout: () => setSetoutOpen(true),
+    onOpenMineGrid: () => setMineGridOpen(true),
+    onOpenTunnelProfile: () => setTunnelProfileOpen(true),
+    onOpenSafetyReport: () => setSafetyReportOpen(true),
+    onOpenTidalDatum: () => setTidalDatumOpen(true),
+    onOpenBackscatter: () => setBackscatterOpen(true),
+    onOpenQcDashboard: () => setQcDashboardOpen(true),
+    onOpenMbesSurvey: () => setMbesSurveyOpen(true),
+    onOpenStockpileChange: () => setStockpileChangeOpen(true),
   }), []);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -428,6 +482,15 @@ export function WorkspaceShell() {
     onOpenEomAuditor: () => setEomAuditorOpen(true),
     onOpenTriage: () => setTriageOpen(true),
     onOpenNtrip: () => setNtripOpen(true),
+    onOpenSetout: () => setSetoutOpen(true),
+    onOpenMineGrid: () => setMineGridOpen(true),
+    onOpenTunnelProfile: () => setTunnelProfileOpen(true),
+    onOpenSafetyReport: () => setSafetyReportOpen(true),
+    onOpenTidalDatum: () => setTidalDatumOpen(true),
+    onOpenBackscatter: () => setBackscatterOpen(true),
+    onOpenQcDashboard: () => setQcDashboardOpen(true),
+    onOpenMbesSurvey: () => setMbesSurveyOpen(true),
+    onOpenStockpileChange: () => setStockpileChangeOpen(true),
   };
 
   return (
@@ -599,6 +662,23 @@ export function WorkspaceShell() {
       <EomAuditorDialog open={eomAuditorOpen} onClose={() => setEomAuditorOpen(false)} />
       <TriageDialog open={triageOpen} onClose={() => setTriageOpen(false)} />
       <NtripDialog open={ntripOpen} onClose={() => setNtripOpen(false)} />
+      {/* ── Sprint 10: Mining field tools ── */}
+      <SetoutToolDialog open={setoutOpen} onClose={() => setSetoutOpen(false)} />
+      <MineGridDialog open={mineGridOpen} onClose={() => setMineGridOpen(false)} />
+      <TunnelProfileDialog open={tunnelProfileOpen} onClose={() => setTunnelProfileOpen(false)} />
+      <SafetyReportDialog open={safetyReportOpen} onClose={() => setSafetyReportOpen(false)} />
+      {/* ── Sprint 10: Marine field tools ── */}
+      <TidalDatumDialog open={tidalDatumOpen} onClose={() => setTidalDatumOpen(false)} />
+      <BackscatterMosaicDialog open={backscatterOpen} onClose={() => setBackscatterOpen(false)} />
+      <QcDashboardDialog open={qcDashboardOpen} onClose={() => setQcDashboardOpen(false)} />
+      <MbesSurveyDialog
+        open={mbesSurveyOpen}
+        onClose={() => setMbesSurveyOpen(false)}
+        onOpenQc={() => setQcDashboardOpen(true)}
+        onOpenBackscatter={() => setBackscatterOpen(true)}
+      />
+      {/* ── Sprint 10: Stockpile change detection ── */}
+      <StockpileChangeDialog open={stockpileChangeOpen} onClose={() => setStockpileChangeOpen(false)} />
       </Suspense>
     </div>
   );
@@ -738,6 +818,15 @@ function LeftSidebar({
   onOpenEomAuditor,
   onOpenTriage,
   onOpenNtrip,
+  onOpenSetout,
+  onOpenMineGrid,
+  onOpenTunnelProfile,
+  onOpenSafetyReport,
+  onOpenTidalDatum,
+  onOpenBackscatter,
+  onOpenQcDashboard,
+  onOpenMbesSurvey,
+  onOpenStockpileChange,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -777,6 +866,15 @@ function LeftSidebar({
   onOpenEomAuditor: () => void;
   onOpenTriage: () => void;
   onOpenNtrip: () => void;
+  onOpenSetout: () => void;
+  onOpenMineGrid: () => void;
+  onOpenTunnelProfile: () => void;
+  onOpenSafetyReport: () => void;
+  onOpenTidalDatum: () => void;
+  onOpenBackscatter: () => void;
+  onOpenQcDashboard: () => void;
+  onOpenMbesSurvey: () => void;
+  onOpenStockpileChange: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -889,6 +987,32 @@ function LeftSidebar({
               label="ML Classification"
               onClick={onOpenMl}
             />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<Crosshair className="h-3 w-3" />}
+              label="Setting Out & Markout"
+              onClick={onOpenSetout}
+            />
+            <SidebarItem
+              icon={<Grid3x3 className="h-3 w-3" />}
+              label="Mine Grid Transform"
+              onClick={onOpenMineGrid}
+            />
+            <SidebarItem
+              icon={<SquareDashed className="h-3 w-3" />}
+              label="Tunnel Profile Analyzer"
+              onClick={onOpenTunnelProfile}
+            />
+            <SidebarItem
+              icon={<ShieldAlert className="h-3 w-3" />}
+              label="Safety Inspection Report"
+              onClick={onOpenSafetyReport}
+            />
+            <SidebarItem
+              icon={<History className="h-3 w-3" />}
+              label="Stockpile Change Detection"
+              onClick={onOpenStockpileChange}
+            />
           </SidebarSection>
         )}
 
@@ -956,6 +1080,27 @@ function LeftSidebar({
               icon={<Brain className="h-3 w-3" />}
               label="ML Classification"
               onClick={onOpenMl}
+            />
+            <div className="my-1.5 border-t border-navy-border" />
+            <SidebarItem
+              icon={<FileSearch className="h-3 w-3" />}
+              label="MBES Survey Reader (.all)"
+              onClick={onOpenMbesSurvey}
+            />
+            <SidebarItem
+              icon={<Activity className="h-3 w-3" />}
+              label="Real-Time QC Dashboard"
+              onClick={onOpenQcDashboard}
+            />
+            <SidebarItem
+              icon={<Grid3x3 className="h-3 w-3" />}
+              label="Backscatter Mosaic"
+              onClick={onOpenBackscatter}
+            />
+            <SidebarItem
+              icon={<Waves className="h-3 w-3" />}
+              label="Tidal Datum Converter"
+              onClick={onOpenTidalDatum}
             />
           </SidebarSection>
         )}

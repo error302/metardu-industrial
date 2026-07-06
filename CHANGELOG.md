@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 10: Field-Tool Completion + Marine Depth
+
+- **Mining field tools** — 4 new dialogs wired to existing IPC commands:
+  - `SetoutToolDialog` — bearing, horizontal/slope distance, slope angle
+    from a reference peg to each design point. Supports blast holes,
+    pegs, bench toes/crests, road centerlines, drill patterns, and
+    infrastructure. CSV export for markout sheets.
+  - `MineGridDialog` — bidirectional mine-grid ↔ parent-CRS transform
+    with rotation + scale. Validates against known points before
+    relying on the transform.
+  - `TunnelProfileDialog` — cross-sectional area, max width/height,
+    overbreak/underbreak vs design profile. SVG preview with as-built
+    and design overlays. Per-chainage reporting for drive advance
+    reconciliation.
+  - `SafetyReportDialog` — hazard register with severity (1-5),
+    status (open/mitigated/resolved), risk level, recommended actions,
+    and a regulator-ready plain-text report.
+- **Marine field tools** — 4 new dialogs wired to existing IPC commands:
+  - `TidalDatumDialog` — convert depths between MLLW, MSL, CD, LAT,
+    NAVD88 with sign-correct offset convention. CSV export.
+  - `BackscatterMosaicDialog` — gridded intensity mosaic (mean or max)
+    with optional Lambert incidence correction. SVG heatmap with
+    min/max/mean/median statistics.
+  - `QcDashboardDialog` — S-44 order compliance (Special/1a/1b/2),
+    sounding density per cell, coverage area, rejected-sounding
+    ratio, depth distribution histogram, compliance meters.
+  - `MbesSurveyDialog` — Kongsberg `.all` ingest with bathymetry,
+    position, attitude, and water column tabs. Hand-off buttons to
+    QC Dashboard and Backscatter Mosaic.
+- **Water column datagram support** — `extract_water_column_summary()`
+  in `formats/kongsberg_all.rs` walks the datagram stream and counts
+  WC pings, total samples, max samples per beam, and average beams per
+  ping without materializing gigabytes of raw amplitude data. New
+  `WaterColumnSummary` struct + `extract_water_column_summary_cmd`
+  IPC command. (Datagram type 0x57 — `W` for Water column.)
+- **Stockpile change detection** — `mining/change_detection.rs` module
+  compares two LAS surveys of the same area and produces a per-cell
+  cut/fill report. Median-of-cell rasterization for outlier robustness,
+  hotspot flagging where |Δz| exceeds a threshold, full statistics
+  (cut/fill volumes, net change, mean/std/max Δz). New IPC command
+  `compute_stockpile_change_cmd` + `StockpileChangeDialog` component
+  with SVG cut/fill heatmap.
+- **9 new sidebar entries** under Mining (Setting Out, Mine Grid,
+  Tunnel Profile, Safety Report, Stockpile Change Detection) and
+  Marine (MBES Survey Reader, QC Dashboard, Backscatter Mosaic,
+  Tidal Datum Converter). All 9 also appear in the Ctrl+K command
+  palette with fuzzy-searchable keywords.
+- **Strategic Roadmap** — `docs/ROADMAP.md` updated with Sprint 10
+  scope and a 5-theme future backlog (AI/ML, real-time streaming,
+  platform expansion, standards/compliance, performance/scale) plus
+  a risk register.
+
 ### Added — Security & Correctness Hardening
 
 #### Security Fixes

@@ -18,7 +18,7 @@ import {
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
   TrendingUp, FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
   Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
-  Clock,
+  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -274,6 +274,18 @@ export function createCommandActions(callbacks: {
   onOpenEomAuditor: () => void;
   onOpenTriage: () => void;
   onOpenNtrip: () => void;
+  // Sprint 10 — Mining field tools
+  onOpenSetout: () => void;
+  onOpenMineGrid: () => void;
+  onOpenTunnelProfile: () => void;
+  onOpenSafetyReport: () => void;
+  // Sprint 10 — Marine field tools
+  onOpenTidalDatum: () => void;
+  onOpenBackscatter: () => void;
+  onOpenQcDashboard: () => void;
+  onOpenMbesSurvey: () => void;
+  // Sprint 10 — Stockpile change detection
+  onOpenStockpileChange: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -314,5 +326,17 @@ export function createCommandActions(callbacks: {
     { id: "svp", label: "SVP Editor (Sound Velocity)", category: "Marine", keywords: ["svp", "sound", "velocity", "profile", "ray", "tracing"], icon: <Waves className={icon} />, action: callbacks.onOpenSvp },
     { id: "vessel", label: "Vessel Configuration (Lever-Arms)", category: "Marine", keywords: ["vessel", "lever", "arm", "offset", "imu", "transducer", "gnss", "tpu"], icon: <Anchor className={icon} />, action: callbacks.onOpenVesselConfig },
     { id: "disambig", label: "CUBE Hypothesis Disambiguation", category: "Marine", keywords: ["cube", "hypothesis", "disambiguation", "ambiguous", "qc"], icon: <Layers3 className={icon} />, action: callbacks.onOpenCubeDisambig },
+    // ── Sprint 10: Mining field tools ──
+    { id: "setout", label: "Setting Out & Markout", category: "Mining · Field Tools", keywords: ["setout", "markout", "bearing", "distance", "blast", "peg", "total station", "rtk"], icon: <Crosshair className={icon} />, action: callbacks.onOpenSetout },
+    { id: "mine_grid", label: "Mine Grid Transform", category: "Mining · Field Tools", keywords: ["mine", "grid", "transform", "rotation", "scale", "crs", "local"], icon: <Grid3x3 className={icon} />, action: callbacks.onOpenMineGrid },
+    { id: "tunnel_profile", label: "Tunnel Profile Analyzer", category: "Mining · Field Tools", keywords: ["tunnel", "profile", "overbreak", "underbreak", "drive", "cross-section", "area"], icon: <SquareDashed className={icon} />, action: callbacks.onOpenTunnelProfile },
+    { id: "safety_report", label: "Safety Inspection Report", category: "Mining · Field Tools", keywords: ["safety", "inspection", "hazard", "compliance", "regulator", "risk"], icon: <ShieldAlert className={icon} />, action: callbacks.onOpenSafetyReport },
+    // ── Sprint 10: Marine field tools ──
+    { id: "tidal_datum", label: "Tidal Datum Converter", category: "Marine · Field Tools", keywords: ["tidal", "datum", "mllw", "msl", "cd", "lat", "navd88", "convert", "depth"], icon: <Waves className={icon} />, action: callbacks.onOpenTidalDatum },
+    { id: "backscatter", label: "Backscatter Mosaic Builder", category: "Marine · Field Tools", keywords: ["backscatter", "mosaic", "intensity", "lambert", "seabed", "classification"], icon: <Grid3x3 className={icon} />, action: callbacks.onOpenBackscatter },
+    { id: "qc_dashboard", label: "Real-Time QC Dashboard", category: "Marine · Field Tools", keywords: ["qc", "quality", "control", "s44", "density", "coverage", "compliance", "uncertainty"], icon: <Activity className={icon} />, action: callbacks.onOpenQcDashboard },
+    { id: "mbes_survey", label: "MBES Survey Reader (Kongsberg .all)", category: "Marine · Field Tools", keywords: ["mbes", "kongsberg", "all", "bathymetry", "multibeam", "ingest", "sonar"], icon: <FileSearch className={icon} />, action: callbacks.onOpenMbesSurvey },
+    // ── Sprint 10: Volumetric change detection ──
+    { id: "stockpile_change", label: "Stockpile Change Detection (Cut/Fill)", category: "Mining · Revenue", keywords: ["stockpile", "change", "cut", "fill", "delta", "epoch", "reconcile", "progress"], icon: <History className={icon} />, action: callbacks.onOpenStockpileChange },
   ];
 }
