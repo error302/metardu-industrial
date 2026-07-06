@@ -8,11 +8,17 @@
 // needs it.
 
 #[allow(dead_code)]
+pub mod backscatter;
+#[allow(dead_code)]
 pub mod cross_section;
 #[allow(dead_code)]
 pub mod density_gates;
 #[allow(dead_code)]
 pub mod dredge;
+#[allow(dead_code)]
+pub mod qc_dashboard;
+#[allow(dead_code)]
+pub mod tidal_datums;
 #[allow(dead_code)]
 pub mod tidal_spline;
 
