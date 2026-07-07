@@ -161,7 +161,7 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
                 placeholder="/path/to/survey.all"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
               />
               <p className="mt-1 text-[10px] text-steel-gray">
                 Reads MBES soundings and synthesizes a per-beam intensity sample.
@@ -176,7 +176,7 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
                 value={cellSize}
                 step="0.1"
                 onChange={(e) => setCellSize(e.target.value)}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
               />
             </div>
 
@@ -225,7 +225,7 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
           </div>
 
           {/* Right: heat map */}
-          <div className="rounded-md border border-navy-border bg-navy-base p-3">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
               Mosaic Heat Map
             </div>

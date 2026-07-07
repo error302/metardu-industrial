@@ -140,7 +140,7 @@ return (
                 onToggle={() => handleToggle("crash_auto_submit")}
                 disabled={saving}
               />
-              <div className="rounded-md border border-navy-border bg-navy-base p-2 text-[10px] text-steel-gray">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-2 text-[10px] text-steel-gray">
                 Anonymous ID: <span className="font-mono">{config.anonymous_id.slice(0, 24)}…</span>
                 <br />
                 Endpoint: <span className="font-mono">{config.endpoint_url || "(local only — no remote submission)"}</span>
@@ -207,7 +207,7 @@ return (
                 <Clock className="h-3 w-3" /> Recent Events (last 20)
               </h4>
               <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border">
-                <table className="w-full text-left text-[10px]">
+                <table className="table-enterprise w-full text-left text-[10px]">
                   <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                     <tr>
                       <th className="px-2 py-1">Time</th>
@@ -271,7 +271,7 @@ function ToggleRow({
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-2">
+    <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-2">
       <div className="text-[9px] uppercase tracking-wider text-steel-gray">{label}</div>
       <div className="mt-0.5 truncate font-mono text-sm font-bold text-white" title={value}>{value}</div>
     </div>

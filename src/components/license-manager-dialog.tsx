@@ -165,7 +165,7 @@ return (
               onChange={(e) => setLicenseText(e.target.value)}
               rows={6}
               placeholder={'Paste the license content you received from MetaRDU Sales here...\n\nIt should look like:\n{\n  "customer": "...",\n  "tier": "pro",\n  ...\n}\nSIGNATURE: hex_hmac_string'}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
             />
             <button
               onClick={handleActivate}
@@ -199,7 +199,7 @@ return (
           </div>
 
           {/* Contact sales */}
-          <div className="rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-light">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-light">
             <div className="font-semibold text-white">Need a license?</div>
             <div className="mt-1">
               Contact MetaRDU Industrial Sales: sales@metardu.example

@@ -166,7 +166,7 @@ return (
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
                 placeholder="/path/to/survey.all"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
                 onKeyDown={(e) => e.key === "Enter" && handleLoad()}
               />
             </div>
@@ -178,7 +178,7 @@ return (
                 min={0}
                 step={100}
                 onChange={(e) => setMaxPings(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
               />
             </div>
             <button
@@ -210,7 +210,7 @@ return (
 
               {/* Bounds */}
               {survey.bounds && (
-                <div className="rounded-md border border-navy-border bg-navy-base p-3 font-mono text-xs text-steel-light">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 font-mono text-xs text-steel-light">
                   <span className="text-steel-gray">Bounds (lon/lat):</span>{" "}
                   {survey.bounds[0].toFixed(5)}, {survey.bounds[1].toFixed(5)} → {survey.bounds[2].toFixed(5)}, {survey.bounds[3].toFixed(5)}
                 </div>
@@ -271,7 +271,7 @@ return (
                     {survey.positions.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2">
                         {survey.positions.slice(0, 12).map((p, i) => (
-                          <div key={i} className="rounded border border-navy-border bg-navy-base p-2 font-mono text-[10px] text-steel-light">
+                          <div key={i} className="input-enterprise rounded border border-navy-border bg-navy-base p-2 font-mono text-[10px] text-steel-light">
                             <div>lat {p.latitude.toFixed(6)}  lon {p.longitude.toFixed(6)}</div>
                             <div className="text-steel-gray">h {p.height.toFixed(2)} m · q{p.quality} · t {p.timestamp.toFixed(1)}</div>
                           </div>
@@ -330,7 +330,7 @@ return (
                         <Kpi icon={<Droplets className="h-3 w-3" />} label="Beams/Ping" value={wcSummary.beams_per_ping.toString()} color={colors.steelLight} />
                       </div>
                     ) : (
-                      <div className="rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-gray">
+                      <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-gray">
                         No water-column datagrams (type 0x4D) found in this file. Water column data is only present
                         when the sonar was configured to record full acoustic returns — typical for object-detection
                         surveys but not for standard bathymetric surveys.
@@ -365,7 +365,7 @@ return (
 
 function Kpi({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider" style={{ color }}>
         {icon} {label}
       </div>

@@ -106,7 +106,7 @@ return (
           {/* Results table */}
           {result && (
             <div className="rounded-md border border-navy-border overflow-hidden">
-              <table className="w-full text-left text-xs">
+              <table className="table-enterprise w-full text-left text-xs">
                 <thead className="bg-navy-panel text-steel-gray">
                   <tr>
                     <th className="px-3 py-2">Benchmark</th>
@@ -148,7 +148,7 @@ return (
 
           {/* Notes */}
           {result && (
-            <div className="rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-gray">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-gray">
               <div className="mb-1 flex items-center gap-1 font-semibold text-steel-light">
                 <Activity className="h-3 w-3" /> Notes
               </div>
@@ -163,7 +163,7 @@ return (
           )}
 
           {!result && !running && (
-            <div className="rounded-md border border-navy-border bg-navy-base p-8 text-center text-xs text-steel-gray">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-8 text-center text-xs text-steel-gray">
               Click "Run Benchmarks" to measure your hardware's performance.
               The suite takes ~30 seconds and covers point cloud loading, CSF classification,
               volume calc, dredge audit, highwall analysis, license verification, SHA-256, and JSON serialization.

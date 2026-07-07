@@ -146,7 +146,7 @@ return (
                 onChange={(e) => setFolderPath(e.target.value)}
                 placeholder="/path/to/field/data"
                 disabled={running}
-                className="flex-1 min-w-0 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
+                className="input-enterprise flex-1 min-w-0 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
               />
               <button
                 onClick={handleRun}
@@ -254,7 +254,7 @@ return (
                   File Inventory ({report.files.length})
                 </h3>
                 <div className="max-h-64 overflow-y-auto rounded-md border border-navy-border">
-                  <table className="w-full text-[10px]">
+                  <table className="table-enterprise w-full text-[10px]">
                     <thead className="sticky top-0 bg-navy-panel">
                       <tr className="text-left text-steel-gray">
                         <th className="px-2 py-1.5 font-medium">Status</th>
@@ -307,7 +307,7 @@ function SummaryTile({
 }) {
   return (
     <div
-      className="rounded-md border p-2.5"
+      className="card-enterprise rounded-md border p-2.5"
       style={{ borderColor: colors.navyBorder, background: colors.navyBase }}
     >
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider" style={{ color }}>

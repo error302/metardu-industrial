@@ -207,7 +207,7 @@ return (
                     value={stationId}
                     onChange={(e) => setStationId(e.target.value)}
                     placeholder="8454000"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
                   />
                 </div>
                 <div>
@@ -228,7 +228,7 @@ return (
                     type="date"
                     value={beginDate}
                     onChange={(e) => setBeginDate(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
                   />
                 </div>
                 <div>
@@ -237,7 +237,7 @@ return (
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
                   />
                 </div>
               </div>
@@ -249,7 +249,7 @@ return (
                     <button
                       key={s.id}
                       onClick={() => setStationId(s.id)}
-                      className="rounded border border-navy-border bg-navy-base px-2 py-0.5 text-[10px] text-steel-light hover:border-marine hover:text-marine"
+                      className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-0.5 text-[10px] text-steel-light hover:border-marine hover:text-marine"
                     >
                       {s.id} · {s.name}
                     </button>
@@ -265,7 +265,7 @@ return (
                   type="text"
                   value={tcpHost}
                   onChange={(e) => setTcpHost(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
                 />
               </div>
               <div>
@@ -274,7 +274,7 @@ return (
                   type="number"
                   value={tcpPort}
                   onChange={(e) => setTcpPort(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
                 />
               </div>
               <p className="col-span-2 rounded-md bg-navy-base p-2 text-[10px] leading-relaxed text-steel-gray">
@@ -300,7 +300,7 @@ return (
                 <Kpi label="Mean" value={`${graph.mean.toFixed(2)} m`} color={colors.steelLight} />
               </div>
 
-              <div className="rounded-md border border-navy-border bg-navy-base p-3">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                     Tide Graph · {series.station_name || series.station_id} · {series.datum}
@@ -388,7 +388,7 @@ return (
 
 function Kpi({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-xs font-bold text-white truncate">{value}</div>
     </div>

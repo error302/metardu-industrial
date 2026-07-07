@@ -217,7 +217,7 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
                 value={yaml}
                 onChange={(e) => setYaml(e.target.value)}
                 rows={14}
-                className="mb-4 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise mb-4 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
               />
               {error && (
                 <div className="mb-4 rounded-md border p-3 text-xs" style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
@@ -255,9 +255,9 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
               <div className="mb-4 rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Add Watch Folder</div>
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="text" value={newWatchPath} onChange={(e) => setNewWatchPath(e.target.value)} placeholder="/path/to/watch" className="rounded border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none" />
-                  <input type="text" value={newWatchPipeline} onChange={(e) => setNewWatchPipeline(e.target.value)} placeholder="Pipeline name" className="rounded border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-industrial-orange focus:outline-none" />
-                  <input type="text" value={newWatchExts} onChange={(e) => setNewWatchExts(e.target.value)} placeholder="las,tif,all" className="rounded border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={newWatchPath} onChange={(e) => setNewWatchPath(e.target.value)} placeholder="/path/to/watch" className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={newWatchPipeline} onChange={(e) => setNewWatchPipeline(e.target.value)} placeholder="Pipeline name" className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={newWatchExts} onChange={(e) => setNewWatchExts(e.target.value)} placeholder="las,tif,all" className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none" />
                   <button onClick={handleAddWatch} className="flex items-center justify-center gap-1 rounded border border-navy-border bg-navy-elevated px-2 py-1.5 text-xs text-steel-light hover:bg-navy-base">
                     <Plus className="h-3 w-3" /> Add
                   </button>
@@ -290,9 +290,9 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
               <div className="mb-4 rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Add Scheduled Job</div>
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="text" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="Job name (e.g. Daily QC)" className="rounded border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-industrial-orange focus:outline-none" />
-                  <input type="text" value={newJobPipeline} onChange={(e) => setNewJobPipeline(e.target.value)} placeholder="Pipeline name" className="rounded border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-industrial-orange focus:outline-none" />
-                  <input type="number" value={newJobInterval} onChange={(e) => setNewJobInterval(parseInt(e.target.value) || 86400)} placeholder="Interval (secs)" className="rounded border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={newJobName} onChange={(e) => setNewJobName(e.target.value)} placeholder="Job name (e.g. Daily QC)" className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={newJobPipeline} onChange={(e) => setNewJobPipeline(e.target.value)} placeholder="Pipeline name" className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="number" value={newJobInterval} onChange={(e) => setNewJobInterval(parseInt(e.target.value) || 86400)} placeholder="Interval (secs)" className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none" />
                   <button onClick={handleAddJob} className="flex items-center justify-center gap-1 rounded border border-navy-border bg-navy-elevated px-2 py-1.5 text-xs text-steel-light hover:bg-navy-base">
                     <Plus className="h-3 w-3" /> Add
                   </button>

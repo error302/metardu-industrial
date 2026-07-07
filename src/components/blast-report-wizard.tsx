@@ -299,7 +299,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                   onChange={(e) => setFragmentsText(e.target.value)}
                   rows={10}
                   placeholder="Paste fragment sizes in mm here…"
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
                 />
                 <p className="mt-1 text-[10px] text-steel-gray">
                   {parseFragments(fragmentsText).length} fragments parsed (minimum 10 required).
@@ -307,7 +307,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                   AI vision pipeline (planned Sprint 6+).
                 </p>
               </div>
-              <div className="rounded-md border border-navy-border bg-navy-base p-3 text-[11px] text-steel-gray">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-[11px] text-steel-gray">
                 <div className="mb-1 font-semibold text-steel-light">Tip — realistic distributions</div>
                 Well-fragmented blast: median 150-250mm, P80 &lt; 300mm.
                 Typical blast: median 250-400mm, P80 300-500mm.
@@ -369,7 +369,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                         <select
                           value={muckPath}
                           onChange={(e) => setMuckPath(e.target.value)}
-                          className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                          className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                           style={{ borderColor: muckPath ? "#FF6B35" : undefined }}
                         >
                           <option value="">— Or pick loaded —</option>
@@ -386,7 +386,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                       <input
                         type="number" step="0.1" value={baselineDepth}
                         onChange={(e) => setBaselineDepth(parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                       />
                       <p className="mt-1 text-[10px] text-steel-gray">
                         The pit floor elevation before blasting. Volume = (muck − floor) × area.
@@ -399,7 +399,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                       <input
                         type="number" step="0.05" value={density}
                         onChange={(e) => setDensity(parseFloat(e.target.value) || 2.7)}
-                        className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                     type="text" value={blastId}
                     onChange={(e) => setBlastId(e.target.value)}
                     placeholder="e.g., BL-2026-0142"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -426,7 +426,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                     type="text" value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g., Pit A — Bench 1050"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -437,7 +437,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                     type="text" value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="e.g., Newcrest — Cadia Valley"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -447,7 +447,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="10" value={designedP80}
                     onChange={(e) => setDesignedP80(parseFloat(e.target.value) || 300)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                   <p className="mt-1 text-[10px] text-steel-gray">Target P80 from blast design</p>
                 </div>
@@ -458,7 +458,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={reportPath}
                     onChange={(e) => setReportPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -560,25 +560,25 @@ export function BlastReportWizard({ open, onClose }: Props) {
               </p>
               {fragResult && (
                 <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">P20</div>
                     <div className="font-mono text-sm font-bold" style={{ color: colors.pass }}>
                       {fragResult.p20.toFixed(0)} mm
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">P50</div>
                     <div className="font-mono text-sm font-bold text-white">
                       {fragResult.p50.toFixed(0)} mm
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">P80</div>
                     <div className="font-mono text-sm font-bold" style={{ color: QUALITY_COLORS[fragResult.quality] }}>
                       {fragResult.p80.toFixed(0)} mm
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">P90</div>
                     <div className="font-mono text-sm font-bold" style={{ color: colors.fail }}>
                       {fragResult.p90.toFixed(0)} mm
@@ -626,7 +626,7 @@ export function BlastReportWizard({ open, onClose }: Props) {
 
 function ResultTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>

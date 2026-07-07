@@ -175,7 +175,7 @@ export function AccountDialog({ open, onClose, isOnboarding = false, onProfileCh
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Sarah Mitchell"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
             />
           </div>
 
@@ -188,7 +188,7 @@ export function AccountDialog({ open, onClose, isOnboarding = false, onProfileCh
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="sarah@mine.com"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
             />
             <p className="mt-0.5 text-[9px] text-steel-gray">Used for license recovery and report contact</p>
           </div>
@@ -202,7 +202,7 @@ export function AccountDialog({ open, onClose, isOnboarding = false, onProfileCh
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="BHP Gold Mine — WA"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
             />
           </div>
 
@@ -216,7 +216,7 @@ export function AccountDialog({ open, onClose, isOnboarding = false, onProfileCh
                 value={registrationNumber}
                 onChange={(e) => setRegistrationNumber(e.target.value)}
                 placeholder="SV12345"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
               />
             </div>
             <div>
@@ -228,7 +228,7 @@ export function AccountDialog({ open, onClose, isOnboarding = false, onProfileCh
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+61 400 000 000"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
               />
             </div>
           </div>
@@ -236,7 +236,7 @@ export function AccountDialog({ open, onClose, isOnboarding = false, onProfileCh
 
         {/* License section */}
         {!isNew && (
-          <div className="rounded-md border border-navy-border bg-navy-base p-3">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
               <Shield className="h-3 w-3" /> License
             </div>

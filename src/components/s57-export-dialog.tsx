@@ -186,7 +186,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
 
             {/* Feature table */}
             <div className="overflow-x-auto rounded-md border border-navy-border">
-              <table className="w-full text-left text-[10px]">
+              <table className="table-enterprise w-full text-left text-[10px]">
                 <thead className="bg-navy-base text-steel-gray">
                   <tr>
                     <th className="px-2 py-1.5">Object Class</th>
@@ -206,7 +206,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
                           onChange={(e) =>
                             updateFeature(f.id, "object_class", e.target.value)
                           }
-                          className="w-full rounded border border-navy-border bg-navy-base px-1 py-1 text-[10px] text-white focus:border-industrial-orange focus:outline-none"
+                          className="input-enterprise w-full rounded border border-navy-border bg-navy-base px-1 py-1 text-[10px] text-white focus:border-industrial-orange focus:outline-none"
                         >
                           {OBJECT_CLASSES.map((oc) => (
                             <option key={oc.value} value={oc.value}>
@@ -220,7 +220,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
                           type="text"
                           value={f.longitude}
                           onChange={(e) => updateFeature(f.id, "longitude", e.target.value)}
-                          className="w-24 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
+                          className="input-enterprise w-24 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
                           placeholder="130.8456"
                         />
                       </td>
@@ -229,7 +229,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
                           type="text"
                           value={f.latitude}
                           onChange={(e) => updateFeature(f.id, "latitude", e.target.value)}
-                          className="w-24 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
+                          className="input-enterprise w-24 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
                           placeholder="-12.3456"
                         />
                       </td>
@@ -238,7 +238,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
                           type="text"
                           value={f.sounding}
                           onChange={(e) => updateFeature(f.id, "sounding", e.target.value)}
-                          className="w-16 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
+                          className="input-enterprise w-16 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
                           placeholder="25.0"
                         />
                       </td>
@@ -247,7 +247,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
                           type="text"
                           value={f.attrs}
                           onChange={(e) => updateFeature(f.id, "attrs", e.target.value)}
-                          className="w-40 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
+                          className="input-enterprise w-40 rounded border border-navy-border bg-navy-base px-1 py-1 font-mono text-[10px] text-white focus:border-industrial-orange focus:outline-none"
                           placeholder="QUASOU=6;WATLEV=3"
                         />
                       </td>
@@ -275,7 +275,7 @@ export function S57ExportDialog({ open, onClose }: Props) {
               type="text"
               value={exportPath}
               onChange={(e) => setExportPath(e.target.value)}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
               placeholder="/path/to/survey.000"
             />
             <p className="mt-1 text-[10px] text-steel-gray">

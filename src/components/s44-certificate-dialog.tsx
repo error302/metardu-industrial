@@ -191,7 +191,7 @@ export function S44CertificateDialog({ open, onClose }: Props) {
                   <select
                     value={targetOrder}
                     onChange={(e) => setTargetOrder(e.target.value as S44Order)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
                   >
                     {(Object.entries(ORDER_LABELS) as [S44Order, string][]).map(([k, v]) => (
                       <option key={k} value={k}>{v}</option>
@@ -200,15 +200,15 @@ export function S44CertificateDialog({ open, onClose }: Props) {
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Vessel</label>
-                  <input type="text" value={vessel} onChange={(e) => setVessel(e.target.value)} placeholder="RV Solander" className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={vessel} onChange={(e) => setVessel(e.target.value)} placeholder="RV Solander" className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Sonar</label>
-                  <input type="text" value={sonar} onChange={(e) => setSonar(e.target.value)} placeholder="EM 710" className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={sonar} onChange={(e) => setSonar(e.target.value)} placeholder="EM 710" className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Survey area</label>
-                  <input type="text" value={surveyArea} onChange={(e) => setSurveyArea(e.target.value)} placeholder="Port of Darwin" className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
+                  <input type="text" value={surveyArea} onChange={(e) => setSurveyArea(e.target.value)} placeholder="Port of Darwin" className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
                 </div>
               </div>
 
@@ -221,14 +221,14 @@ export function S44CertificateDialog({ open, onClose }: Props) {
                   value={csvInput}
                   onChange={(e) => setCsvInput(e.target.value)}
                   rows={5}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
                 />
               </div>
 
               {/* Report path */}
               <div className="mb-4">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Certificate output path</label>
-                <input type="text" value={reportPath} onChange={(e) => setReportPath(e.target.value)} className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none" />
+                <input type="text" value={reportPath} onChange={(e) => setReportPath(e.target.value)} className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none" />
               </div>
 
               {/* Results */}

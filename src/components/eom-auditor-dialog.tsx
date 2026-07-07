@@ -454,7 +454,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
                       step={0.1}
                       onChange={(e) => setReferenceElevation(parseFloat(e.target.value) || 0)}
                       disabled={autoDetectBaseline}
-                      className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
+                      className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
                       placeholder={autoDetectBaseline ? "auto" : "0.0"}
                     />
                   </div>
@@ -506,7 +506,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
                     type="text"
                     value={reportPath}
                     onChange={(e) => setReportPath(e.target.value)}
-                    className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
+                    className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -544,7 +544,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
             {/* ═══ RIGHT: Progress + Results ═══ */}
             <div className="space-y-4">
               {/* Progress panel */}
-              <div className="rounded-md border border-navy-border bg-navy-base p-3">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                     Pipeline Progress
@@ -740,7 +740,7 @@ function VolumeTile({
 }) {
   return (
     <div
-      className="rounded-md border p-3"
+      className="card-enterprise rounded-md border p-3"
       style={{ borderColor: `${color}40`, background: `${color}10` }}
     >
       <div
@@ -812,7 +812,7 @@ function ResultPanel({
       </div>
 
       {/* Survey metadata */}
-      <div className="rounded-md border border-navy-border bg-navy-base p-3">
+      <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
           Survey Metadata
         </div>
@@ -841,7 +841,7 @@ function ResultPanel({
       </div>
 
       {/* Audit trail (SHA-256 hashes) */}
-      <div className="rounded-md border border-navy-border bg-navy-base p-3">
+      <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
         <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
           <Hash className="h-3 w-3" /> Audit Trail · SHA-256
         </div>
@@ -961,7 +961,7 @@ function WatchFolderSection({
   events: EomWatchEventRpc[];
 }) {
   return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-3">
+    <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
           <FolderOpen className="h-3 w-3" /> Watch Folder (zero-touch ingest)
@@ -1104,7 +1104,7 @@ function PathField({
           <select
             value={dropdownValue}
             onChange={(e) => onDropdownChange(e.target.value)}
-            className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+            className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
           >
             <option value="">— Or pick loaded —</option>
             {dropdownOptions.map((o) => (
@@ -1145,7 +1145,7 @@ function NumberField({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
       />
     </div>
   );
@@ -1172,7 +1172,7 @@ function TextField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
       />
     </div>
   );

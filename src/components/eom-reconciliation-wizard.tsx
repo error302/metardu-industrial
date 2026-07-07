@@ -159,7 +159,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Previous Survey (start of month)</label>
                 <div className="flex items-center gap-2">
                   <button onClick={async () => { const p = await pickFile({ extensions: ["tif", "tiff"], filterName: "GeoTIFF DEM", title: "Select previous survey" }); if (p) setPrevPath(p); }} className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-1.5 text-xs text-white hover:bg-navy-elevated"><FolderOpen className="h-3.5 w-3.5" /> Browse</button>
-                  {geotiffFiles.length > 0 && <select value={prevPath} onChange={(e) => setPrevPath(e.target.value)} className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"><option value="">— Or pick loaded —</option>{geotiffFiles.map((f) => <option key={f.id} value={f.path}>{f.name}</option>)}</select>}
+                  {geotiffFiles.length > 0 && <select value={prevPath} onChange={(e) => setPrevPath(e.target.value)} className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"><option value="">— Or pick loaded —</option>{geotiffFiles.map((f) => <option key={f.id} value={f.path}>{f.name}</option>)}</select>}
                 </div>
                 {prevPath && <div className="mt-0.5 truncate font-mono text-[10px] text-steel-light">✓ {prevPath.split(/[\\/]/).pop()}</div>}
               </div>
@@ -169,7 +169,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Current Survey (end of month)</label>
                 <div className="flex items-center gap-2">
                   <button onClick={async () => { const p = await pickFile({ extensions: ["tif", "tiff"], filterName: "GeoTIFF DEM", title: "Select current survey" }); if (p) setCurrPath(p); }} className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-1.5 text-xs text-white hover:bg-navy-elevated"><FolderOpen className="h-3.5 w-3.5" /> Browse</button>
-                  {geotiffFiles.length > 0 && <select value={currPath} onChange={(e) => setCurrPath(e.target.value)} className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"><option value="">— Or pick loaded —</option>{geotiffFiles.filter((f) => f.path !== prevPath).map((f) => <option key={f.id} value={f.path}>{f.name}</option>)}</select>}
+                  {geotiffFiles.length > 0 && <select value={currPath} onChange={(e) => setCurrPath(e.target.value)} className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"><option value="">— Or pick loaded —</option>{geotiffFiles.filter((f) => f.path !== prevPath).map((f) => <option key={f.id} value={f.path}>{f.name}</option>)}</select>}
                 </div>
                 {currPath && <div className="mt-0.5 truncate font-mono text-[10px] text-steel-light">✓ {currPath.split(/[\\/]/).pop()}</div>}
               </div>
@@ -178,11 +178,11 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Density (t/m³)</label>
-                  <input type="number" step="0.1" value={density} onChange={(e) => setDensity(parseFloat(e.target.value) || 2.7)} className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none" />
+                  <input type="number" step="0.1" value={density} onChange={(e) => setDensity(parseFloat(e.target.value) || 2.7)} className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Bench (m)</label>
-                  <input type="number" step="0.5" value={benchInterval} onChange={(e) => setBenchInterval(parseFloat(e.target.value) || 5)} className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none" />
+                  <input type="number" step="0.5" value={benchInterval} onChange={(e) => setBenchInterval(parseFloat(e.target.value) || 5)} className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none" />
                 </div>
               </div>
 
@@ -190,11 +190,11 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Client / Mine</label>
-                  <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="e.g., BHP Iron Ore" className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none" />
+                  <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="e.g., BHP Iron Ore" className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Site / Pit</label>
-                  <input type="text" value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="e.g., Pit A — June" className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none" />
+                  <input type="text" value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="e.g., Pit A — June" className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none" />
                 </div>
               </div>
 
@@ -203,7 +203,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Report output</label>
                 <div className="flex items-center gap-2">
                   <button onClick={async () => { const p = await pickSaveFile({ extensions: ["html"], filterName: "HTML Report", title: "Save report" }); if (p) setReportPath(p); }} className="flex items-center gap-1 rounded-md border border-navy-border bg-navy-base px-2.5 py-1.5 text-xs text-white hover:bg-navy-elevated"><Download className="h-3.5 w-3.5" /> Save As</button>
-                  <input type="text" value={reportPath} onChange={(e) => setReportPath(e.target.value)} className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none" />
+                  <input type="text" value={reportPath} onChange={(e) => setReportPath(e.target.value)} className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none" />
                 </div>
               </div>
 
@@ -246,7 +246,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
                   {/* Bench breakdown */}
                   {result.benches.length > 0 && (
                     <div className="max-h-28 overflow-y-auto rounded-md border border-navy-border">
-                      <table className="w-full text-left text-[9px]">
+                      <table className="table-enterprise w-full text-left text-[9px]">
                         <thead className="sticky top-0 bg-navy-panel text-steel-gray"><tr><th className="px-1.5 py-1">Bench</th><th className="px-1.5 py-1 text-right">Fill m³</th><th className="px-1.5 py-1 text-right">Cut m³</th><th className="px-1.5 py-1 text-right">Fill t</th><th className="px-1.5 py-1 text-right">Cut t</th></tr></thead>
                         <tbody>
                           {result.benches.map((b, i) => (
@@ -283,7 +283,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
 
 function ResultTile({ label, value, unit, tonnage, color, icon }: { label: string; value: string; unit: string; tonnage: string; color: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider" style={{ color }}>{icon} {label}</div>
       <div className="mt-1 font-mono text-base font-bold text-white">{value}<span className="ml-0.5 text-[10px] font-normal text-steel-gray">{unit}</span></div>
       <div className="font-mono text-[10px]" style={{ color }}>{tonnage} t</div>

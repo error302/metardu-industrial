@@ -169,7 +169,7 @@ return (
                 value={chainage}
                 step="0.1"
                 onChange={(e) => setChainage(e.target.value)}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
               />
             </div>
 
@@ -181,7 +181,7 @@ return (
                 value={asBuilt}
                 onChange={(e) => setAsBuilt(e.target.value)}
                 rows={9}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:border-mining focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:border-mining focus:outline-none"
                 placeholder="-3.0,0.0"
               />
             </div>
@@ -194,7 +194,7 @@ return (
                 value={design}
                 onChange={(e) => setDesign(e.target.value)}
                 rows={7}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:border-mining focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:border-mining focus:outline-none"
               />
             </div>
 
@@ -225,7 +225,7 @@ return (
           </div>
 
           {/* SVG Preview */}
-          <div className="rounded-md border border-navy-border bg-navy-base p-3">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
               Cross-Section Preview
             </div>
@@ -271,7 +271,7 @@ return (
 
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-xs font-bold text-white">{value}</div>
     </div>

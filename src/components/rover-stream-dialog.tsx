@@ -175,7 +175,7 @@ return (
                 onChange={(e) => setHost(e.target.value)}
                 disabled={isRunning}
                 placeholder="127.0.0.1"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none disabled:opacity-50"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none disabled:opacity-50"
               />
             </div>
             <div>
@@ -187,7 +187,7 @@ return (
                 disabled={isRunning}
                 min={1}
                 max={65535}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none disabled:opacity-50"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none disabled:opacity-50"
               />
             </div>
             {isRunning ? (
@@ -243,7 +243,7 @@ return (
           {/* Position details */}
           {position && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-md border border-navy-border bg-navy-base p-3">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Position</div>
                 <div className="space-y-1 font-mono text-xs">
                   <Row label="Latitude" value={position.latitude != null ? position.latitude.toFixed(8) + "°" : "—"} />
@@ -253,7 +253,7 @@ return (
                   <Row label="HDOP" value={position.hdop?.toFixed(2) ?? "—"} />
                 </div>
               </div>
-              <div className="rounded-md border border-navy-border bg-navy-base p-3">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Motion</div>
                 <div className="space-y-1 font-mono text-xs">
                   <Row label="Speed" value={position.speed_mps != null ? (position.speed_mps * 3.6).toFixed(2) + " km/h" : "—"} />
@@ -267,7 +267,7 @@ return (
           )}
 
           {/* Trail sparkline */}
-          <div className="rounded-md border border-navy-border bg-navy-base p-3">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
               Position Trail ({trailPoints.length} points)
             </div>
@@ -311,7 +311,7 @@ return (
 
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-xs font-bold text-white">{value}</div>
     </div>

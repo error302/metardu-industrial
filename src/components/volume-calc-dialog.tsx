@@ -267,7 +267,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                         setCurrentPath(e.target.value);
                         setCurrentName(e.target.options[e.target.selectedIndex].text);
                       }}
-                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                      className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
                     >
                       <option value="">— Or pick loaded file —</option>
                       {geotiffFiles.map((f) => (
@@ -328,7 +328,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                     <input
                       type="number" step="0.1" value={flatElevation}
                       onChange={(e) => setFlatElevation(parseFloat(e.target.value) || 0)}
-                      className="w-24 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+                      className="input-enterprise w-24 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
                     />
                     <span className="text-xs text-steel-gray">m elevation</span>
                   </div>
@@ -352,7 +352,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                         value={dxfPath}
                         onChange={(e) => setDxfPath(e.target.value)}
                         placeholder="/path/to/design_surface.dxf"
-                        className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:outline-none"
+                        className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:outline-none"
                       />
                     </div>
                     {dxfName && !dxfLoading && (
@@ -382,7 +382,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                             setReferencePath(e.target.value);
                             setReferenceName(e.target.options[e.target.selectedIndex].text);
                           }}
-                          className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                          className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
                         >
                           <option value="">— Or pick loaded file —</option>
                           {geotiffFiles.filter((f) => f.path !== currentPath).map((f) => (
@@ -408,7 +408,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                 <input
                   type="number" step="0.5" min="0" value={benchInterval}
                   onChange={(e) => setBenchInterval(parseFloat(e.target.value) || 0)}
-                  className="w-24 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+                  className="input-enterprise w-24 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
                 />
               </div>
 
@@ -425,7 +425,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                       const preset = DENSITY_PRESETS.find((p) => p.label === e.target.value);
                       if (preset && preset.value > 0) setDensity(preset.value);
                     }}
-                    className="rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                    className="input-enterprise rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
                   >
                     {DENSITY_PRESETS.map((p) => (
                       <option key={p.label} value={p.label}>{p.label}</option>
@@ -437,7 +437,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                       setDensity(parseFloat(e.target.value) || 2.7);
                       setDensityPreset("Custom");
                     }}
-                    className="w-20 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-20 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
                   />
                   <span className="text-xs text-steel-gray">t/m³</span>
                 </div>
@@ -494,7 +494,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                   </div>
 
                   {/* Cell info */}
-                  <div className="rounded-md border border-navy-border bg-navy-base p-2 text-[10px] text-steel-light">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-2 text-[10px] text-steel-light">
                     Cell area: <span className="font-mono">{result.cell_area.toFixed(2)} m²</span>
                     {" · "} Fill cells: <span className="font-mono">{result.fill_cells.toLocaleString()}</span>
                     {" · "} Cut cells: <span className="font-mono">{result.cut_cells.toLocaleString()}</span>
@@ -505,7 +505,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
                     <div>
                       <div className="mb-1 text-[9px] uppercase tracking-wider text-steel-gray">Bench Breakdown</div>
                       <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border">
-                        <table className="w-full text-left text-[9px]">
+                        <table className="table-enterprise w-full text-left text-[9px]">
                           <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                             <tr>
                               <th className="px-1.5 py-1">Bench</th>
@@ -569,7 +569,7 @@ function BigTile({
   label: string; value: number; unit: string; tonnage: number; color: string; icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider" style={{ color }}>
         {icon} {label}
       </div>

@@ -197,7 +197,7 @@ return (
           </div>
 
           <div className="mb-4 max-h-64 overflow-y-auto rounded-md border border-navy-border">
-            <table className="w-full text-left text-[10px]">
+            <table className="table-enterprise w-full text-left text-[10px]">
               <thead className="sticky top-0 bg-navy-elevated text-steel-gray">
                 <tr>
                   <th className="px-2 py-1.5">ID</th>
@@ -300,7 +300,7 @@ return (
                 </button>
               </div>
               <div className="max-h-64 overflow-y-auto rounded-md border border-navy-border">
-                <table className="w-full text-left text-[10px]">
+                <table className="table-enterprise w-full text-left text-[10px]">
                   <thead className="sticky top-0 bg-navy-elevated text-steel-gray">
                     <tr>
                       <th className="px-2 py-1.5">ID</th>
@@ -340,7 +340,7 @@ function LabeledInput({ label, value, onChange }: { label: string; value: string
         value={value}
         step="0.001"
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
+        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
       />
     </div>
   );

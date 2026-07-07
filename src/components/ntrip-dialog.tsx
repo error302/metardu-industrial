@@ -263,7 +263,7 @@ return (
                   onChange={(e) => setHost(e.target.value)}
                   placeholder="ntrip.example.com"
                   disabled={isConnected || connecting}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
                 />
               </div>
               <input
@@ -271,7 +271,7 @@ return (
                 value={port}
                 onChange={(e) => setPort(parseInt(e.target.value) || 2101)}
                 disabled={isConnected || connecting}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
               />
             </div>
           </div>
@@ -287,7 +287,7 @@ return (
               onChange={(e) => setMountpoint(e.target.value)}
               placeholder="RTCM3GG"
               disabled={isConnected || connecting}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none disabled:opacity-50"
             />
           </div>
 
@@ -303,7 +303,7 @@ return (
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="user"
                 disabled={isConnected || connecting}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
               />
             </div>
             <div>
@@ -316,7 +316,7 @@ return (
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••"
                 disabled={isConnected || connecting}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none disabled:opacity-50"
               />
             </div>
           </div>

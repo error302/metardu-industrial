@@ -232,7 +232,7 @@ return (
                       <AlertTriangle className="h-3 w-3" /> Hotspots ({result.hotspots.length})
                     </div>
                     <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border bg-navy-base">
-                      <table className="w-full text-left text-[10px]">
+                      <table className="table-enterprise w-full text-left text-[10px]">
                         <thead className="sticky top-0 bg-navy-elevated text-steel-gray">
                           <tr>
                             <th className="px-2 py-1">#</th>
@@ -267,7 +267,7 @@ return (
           </div>
 
           {/* Right: heatmap */}
-          <div className="rounded-md border border-navy-border bg-navy-base p-3">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Cut / Fill Heat Map</span>
               {heatmap && (
@@ -315,7 +315,7 @@ return (
 
 function Kpi({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-xs font-bold text-white">{value}</div>
     </div>

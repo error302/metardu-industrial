@@ -146,7 +146,7 @@ return (
                 value={offset}
                 step="0.001"
                 onChange={(e) => setOffset(e.target.value)}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
               />
             </div>
           </div>
@@ -168,7 +168,7 @@ return (
                 onChange={(e) => setInputDepths(e.target.value)}
                 rows={8}
                 placeholder="12.5&#10;14.2&#10;18.7"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
               />
             </div>
 
@@ -189,7 +189,7 @@ return (
               </div>
               <div className="h-[182px] overflow-y-auto rounded-md border border-navy-border bg-navy-base p-2 font-mono text-xs text-white">
                 {outputDepths ? (
-                  <table className="w-full text-right">
+                  <table className="table-enterprise w-full text-right">
                     <thead className="text-[9px] uppercase text-steel-gray">
                       <tr>
                         <th className="pb-1 text-left">Input (m)</th>

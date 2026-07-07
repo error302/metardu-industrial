@@ -208,14 +208,14 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   Surveyed DEM (post-dredge bathymetric surface)
                 </label>
                 {geotiffFiles.length === 0 ? (
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-gray">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-gray">
                     Drop a GeoTIFF DEM of the surveyed channel on the map first.
                   </div>
                 ) : (
                   <select
                     value={surveyPath}
                     onChange={(e) => setSurveyPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                     style={{ borderColor: surveyPath ? colors.marine : undefined }}
                   >
                     <option value="">— Select survey DEM —</option>
@@ -243,7 +243,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   onChange={(e) => setCenterlineText(e.target.value)}
                   rows={6}
                   placeholder={"# Format: x, y (projected, e.g., UTM easting/northing)\n# Example for EPSG:28355 (MGA Zone 55):\n337000.0, 6253000.0\n337500.0, 6253050.0\n338000.0, 6253100.0"}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
                 />
                 <p className="mt-1 text-[10px] text-steel-gray">
                   {parseCenterline(centerlineText).length} vertices parsed (minimum 2 required).
@@ -260,7 +260,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="5" value={spacingM}
                     onChange={(e) => setSpacingM(parseFloat(e.target.value) || 50)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -270,7 +270,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="5" value={halfWidthM}
                     onChange={(e) => setHalfWidthM(parseFloat(e.target.value) || 25)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -280,7 +280,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="0.5" value={sampleResM}
                     onChange={(e) => setSampleResM(parseFloat(e.target.value) || 1)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -315,13 +315,13 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="0.1" value={designDepth}
                     onChange={(e) => setDesignDepth(parseFloat(e.target.value) || 15)}
-                    className="mt-2 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise mt-2 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                 ) : (
                   <select
                     value={designTiffPath}
                     onChange={(e) => setDesignTiffPath(e.target.value)}
-                    className="mt-2 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise mt-2 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   >
                     <option value="">— Select design GeoTIFF —</option>
                     {geotiffFiles.filter((f) => f.path !== surveyPath).map((f) => (
@@ -339,7 +339,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)}
                     placeholder="e.g., Entrance Channel"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -349,7 +349,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={clientName} onChange={(e) => setClientName(e.target.value)}
                     placeholder="e.g., Port of Rotterdam"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -358,7 +358,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   </label>
                   <input
                     type="text" value={reportPath} onChange={(e) => setReportPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -421,7 +421,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                   Sections ({result.sections.length})
                 </h4>
                 <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border">
-                  <table className="w-full text-left text-[10px]">
+                  <table className="table-enterprise w-full text-left text-[10px]">
                     <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                       <tr>
                         <th className="px-2 py-1.5">Chainage (m)</th>
@@ -479,17 +479,17 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
               </p>
               {result && (
                 <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                  <div className="rounded-md border border-navy-border bg-navy-base p-4">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4">
                     <div className="text-[9px] uppercase text-steel-gray">Sections</div>
                     <div className="font-mono text-lg font-bold text-white">{result.n_sections}</div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-4">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4">
                     <div className="text-[9px] uppercase text-steel-gray">Under-Dredge</div>
                     <div className="font-mono text-lg font-bold" style={{ color: colors.fail }}>
                       {result.summary.total_under_dredge_area.toFixed(0)} m²
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-4">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4">
                     <div className="text-[9px] uppercase text-steel-gray">Compliance</div>
                     <div className="font-mono text-lg font-bold" style={{ color: result.summary.compliance_pct > 95 ? colors.pass : colors.fail }}>
                       {result.summary.compliance_pct.toFixed(1)}%
@@ -505,7 +505,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
 
 function ResultTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>

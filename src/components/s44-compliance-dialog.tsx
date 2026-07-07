@@ -127,7 +127,7 @@ export function S44ComplianceDialog({ open, onClose }: Props) {
             <select
               value={targetOrder}
               onChange={(e) => setTargetOrder(e.target.value as S44Order)}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
             >
               {(Object.entries(ORDER_LABELS) as [S44Order, string][]).map(([k, v]) => (
                 <option key={k} value={k}>
@@ -146,7 +146,7 @@ export function S44ComplianceDialog({ open, onClose }: Props) {
               value={soundingsInput}
               onChange={(e) => setSoundingsInput(e.target.value)}
               rows={6}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
               placeholder="10.0,0.25,1.5&#10;12.0,0.27,1.6"
             />
             <p className="mt-1 text-[10px] text-steel-gray">
@@ -198,7 +198,7 @@ export function S44ComplianceDialog({ open, onClose }: Props) {
                     Worst Failures (top {result.worst_failures.length})
                   </h4>
                   <div className="max-h-40 overflow-y-auto rounded-md border border-navy-border">
-                    <table className="w-full text-left text-[10px]">
+                    <table className="table-enterprise w-full text-left text-[10px]">
                       <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                         <tr>
                           <th className="px-2 py-1.5">#</th>
@@ -252,7 +252,7 @@ function SummaryTile({
 }) {
   return (
     <div
-      className="rounded-md border p-2.5"
+      className="card-enterprise rounded-md border p-2.5"
       style={{ borderColor: `${color}40`, background: `${color}10` }}
     >
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>

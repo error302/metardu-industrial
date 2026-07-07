@@ -202,7 +202,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                     <select
                       value={currPath}
                       onChange={(e) => setCurrPath(e.target.value)}
-                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                      className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                       style={{ borderColor: currPath ? "#FFC107" : undefined }}
                     >
                       <option value="">— Or pick loaded —</option>
@@ -262,7 +262,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="0.1" value={baselineDepth}
                     onChange={(e) => setBaselineDepth(parseFloat(e.target.value) || 0)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                   <p className="mt-1 text-[10px] text-steel-gray">
                     The graded pad elevation. Volume = (current − pad) × area for each cell.
@@ -276,7 +276,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                   <select
                     value={prevPath}
                     onChange={(e) => setPrevPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   >
                     <option value="">— Select previous survey —</option>
                     {geotiffFiles.filter((f) => f.path !== currPath).map((f) => (
@@ -294,7 +294,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="0.05" value={density}
                     onChange={(e) => setDensity(parseFloat(e.target.value) || 2.7)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                   <p className="mt-1 text-[10px] text-steel-gray">
                     Iron ore: 2.7-3.0, Coal: 1.3-1.7, Copper: 2.5, Gold ore: 2.8
@@ -308,7 +308,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                     type="text" value={stockpileName}
                     onChange={(e) => setStockpileName(e.target.value)}
                     placeholder="e.g., ROM Pad — North Stockpile"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -319,7 +319,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                     type="text" value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="e.g., BHP Iron Ore — Mt Whaleback"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -329,7 +329,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={reportPath}
                     onChange={(e) => setReportPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -397,13 +397,13 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
                 Open in browser → Ctrl+P → Save as PDF for print-ready output.
               </p>
               <div className="mt-4 grid grid-cols-2 gap-3 text-center">
-                <div className="rounded-md border border-navy-border bg-navy-base p-4">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4">
                   <div className="text-[9px] uppercase text-steel-gray">Volume</div>
                   <div className="font-mono text-lg font-bold" style={{ color: "#FFC107" }}>
                     {(volumeResult?.fill_volume ?? 0).toFixed(1)} m³
                   </div>
                 </div>
-                <div className="rounded-md border border-navy-border bg-navy-base p-4">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4">
                   <div className="text-[9px] uppercase text-steel-gray">Tonnage</div>
                   <div className="font-mono text-lg font-bold" style={{ color: colors.pass }}>
                     {((volumeResult?.fill_volume ?? 0) * density).toFixed(0)} t
@@ -418,7 +418,7 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
 
 function ResultTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>

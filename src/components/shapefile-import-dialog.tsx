@@ -131,7 +131,7 @@ export function ShapefileImportDialog({ open, onClose }: Props) {
                 <Table2 className="h-3 w-3" /> Feature Table ({shapefile.features.length} features)
               </div>
               <div className="max-h-48 overflow-auto rounded-md border border-navy-border">
-                <table className="w-full text-left text-[10px]">
+                <table className="table-enterprise w-full text-left text-[10px]">
                   <thead className="sticky top-0 bg-navy-elevated text-steel-gray">
                     <tr>
                       <th className="px-2 py-1.5">#</th>
@@ -167,7 +167,7 @@ export function ShapefileImportDialog({ open, onClose }: Props) {
 
             {/* Selected feature detail */}
             {selectedFeature != null && shapefile.features[selectedFeature] && (
-              <div className="rounded-md border border-navy-border bg-navy-base p-3">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                   <MapIcon className="h-3 w-3" /> Feature {selectedFeature + 1} Detail
                 </div>
@@ -193,7 +193,7 @@ export function ShapefileImportDialog({ open, onClose }: Props) {
 
 function Kpi({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-[11px] font-bold text-white truncate">{value}</div>
     </div>

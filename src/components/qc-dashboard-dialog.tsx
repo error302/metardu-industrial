@@ -151,7 +151,7 @@ return (
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
                 placeholder="/path/to/survey.all"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-marine focus:outline-none"
               />
             </div>
             <div>
@@ -179,7 +179,7 @@ return (
                 value={cellSize}
                 step="0.5"
                 onChange={(e) => setCellSize(e.target.value)}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-marine focus:outline-none"
               />
             </div>
             <button
@@ -228,7 +228,7 @@ return (
               </div>
 
               {/* Depth distribution histogram */}
-              <div className="rounded-md border border-navy-border bg-navy-base p-3">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Depth Distribution</span>
                   <span className="font-mono text-[10px] text-steel-gray">
@@ -255,7 +255,7 @@ return (
 
 function Kpi({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>
@@ -267,7 +267,7 @@ function ComplianceMeter({ label, pct, order }: { label: string; pct: number; or
   const warn = pct >= 80 && pct < 95;
   const color = pass ? colors.pass : warn ? colors.warn : colors.fail;
   return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-3">
+    <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-gray">{label}</span>
         <span className="font-mono text-xs font-bold" style={{ color }}>{pct.toFixed(1)}%</span>

@@ -133,7 +133,7 @@ return (
           )}
 
           {/* Current version info */}
-          <div className="rounded-md border border-navy-border bg-navy-base p-3 text-xs">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-xs">
             <div className="flex items-center gap-2">
               <Info className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
               <span className="text-steel-light">

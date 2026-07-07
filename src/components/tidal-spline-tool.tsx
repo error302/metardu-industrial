@@ -89,7 +89,7 @@ return (
               <input
                 type="text" value={sonarPath} onChange={(e) => setSonarPath(e.target.value)}
                 placeholder="Or type a path…"
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
               />
             </div>
             <p className="mt-1 text-[10px] text-steel-gray">Format: timestamp_unix_secs, raw_depth_m</p>
@@ -110,7 +110,7 @@ return (
               <input
                 type="text" value={tidePath} onChange={(e) => setTidePath(e.target.value)}
                 placeholder="Or type a path…"
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
               />
             </div>
             <p className="mt-1 text-[10px] text-steel-gray">Format: timestamp_unix_secs, tide_level_m (minimum 4 readings)</p>
@@ -130,7 +130,7 @@ return (
               </button>
               <input
                 type="text" value={outputPath} onChange={(e) => setOutputPath(e.target.value)}
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
               />
             </div>
           </div>
@@ -149,7 +149,7 @@ return (
           {/* Results */}
           {result && (
             <div className="space-y-3">
-              <div className="rounded-md border p-3"
+              <div className="card-enterprise rounded-md border p-3"
                 style={{ borderColor: `${colors.pass}40`, background: `${colors.pass}10` }}>
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="h-4 w-4" style={{ color: colors.pass }} />

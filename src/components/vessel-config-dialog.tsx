@@ -134,12 +134,12 @@ return (
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Vessel name</label>
               <input type="text" value={config.vessel_name} onChange={(e) => update("vessel_name", e.target.value)}
-                placeholder="RV Solander" className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
+                placeholder="RV Solander" className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Sonar model</label>
               <input type="text" value={config.sonar_model} onChange={(e) => update("sonar_model", e.target.value)}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none" />
             </div>
           </div>
 
@@ -199,7 +199,7 @@ function OffsetInput({ label, value, onChange, unit, step = "0.1" }: {
         <input
           type="number" step={step} value={value}
           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-          className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+          className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
         />
         <span className="text-[10px] text-steel-gray">{unit}</span>
       </div>

@@ -69,19 +69,19 @@ return (
     >
           {/* Summary */}
           <div className="mb-4 grid grid-cols-4 gap-2">
-            <div className="rounded-md border p-2.5" style={{ borderColor: `${colors.investigate}40`, background: `${colors.investigate}10` }}>
+            <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${colors.investigate}40`, background: `${colors.investigate}10` }}>
               <div className="text-[9px] uppercase tracking-wider" style={{ color: colors.investigate }}>Ambiguous</div>
               <div className="mt-0.5 font-mono text-sm font-bold text-white">{unresolved.length}</div>
             </div>
-            <div className="rounded-md border p-2.5" style={{ borderColor: `${colors.pass}40`, background: `${colors.pass}10` }}>
+            <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${colors.pass}40`, background: `${colors.pass}10` }}>
               <div className="text-[9px] uppercase tracking-wider" style={{ color: colors.pass }}>Resolved</div>
               <div className="mt-0.5 font-mono text-sm font-bold text-white">{resolvedCells.size}</div>
             </div>
-            <div className="rounded-md border p-2.5" style={{ borderColor: `${colors.steelLight}40`, background: `${colors.steelLight}10` }}>
+            <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${colors.steelLight}40`, background: `${colors.steelLight}10` }}>
               <div className="text-[9px] uppercase tracking-wider" style={{ color: colors.steelLight }}>Valid cells</div>
               <div className="mt-0.5 font-mono text-sm font-bold text-white">{surface.valid_cells}</div>
             </div>
-            <div className="rounded-md border p-2.5" style={{ borderColor: `${colors.marineTurquoise}40`, background: `${colors.marineTurquoise}10` }}>
+            <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${colors.marineTurquoise}40`, background: `${colors.marineTurquoise}10` }}>
               <div className="text-[9px] uppercase tracking-wider" style={{ color: colors.marineTurquoise }}>Total soundings</div>
               <div className="mt-0.5 font-mono text-sm font-bold text-white">{surface.total_soundings.toLocaleString()}</div>
             </div>
@@ -100,7 +100,7 @@ return (
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                 Hypothesis Count Heatmap (click to inspect)
               </div>
-              <div className="rounded-md border border-navy-border bg-navy-base p-3 flex justify-center">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 flex justify-center">
                 <svg width={gridW + 40} height={gridH + 40} style={{ maxWidth: "100%" }}>
                   {/* Grid cells */}
                   {Array.from({ length: rows }, (_, r) =>

@@ -227,7 +227,7 @@ export function TopologyValidatorDialog({ open, onClose }: Props) {
               ? "(0,0) (10,0) (10,10) (0,10) (0,0)\n(20,20) (30,20) (30,30) (20,30) (20,20)"
               : "(0,0) (10,0) (10,10)\n(10,10) (20,10) (20,20)"
             }
-            className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:border-pass focus:outline-none"
+            className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-[10px] text-white focus:border-pass focus:outline-none"
           />
           <p className="mt-1 text-[9px] text-steel-gray">
             Format: one {geoType} per line, vertices as <span className="font-mono">(x,y)</span> pairs. Polygons must be closed (first point = last point).
@@ -266,7 +266,7 @@ export function TopologyValidatorDialog({ open, onClose }: Props) {
             {/* Error list */}
             {report.errors.length > 0 && (
               <div className="max-h-48 overflow-y-auto rounded-md border border-navy-border">
-                <table className="w-full text-left text-[10px]">
+                <table className="table-enterprise w-full text-left text-[10px]">
                   <thead className="sticky top-0 bg-navy-elevated text-steel-gray">
                     <tr>
                       <th className="px-2 py-1.5">Severity</th>

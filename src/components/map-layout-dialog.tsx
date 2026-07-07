@@ -260,7 +260,7 @@ export function MapLayoutDialog({ open, onClose, map, defaultProjectName = "", d
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               placeholder="Stockpile Audit — Pad A"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-accent focus:outline-none"
             />
           </div>
           <div>
@@ -270,7 +270,7 @@ export function MapLayoutDialog({ open, onClose, map, defaultProjectName = "", d
               value={surveyor}
               onChange={(e) => setSurveyor(e.target.value)}
               placeholder="Surveyor name"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:border-accent focus:outline-none"
             />
           </div>
           <div>
@@ -279,7 +279,7 @@ export function MapLayoutDialog({ open, onClose, map, defaultProjectName = "", d
               type="date"
               value={surveyDate}
               onChange={(e) => setSurveyDate(e.target.value)}
-              className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
             />
           </div>
           <div>
@@ -289,7 +289,7 @@ export function MapLayoutDialog({ open, onClose, map, defaultProjectName = "", d
               value={scale}
               onChange={(e) => setScale(e.target.value)}
               placeholder="1:1000"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
             />
           </div>
         </div>
@@ -302,7 +302,7 @@ export function MapLayoutDialog({ open, onClose, map, defaultProjectName = "", d
             value={crs}
             onChange={(e) => setCrs(e.target.value)}
             placeholder="EPSG:28355"
-            className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
+            className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -332,7 +332,7 @@ export function MapLayoutDialog({ open, onClose, map, defaultProjectName = "", d
                   value={entry.label}
                   onChange={(e) => updateLegendEntry(i, { label: e.target.value })}
                   placeholder="Legend label"
-                  className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1 text-xs text-white focus:border-accent focus:outline-none"
+                  className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1 text-xs text-white focus:border-accent focus:outline-none"
                 />
                 <button
                   onClick={() => removeLegendEntry(i)}

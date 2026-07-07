@@ -185,7 +185,7 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
               value={config.images_dir}
               onChange={(e) => setConfig({ ...config, images_dir: e.target.value })}
               placeholder="/path/to/drone/images"
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
             />
             <p className="mt-1 text-[10px] text-steel-gray">
               Directory containing JPEG/TIFF images from the drone flight.
@@ -206,7 +206,7 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
                 onChange={(e) =>
                   setConfig({ ...config, max_concurrency: parseInt(e.target.value) || 4 })
                 }
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
               />
             </section>
             <section>
@@ -216,7 +216,7 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
               <select
                 value={config.feature_quality}
                 onChange={(e) => setConfig({ ...config, feature_quality: e.target.value })}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
               >
                 <option value="ultra">Ultra (slowest, best)</option>
                 <option value="high">High</option>
@@ -232,7 +232,7 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
               <select
                 value={config.pc_type}
                 onChange={(e) => setConfig({ ...config, pc_type: e.target.value })}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
               >
                 <option value="las">LAS</option>
                 <option value="laz">LAZ (compressed)</option>

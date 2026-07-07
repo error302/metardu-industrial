@@ -148,7 +148,7 @@ return (
 
           {/* Current project status */}
           {currentProject && (
-            <div className="rounded-md border border-navy-border bg-navy-base p-3">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
               <div className="text-[10px] uppercase tracking-wider text-steel-gray">Current Project</div>
               <div className="text-sm font-bold text-white">{currentProject.name}</div>
               <div className="text-[10px] text-steel-gray mt-1">
@@ -194,16 +194,16 @@ return (
               <input
                 type="text" value={newName} onChange={(e) => setNewName(e.target.value)}
                 placeholder="Project name"
-                className="rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                className="input-enterprise rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
               />
               <input
                 type="text" value={newEpsg} onChange={(e) => setNewEpsg(e.target.value)}
                 placeholder="EPSG:4326"
-                className="rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
               />
               <select
                 value={newDomain} onChange={(e) => setNewDomain(e.target.value)}
-                className="rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                className="input-enterprise rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
               >
                 <option value="both">Both</option>
                 <option value="mining">Mining</option>
@@ -227,7 +227,7 @@ return (
               <input
                 type="text" value={savePath} onChange={(e) => setSavePath(e.target.value)}
                 placeholder="/path/to/project.metardu"
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
               />
               <button
                 onClick={handleSave} disabled={saving || !currentProject}
@@ -247,7 +247,7 @@ return (
               <input
                 type="text" value={loadPath} onChange={(e) => setLoadPath(e.target.value)}
                 placeholder="/path/to/project.metardu"
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
               />
               <button
                 onClick={handleLoad} disabled={loading || !loadPath}
@@ -267,7 +267,7 @@ return (
               </h3>
               <div className="space-y-1">
                 {currentProject.recent_reports.slice(0, 5).map((r, i) => (
-                  <div key={i} className="rounded border border-navy-border bg-navy-base px-2 py-1 font-mono text-[10px] text-steel-light truncate">
+                  <div key={i} className="input-enterprise rounded border border-navy-border bg-navy-base px-2 py-1 font-mono text-[10px] text-steel-light truncate">
                     {r}
                   </div>
                 ))}

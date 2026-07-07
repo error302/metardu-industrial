@@ -199,12 +199,12 @@ export function SafetyReportDialog({ open, onClose }: Props) {
               </div>
               <div className="max-h-64 space-y-1.5 overflow-y-auto">
                 {inspection.hazards.map((h, i) => (
-                  <div key={i} className="rounded-md border border-navy-border bg-navy-base p-2">
+                  <div key={i} className="input-enterprise rounded-md border border-navy-border bg-navy-base p-2">
                     <div className="mb-1.5 grid grid-cols-3 gap-1.5">
                       <select
                         value={h.hazard_type}
                         onChange={(e) => updateHazard(i, { hazard_type: e.target.value as HazardType })}
-                        className="rounded border border-navy-border bg-navy-base px-1 py-0.5 text-[10px] text-steel-light"
+                        className="input-enterprise rounded border border-navy-border bg-navy-base px-1 py-0.5 text-[10px] text-steel-light"
                       >
                         {HAZARD_TYPES.map((t) => (
                           <option key={t.value} value={t.value}>{t.label}</option>
@@ -213,7 +213,7 @@ export function SafetyReportDialog({ open, onClose }: Props) {
                       <select
                         value={h.status}
                         onChange={(e) => updateHazard(i, { status: e.target.value as HazardStatus })}
-                        className="rounded border border-navy-border bg-navy-base px-1 py-0.5 text-[10px] text-steel-light"
+                        className="input-enterprise rounded border border-navy-border bg-navy-base px-1 py-0.5 text-[10px] text-steel-light"
                       >
                         {STATUSES.map((s) => (
                           <option key={s.value} value={s.value}>{s.label}</option>
@@ -365,7 +365,7 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded border border-navy-border bg-navy-base px-2 py-1 text-xs text-white focus:border-fail focus:outline-none"
+        className="input-enterprise w-full rounded border border-navy-border bg-navy-base px-2 py-1 text-xs text-white focus:border-fail focus:outline-none"
       />
     </div>
   );

@@ -258,7 +258,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                   <select
                     value={epoch.path}
                     onChange={(e) => updateEpoch(i, "path", e.target.value)}
-                    className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                    className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
                   >
                     <option value="">— Select DEM —</option>
                     {geotiffFiles.map((f) => (
@@ -269,7 +269,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                     type="date"
                     value={epoch.date}
                     onChange={(e) => updateEpoch(i, "date", e.target.value)}
-                    className="rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                    className="input-enterprise rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
                   />
                   {epochs.length > 2 && (
                     <button onClick={() => removeEpoch(i)} className="rounded p-1 text-steel-gray hover:text-fail">
@@ -285,7 +285,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                 <Plus className="h-3.5 w-3.5" /> Add Epoch
               </button>
               {geotiffFiles.length === 0 && (
-                <div className="rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-gray">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-xs text-steel-gray">
                   Drop GeoTIFF DEM files (one per epoch) on the map first.
                 </div>
               )}
@@ -295,7 +295,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
           {/* Step 2: Thresholds + metadata */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="rounded-md border p-3" style={{ borderColor: `${colors.failDim}40`, background: `${colors.failDim}10` }}>
+              <div className="card-enterprise rounded-md border p-3" style={{ borderColor: `${colors.failDim}40`, background: `${colors.failDim}10` }}>
                 <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: colors.failDim }}>
                   <AlertTriangle className="h-3 w-3" /> Thresholds (USACE EM 1110-2-1900 defaults)
                 </div>
@@ -316,7 +316,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={siteName} onChange={(e) => setSiteName(e.target.value)}
                     placeholder="e.g., Pit B — North Highwall"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -326,7 +326,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={clientName} onChange={(e) => setClientName(e.target.value)}
                     placeholder="e.g., Vale — Brucutu Mine"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -336,7 +336,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={regulatorName} onChange={(e) => setRegulatorName(e.target.value)}
                     placeholder="e.g., ANM (Brazil) / DMP (Australia)"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -345,7 +345,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                   </label>
                   <input
                     type="text" value={reportPath} onChange={(e) => setReportPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -422,7 +422,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                     All Alerts ({result.alerts.length})
                   </h4>
                   <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border">
-                    <table className="w-full text-left text-[10px]">
+                    <table className="table-enterprise w-full text-left text-[10px]">
                       <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                         <tr>
                           <th className="px-2 py-1.5">Cell</th>
@@ -474,25 +474,25 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
               </p>
               {result && (
                 <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">Advisory</div>
                     <div className="font-mono text-sm font-bold" style={{ color: ALERT_COLORS.advisory }}>
                       {result.stats.advisory_cells}
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">Watch</div>
                     <div className="font-mono text-sm font-bold" style={{ color: ALERT_COLORS.watch }}>
                       {result.stats.watch_cells}
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">Critical</div>
                     <div className="font-mono text-sm font-bold" style={{ color: ALERT_COLORS.critical }}>
                       {result.stats.critical_cells}
                     </div>
                   </div>
-                  <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                  <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                     <div className="text-[9px] uppercase text-steel-gray">Compliance</div>
                     <div className="font-mono text-sm font-bold" style={{ color: result.stats.compliance_pct > 95 ? ALERT_COLORS.none : ALERT_COLORS.advisory }}>
                       {result.stats.compliance_pct.toFixed(1)}%
@@ -533,7 +533,7 @@ function ThresholdField({
 
 function ResultTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>

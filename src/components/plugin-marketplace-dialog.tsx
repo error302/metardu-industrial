@@ -154,7 +154,7 @@ return (
               <input
                 type="text" value={registrySource} onChange={(e) => setRegistrySource(e.target.value)}
                 placeholder="https://registry.metardu.example/plugins.json or /path/to/registry.json"
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:outline-none"
               />
               <button
                 onClick={handleFetchRegistry} disabled={loading || !registrySource}
@@ -175,7 +175,7 @@ return (
                 <input
                   type="text" value={query} onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search plugins…"
-                  className="flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
+                  className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-2 py-1.5 text-xs text-white focus:outline-none"
                 />
                 <span className="text-[10px] text-steel-gray">{filteredPlugins.length} plugins</span>
               </div>
@@ -184,7 +184,7 @@ return (
                 {filteredPlugins.map((plugin) => {
                   const installedAlready = isInstalled(plugin.id);
                   return (
-                    <div key={plugin.id} className="rounded-md border border-navy-border bg-navy-base p-3">
+                    <div key={plugin.id} className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">

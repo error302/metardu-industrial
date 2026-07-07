@@ -221,7 +221,7 @@ export function DialogButton({
       disabled={disabled}
       title={title}
       aria-label={ariaLabel ?? (typeof children === "string" ? children : undefined)}
-      className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+      className="btn-enterprise flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
       style={{ background: bg, color }}
     >
       {children}

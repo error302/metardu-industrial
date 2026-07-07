@@ -110,7 +110,7 @@ return (
                   value={folderPath}
                   onChange={(e) => setFolderPath(e.target.value)}
                   placeholder="Or type a folder path…"
-                  className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
+                  className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:outline-none"
                 />
               </div>
             </div>
@@ -121,7 +121,7 @@ return (
               <select
                 value={targetOrder}
                 onChange={(e) => setTargetOrder(e.target.value)}
-                className="rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none"
+                className="input-enterprise rounded-md border border-navy-border bg-navy-base px-3 py-2 text-xs text-white focus:outline-none"
               >
                 <option value="exclusive">Exclusive (critical under-keel)</option>
                 <option value="special">Special (harbors)</option>
@@ -162,7 +162,7 @@ return (
                     Coverage Heatmap ({report.grid_cols}×{report.grid_rows} grid)
                   </span>
                 </div>
-                <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                   <CoverageHeatmap report={report} />
                 </div>
               </div>
@@ -196,7 +196,7 @@ return (
                   Files Scanned ({report.file_summaries.length})
                 </h4>
                 <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border">
-                  <table className="w-full text-left text-[10px]">
+                  <table className="table-enterprise w-full text-left text-[10px]">
                     <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                       <tr>
                         <th className="px-2 py-1">Filename</th>
@@ -222,7 +222,7 @@ return (
           )}
 
           {!report && !running && (
-            <div className="rounded-md border border-navy-border bg-navy-base p-8 text-center text-xs text-steel-gray">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-8 text-center text-xs text-steel-gray">
               Drop a folder of .all or .s7k files above. The tool scans every file,
               extracts ping positions, and shows a coverage heatmap in seconds.
               <br />
@@ -268,7 +268,7 @@ function CoverageHeatmap({ report }: { report: CoverageReport }) {
 
 function StatTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-2.5">
+    <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-2.5">
       <div className="text-[9px] uppercase tracking-wider text-steel-gray">{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold" style={{ color }}>{value}</div>
     </div>

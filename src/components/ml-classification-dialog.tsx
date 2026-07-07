@@ -215,7 +215,7 @@ function FragmentationTab() {
         value={csvInput}
         onChange={(e) => setCsvInput(e.target.value)}
         rows={6}
-        className="mb-4 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
+        className="input-enterprise mb-4 w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
       />
 
       {error && <div className="mb-4 rounded-md border p-3 text-xs" style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>{error}</div>}
@@ -234,7 +234,7 @@ function FragmentationTab() {
             <FragTile label="P80" value={`${result.p80.toFixed(0)}mm`} />
             <FragTile label="P90" value={`${result.p90.toFixed(0)}mm`} />
           </div>
-          <div className="rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-light">
+          <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-light">
             Uniformity coefficient (P60/P10): <span className="font-mono text-white">{result.uniformity.toFixed(2)}</span>
           </div>
         </div>
@@ -257,7 +257,7 @@ function NumInput({ label, value, step, onChange }: { label: string; value: numb
       <input
         type="number" step={step} value={value}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
       />
     </div>
   );
@@ -265,7 +265,7 @@ function NumInput({ label, value, step, onChange }: { label: string; value: numb
 
 function FragTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-2.5">
+    <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-2.5">
       <div className="text-[9px] uppercase tracking-wider text-steel-gray">{label}</div>
       <div className="mt-0.5 font-mono text-sm font-semibold text-white">{value}</div>
     </div>

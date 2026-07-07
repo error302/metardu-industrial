@@ -203,7 +203,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
 
         <div className="flex-1 overflow-y-auto p-5">
           {demFiles.length < 2 ? (
-            <div className="rounded-md border border-navy-border bg-navy-base p-4 text-center text-xs text-steel-gray">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4 text-center text-xs text-steel-gray">
               Drop at least 2 GeoTIFF DEM files (previous + current survey) to compute differences.
             </div>
           ) : (
@@ -215,7 +215,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
                 <select
                   value={prevPath}
                   onChange={(e) => setPrevPath(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
                 >
                   <option value="">— Select previous —</option>
                   {demFiles.map((f) => (
@@ -231,7 +231,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
                 <select
                   value={currPath}
                   onChange={(e) => setCurrPath(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-industrial-orange focus:outline-none"
                 >
                   <option value="">— Select current —</option>
                   {demFiles.filter((f) => f.path !== prevPath).map((f) => (
@@ -248,7 +248,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
                   <input
                     type="number" step="0.1" value={density}
                     onChange={(e) => setDensity(parseFloat(e.target.value) || 2.7)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
                   />
                 </div>
                 <div>
@@ -258,7 +258,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
                   <input
                     type="number" step="0.1" value={hotspotThreshold}
                     onChange={(e) => setHotspotThreshold(parseFloat(e.target.value) || 1.0)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
                   />
                 </div>
               </div>
@@ -283,7 +283,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
                 <StatTile label="Cut (t)" value={s.total_cut_tonnage.toFixed(0)} color={colors.fail} />
                 <StatTile label="Hotspots" value={result.hotspots.length.toString()} color={colors.investigate} />
               </div>
-              <div className="rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-light">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-light">
                 <div className="grid grid-cols-2 gap-2">
                   <span>Fill cells: <span className="font-mono text-white">{s.fill_cells.toLocaleString()}</span></span>
                   <span>Cut cells: <span className="font-mono text-white">{s.cut_cells.toLocaleString()}</span></span>
@@ -383,7 +383,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
 
 function StatTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-semibold text-white">{value}</div>
     </div>

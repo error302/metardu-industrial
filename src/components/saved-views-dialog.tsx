@@ -72,7 +72,7 @@ export function SavedViewsDialog({ open, onClose, onCapture, onRestore }: Props)
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
             placeholder="e.g., Stockpile Pad A"
-            className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
+            className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-1.5 text-sm text-white focus:border-accent focus:outline-none"
           />
           <DialogButton
             variant="primary"

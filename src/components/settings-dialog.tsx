@@ -245,7 +245,7 @@ export function SettingsDialog({ open, onClose }: Props) {
               onChange={(e) =>
                 setDraft({ ...draft, defaultEpsg: e.target.value })
               }
-              className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2.5 font-mono text-[14px] text-white transition-colors focus:border-industrial-orange focus:outline-none"
+              className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2.5 font-mono text-[14px] text-white transition-colors focus:border-industrial-orange focus:outline-none"
             >
               {CRS_QUICKPICKS.map((p) => (
                 <option key={p.code} value={p.code}>
@@ -278,7 +278,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                 value={crsSearch}
                 onChange={(e) => setCrsSearch(e.target.value)}
                 placeholder="Search EPSG codes, datums, or regions (e.g. 'GDA2020', 'Africa', 'NAD83')…"
-                className="w-full rounded-md border border-navy-border bg-navy-base py-2.5 pl-9 pr-3 text-[14px] text-white placeholder:text-steel-gray focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base py-2.5 pl-9 pr-3 text-[14px] text-white placeholder:text-steel-gray focus:border-industrial-orange focus:outline-none"
               />
             </div>
             <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1">
@@ -371,7 +371,7 @@ export function SettingsDialog({ open, onClose }: Props) {
             </p>
 
             {/* Form */}
-            <div className="rounded-md border border-navy-border bg-navy-base p-3 space-y-2.5">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 space-y-2.5">
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                   CRS Code
@@ -381,7 +381,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                   value={customCode}
                   onChange={(e) => setCustomCode(e.target.value)}
                   placeholder="MINE:NEWMONT-A"
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-[13px] text-white placeholder:text-steel-gray focus:border-industrial-orange focus:outline-none"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-[13px] text-white placeholder:text-steel-gray focus:border-industrial-orange focus:outline-none"
                 />
               </div>
               <div>
@@ -393,7 +393,7 @@ export function SettingsDialog({ open, onClose }: Props) {
                   onChange={(e) => setCustomDef(e.target.value)}
                   placeholder="+proj=tmerc +lat_0=0 +lon_0=121.5 +k=1 +x_0=50000 +y_0=1000000 +ellps=GRS80 +units=m +no_defs"
                   rows={3}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-[11px] text-white placeholder:text-steel-gray focus:border-industrial-orange focus:outline-none resize-y"
+                  className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-[11px] text-white placeholder:text-steel-gray focus:border-industrial-orange focus:outline-none resize-y"
                 />
               </div>
               {customError && (
@@ -735,7 +735,7 @@ function AboutTile({
   mono?: boolean;
 }) {
   return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-3">
+    <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
       <div className="text-[10px] font-medium uppercase tracking-wider text-steel-gray">
         {label}
       </div>

@@ -105,7 +105,7 @@ return (
                 value={filePath}
                 onChange={(e) => setFilePath(e.target.value)}
                 placeholder="/path/to/survey.svp"
-                className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
                 onKeyDown={(e) => e.key === "Enter" && handleLoad()}
               />
               <button
@@ -141,7 +141,7 @@ return (
 
           {/* Graph */}
           {profile && (
-            <div className="rounded-md border border-navy-border bg-navy-base p-3">
+            <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                 Depth vs Sound Speed
               </div>
@@ -201,7 +201,7 @@ return (
                 Cast Data ({profile.points.length} points)
               </h4>
               <div className="max-h-32 overflow-y-auto rounded-md border border-navy-border">
-                <table className="w-full text-left text-[10px]">
+                <table className="table-enterprise w-full text-left text-[10px]">
                   <thead className="sticky top-0 bg-navy-panel text-steel-gray">
                     <tr>
                       <th className="px-2 py-1.5">#</th>
@@ -228,7 +228,7 @@ return (
 
 function Stat({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>

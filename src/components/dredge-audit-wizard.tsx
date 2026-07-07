@@ -220,7 +220,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                     <select
                       value={prePath}
                       onChange={(e) => setPrePath(e.target.value)}
-                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                      className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                       style={{ borderColor: prePath ? colors.marineTurquoise : undefined }}
                     >
                       <option value="">— Or pick loaded —</option>
@@ -246,7 +246,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                     <select
                       value={postPath}
                       onChange={(e) => setPostPath(e.target.value)}
-                      className="flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                      className="input-enterprise flex-1 rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                       style={{ borderColor: postPath ? colors.marineTurquoise : undefined }}
                     >
                       <option value="">— Or pick loaded —</option>
@@ -303,7 +303,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="0.1" value={designDepth}
                     onChange={(e) => setDesignDepth(parseFloat(e.target.value) || 0)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                   <p className="mt-1 text-[10px] text-steel-gray">
                     e.g., 15.0 for a berth, 12.0 for an approach channel
@@ -317,7 +317,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   <select
                     value={designTiffPath}
                     onChange={(e) => setDesignTiffPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   >
                     <option value="">— Select design template —</option>
                     {geotiffFiles.filter((f) => f.path !== prePath && f.path !== postPath).map((f) => (
@@ -335,7 +335,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   <input
                     type="number" step="0.05" min="0" value={tolerance}
                     onChange={(e) => setTolerance(parseFloat(e.target.value) || 0)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                   <p className="mt-1 text-[10px] text-steel-gray">
                     Standard contracts: 0.3m (precision), 0.5m (standard)
@@ -349,7 +349,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                     type="text" value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="e.g., Port of Rotterdam / Van Oord"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -360,7 +360,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                     type="text" value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
                     placeholder="e.g., Entrance Channel — June 2026"
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -370,7 +370,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   <input
                     type="text" value={reportPath}
                     onChange={(e) => setReportPath(e.target.value)}
-                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
+                    className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:outline-none"
                   />
                 </div>
               </div>
@@ -421,7 +421,7 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                   Category Breakdown
                 </h4>
                 <div className="rounded-md border border-navy-border">
-                  <table className="w-full text-left text-[10px]">
+                  <table className="table-enterprise w-full text-left text-[10px]">
                     <thead className="bg-navy-panel text-steel-gray">
                       <tr>
                         <th className="px-2 py-1.5">Category</th>
@@ -493,25 +493,25 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
                 Open in browser → Ctrl+P → Save as PDF for print-ready output.
               </p>
               <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                   <div className="text-[9px] uppercase text-steel-gray">Pay</div>
                   <div className="font-mono text-sm font-bold" style={{ color: colors.pass }}>
                     {(result?.pay_volume ?? 0).toFixed(0)} m³
                   </div>
                 </div>
-                <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                   <div className="text-[9px] uppercase text-steel-gray">Allow OD</div>
                   <div className="font-mono text-sm font-bold" style={{ color: colors.industrialOrange }}>
                     {(result?.allowable_overdredge ?? 0).toFixed(0)} m³
                   </div>
                 </div>
-                <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                   <div className="text-[9px] uppercase text-steel-gray">Excess OD</div>
                   <div className="font-mono text-sm font-bold" style={{ color: colors.fail }}>
                     {(result?.excessive_overdredge ?? 0).toFixed(0)} m³
                   </div>
                 </div>
-                <div className="rounded-md border border-navy-border bg-navy-base p-3">
+                <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3">
                   <div className="text-[9px] uppercase text-steel-gray">Shoaling</div>
                   <div className="font-mono text-sm font-bold" style={{ color: "#F59E0B" }}>
                     {(result?.shoaling ?? 0).toFixed(0)} m³
@@ -552,7 +552,7 @@ function catCells(result: DredgeVolumeResult, cat: DredgeCategory): number {
 
 function ResultTile({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
+    <div className="card-enterprise rounded-md border p-2.5" style={{ borderColor: `${color}40`, background: `${color}10` }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>{label}</div>
       <div className="mt-0.5 font-mono text-sm font-bold text-white">{value}</div>
     </div>

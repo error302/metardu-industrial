@@ -172,7 +172,7 @@ export function CubeSurfaceDialog({ open, onClose, onSurfaceGenerated }: Props) 
                 value={csvInput}
                 onChange={(e) => setCsvInput(e.target.value)}
                 rows={4}
-                className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
+                className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-industrial-orange focus:outline-none"
                 placeholder="x,y,depth,uncertainty&#10;0,0,10.0,0.15&#10;0.5,0,10.1,0.15"
               />
             )}
@@ -242,7 +242,7 @@ export function CubeSurfaceDialog({ open, onClose, onSurfaceGenerated }: Props) 
                   color={colors.marineCyan}
                 />
               </div>
-              <div className="rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-light">
+              <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-3 text-[10px] text-steel-light">
                 <span className="flex items-center gap-1.5">
                   <Database className="h-3 w-3" style={{ color: colors.marineTurquoise }} />
                   Surface rendered on map · blue depth ramp
@@ -303,7 +303,7 @@ function ParamInput({
           const v = isInt ? parseInt(e.target.value) || 0 : parseFloat(e.target.value) || 0;
           onChange(v);
         }}
-        className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
+        className="input-enterprise w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-sm text-white focus:border-industrial-orange focus:outline-none"
       />
       <p className="mt-1 text-[10px] text-steel-gray">{hint}</p>
     </div>
@@ -321,7 +321,7 @@ function ResultTile({
 }) {
   return (
     <div
-      className="rounded-md border p-2.5"
+      className="card-enterprise rounded-md border p-2.5"
       style={{ borderColor: `${color}40`, background: `${color}10` }}
     >
       <div className="text-[9px] uppercase tracking-wider" style={{ color }}>
