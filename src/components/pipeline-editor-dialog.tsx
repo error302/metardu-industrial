@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Pipeline Editor Dialog — Phase 3 Automation.
  *
@@ -12,9 +11,10 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useEffect, useState } from "react";
-import { X, Play, Loader2, GitBranch, Clock, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { GitBranch, Clock, FolderOpen, Plus, Trash2 } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   runPipelineCmd,
   parsePipelineCmd,
@@ -69,7 +69,7 @@ steps:
 type Tab = "pipeline" | "watch" | "schedule";
 
 export function PipelineEditorDialog({ open, onClose }: Props) {
-  const [tab, setTab] = useState<Tab>("pipeline");
+  const [tab] = useState<Tab>("pipeline");
   const [yaml, setYaml] = useState(SAMPLE_YAML);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<PipelineRunResult | null>(null);
@@ -87,7 +87,6 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
   const [newJobInterval, setNewJobInterval] = useState(86400);
 
   // Subscribe to pipeline progress events
-  useEscapeKey(onClose, open);
   useEffect(() => {
     if (!open) return;
     const unlisten = listen<{ step_id: string; action: string; status: string; log_lines?: string[]; error?: string }>(
@@ -113,7 +112,6 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
     listScheduledJobs().then(setJobs);
   }, [open]);
 
-  if (!open) return null;
 
   async function handleRun() {
     setRunning(true);
@@ -182,35 +180,23 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
     listScheduledJobs().then(setJobs);
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Pipeline Editor"
+      icon={<GitBranch className="h-4 w-4" />}
+      iconColor={colors.steelLight}
+      maxWidth="max-w-3xl"
+      subtitle="Visual workflow builder"
+      footerHint="11 actions + watch folders"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleRun} disabled={running}>Run</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <GitBranch className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            Automation
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-navy-border px-5 pt-3">
-          <TabBtn active={tab === "pipeline"} onClick={() => setTab("pipeline")} icon={<GitBranch className="h-3 w-3" />} label="Pipelines" />
-          <TabBtn active={tab === "watch"} onClick={() => setTab("watch")} icon={<FolderOpen className="h-3 w-3" />} label="Watch Folders" />
-          <TabBtn active={tab === "schedule"} onClick={() => setTab("schedule")} icon={<Clock className="h-3 w-3" />} label="Scheduled Jobs" />
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {tab === "pipeline" && (
             <div>
               <textarea
@@ -319,37 +305,7 @@ export function PipelineEditorDialog({ open, onClose }: Props) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">YAML pipeline DSL · template variables: {'{{input.*}}, {{steps.<id>.*}}'}</div>
-          {tab === "pipeline" && (
-            <button
-              onClick={handleRun}
-              disabled={running}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
-              style={{ background: running ? colors.steelGray : colors.industrialOrange, color: colors.navyBase }}
-            >
-              {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-              {running ? "Running…" : "Run pipeline"}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 
-function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-medium transition-colors ${active ? "text-white" : "text-steel-gray hover:text-steel-light"}`}
-      style={active ? { borderColor: colors.industrialOrange } : { borderColor: "transparent" }}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
