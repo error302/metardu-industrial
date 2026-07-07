@@ -1,19 +1,8 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
-/**
- * Settings Dialog — workspace defaults, CRS library, accessibility, about.
- *
- * Robust layout: max-w-2xl, sectioned with dividers, larger touch targets,
- * and a prominent Save action. Settings persist via Tauri IPC (save_settings)
- * with a localStorage fallback handled in the app store.
- */
-
 import { useMemo, useState } from "react";
 import {
   Mountain,
   Ship,
-  X,
-  Save,
-  RotateCcw,
+  Settings,
   Search,
   Library,
   Info,
@@ -32,6 +21,7 @@ import {
 import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore, type AppSettings } from "@/stores/app-store";
 import { saveSettings } from "@/lib/tauri-ipc";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   CRS_QUICKPICKS,
   filterCrsQuickpicks,
@@ -52,6 +42,7 @@ export function SettingsDialog({ open, onClose }: Props) {
   const [draft, setDraft] = useState<AppSettings>(settings);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  void saved;
   const [crsSearch, setCrsSearch] = useState("");
 
   const filteredCrs = useMemo(() => filterCrsQuickpicks(crsSearch), [crsSearch]);
@@ -114,7 +105,6 @@ export function SettingsDialog({ open, onClose }: Props) {
     }
   }
 
-  useEscapeKey(onClose, open);
   if (!open) return null;
 
   const dirty =
@@ -145,31 +135,25 @@ export function SettingsDialog({ open, onClose }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Settings"
+      icon={<Settings className="h-4 w-4" />}
+      iconColor={colors.steelLight}
+      maxWidth="max-w-2xl"
+      subtitle="Theme + CRS + density"
+      footerHint="Daylight/cabin mode"
+      actions={
+        <>
+          <DialogButton variant="secondary" onClick={reset} disabled={!dirty}>Reset</DialogButton>
+          <DialogButton variant="primary" onClick={apply} disabled={!dirty || saving}>
+            {saving ? "Saving…" : "Save Changes"}
+          </DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <SettingsGlyph />
-            <h2 className="text-base font-semibold text-white">Settings</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded p-1.5 text-steel-light transition-colors hover:bg-navy-elevated hover:text-white"
-            aria-label="Close settings"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
           {/* ── Default Workspace ── */}
           <SectionHeader title="Default Workspace" />
           <section className="mb-7">
@@ -546,88 +530,12 @@ export function SettingsDialog({ open, onClose }: Props) {
               </div>
             </div>
           </section>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-6 py-4">
-          <button
-            onClick={reset}
-            disabled={!dirty}
-            className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] text-steel-light transition-colors hover:bg-navy-elevated hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Reset
-          </button>
-          <div className="flex items-center gap-3">
-            {saved && (
-              <span
-                className="text-[12px] font-semibold"
-                style={{ color: colors.pass }}
-              >
-                Saved ✓
-              </span>
-            )}
-            <button
-              onClick={apply}
-              disabled={!dirty || saving}
-              className="flex items-center gap-2 rounded-md px-5 py-2.5 text-[13px] font-bold shadow-lg transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
-              style={{
-                background: dirty ? colors.industrialOrange : colors.steelGray,
-                color: colors.navyBase,
-                boxShadow: dirty
-                  ? `0 4px 14px ${colors.industrialOrange}40`
-                  : "none",
-              }}
-            >
-              <Save className="h-4 w-4" />
-              {saving ? "Saving…" : "Save Changes"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 
 /* ──────────────────────────────────────────────────────────── */
 
-function SettingsGlyph() {
-  return (
-    <div
-      className="flex h-7 w-7 items-center justify-center rounded"
-      style={{ background: colors.industrialOrange, color: colors.navyBase }}
-      aria-hidden
-    >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 120 120"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          cx="60"
-          cy="60"
-          r="54"
-          stroke="currentColor"
-          strokeWidth="10"
-          fill="none"
-        />
-        <text
-          x="60"
-          y="82"
-          textAnchor="middle"
-          fontSize="62"
-          fontWeight="900"
-          fontFamily="Inter, system-ui, sans-serif"
-          fill="currentColor"
-        >
-          M
-        </text>
-      </svg>
-    </div>
-  );
-}
 
 function SectionHeader({
   title,
