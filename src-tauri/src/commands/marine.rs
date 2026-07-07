@@ -23,8 +23,19 @@ pub async fn generate_cube_surface_cmd(
     soundings: Vec<Sounding>,
     params: CubeParams,
 ) -> Result<crate::marine::CubeSurface, String> {
-    generate_cube_surface(&soundings, &params)
-        .map_err(|e| ctx_no_input!("generating CUBE surface", e))
+    // Sprint 21: save recovery snapshot before long operation
+    let _snapshot = crate::recovery::save_recovery_snapshot(
+        &format!("{{\"operation\":\"generate_cube_surface\",\"soundings\":{}}}", soundings.len()),
+        "generate_cube_surface",
+    );
+
+    let result = generate_cube_surface(&soundings, &params)
+        .map_err(|e| ctx_no_input!("generating CUBE surface", e))?;
+
+    if let Ok(ref snap) = _snapshot {
+        crate::recovery::clear_recovery_snapshot(snap);
+    }
+    Ok(result)
 }
 
 /// Compute TPU for a batch of soundings.
@@ -103,8 +114,15 @@ pub struct DredgeAuditRequest {
 pub async fn compute_dredge_audit_cmd(
     request: DredgeAuditRequest,
 ) -> Result<DredgeVolumeResult, String> {
+    // Sprint 21: save recovery snapshot before long operation
+    let _snapshot = crate::recovery::save_recovery_snapshot(
+        &format!("{{\"operation\":\"dredge_audit\",\"post_path\":\"{}\"}}", request.post_path),
+        "dredge_audit",
+    );
+
     // Read post-dredge grid (the reference grid)
-    let post_path = PathBuf::from(&request.post_path);
+    let post_path = crate::path_validation::validate_path(&request.post_path)
+        .map_err(|e| ctx!("validating post-dredge path", request.post_path, e))?;
     let post_header = read_geotiff_header(&post_path)
         .map_err(|e| ctx!("reading post-dredge DEM header", request.post_path, e))?;
     let post_grid = read_dem_grid(&post_path, &post_header)
@@ -112,7 +130,8 @@ pub async fn compute_dredge_audit_cmd(
     let (cell_w_m, cell_h_m) = derive_cell_meters(&post_header);
 
     // Read pre-dredge grid
-    let pre_path = PathBuf::from(&request.pre_path);
+    let pre_path = crate::path_validation::validate_path(&request.pre_path)
+        .map_err(|e| ctx!("validating pre-dredge path", request.pre_path, e))?;
     let pre_header = read_geotiff_header(&pre_path)
         .map_err(|e| ctx!("reading pre-dredge DEM header", request.pre_path, e))?;
     let pre_grid = read_dem_grid(&pre_path, &pre_header)

@@ -154,10 +154,10 @@ fn parse_shp(data: &[u8]) -> Result<(ShapeType, Vec<Shape>, (f64, f64, f64, f64)
         .ok_or(ShapefileError::UnsupportedShapeType(shape_type_raw))?;
 
     // Bounds: bytes 36-67 (min_x, min_y, max_x, max_y — little-endian f64)
-    let min_x = f64::from_le_bytes(data[36..44].try_into().unwrap());
-    let min_y = f64::from_le_bytes(data[44..52].try_into().unwrap());
-    let max_x = f64::from_le_bytes(data[52..60].try_into().unwrap());
-    let max_y = f64::from_le_bytes(data[60..68].try_into().unwrap());
+    let min_x = f64::from_le_bytes(data[36..44].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [36..44]".to_string()))?);
+    let min_y = f64::from_le_bytes(data[44..52].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [44..52]".to_string()))?);
+    let max_x = f64::from_le_bytes(data[52..60].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [52..60]".to_string()))?);
+    let max_y = f64::from_le_bytes(data[60..68].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [60..68]".to_string()))?);
 
     // Records start at byte 100
     let mut offset = 100usize;
@@ -203,23 +203,23 @@ fn parse_record(data: &[u8], expected_type: ShapeType) -> Result<Option<Shape>, 
             if data.len() < 20 {
                 return Err(ShapefileError::Invalid("Point record too short".to_string()));
             }
-            let x = f64::from_le_bytes(data[4..12].try_into().unwrap());
-            let y = f64::from_le_bytes(data[12..20].try_into().unwrap());
+            let x = f64::from_le_bytes(data[4..12].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [4..12]".to_string()))?);
+            let y = f64::from_le_bytes(data[12..20].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [12..20]".to_string()))?);
             Shape::Point { x, y }
         }
         ShapeType::MultiPoint => {
             if data.len() < 40 {
                 return Err(ShapefileError::Invalid("MultiPoint record too short".to_string()));
             }
-            let num_points = i32::from_le_bytes(data[36..40].try_into().unwrap()) as usize;
+            let num_points = i32::from_le_bytes(data[36..40].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [36..40]".to_string()))?) as usize;
             let mut points = Vec::with_capacity(num_points);
             for i in 0..num_points {
                 let base = 40 + i * 16;
                 if base + 16 > data.len() {
                     break;
                 }
-                let x = f64::from_le_bytes(data[base..base + 8].try_into().unwrap());
-                let y = f64::from_le_bytes(data[base + 8..base + 16].try_into().unwrap());
+                let x = f64::from_le_bytes(data[base..base + 8].try_into().map_err(|_| ShapefileError::Invalid("truncated point data".to_string()))?);
+                let y = f64::from_le_bytes(data[base + 8..base + 16].try_into().map_err(|_| ShapefileError::Invalid("truncated point data".to_string()))?);
                 points.push([x, y]);
             }
             Shape::MultiPoint { points }
@@ -228,8 +228,8 @@ fn parse_record(data: &[u8], expected_type: ShapeType) -> Result<Option<Shape>, 
             if data.len() < 44 {
                 return Err(ShapefileError::Invalid("Polyline/Polygon record too short".to_string()));
             }
-            let num_parts = i32::from_le_bytes(data[36..40].try_into().unwrap()) as usize;
-            let num_points = i32::from_le_bytes(data[40..44].try_into().unwrap()) as usize;
+            let num_parts = i32::from_le_bytes(data[36..40].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [36..40]".to_string()))?) as usize;
+            let num_points = i32::from_le_bytes(data[40..44].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [40..44]".to_string()))?) as usize;
 
             // Parts array: num_parts × i32 (start index of each part)
             let parts_end = 44 + num_parts * 4;
@@ -239,15 +239,15 @@ fn parse_record(data: &[u8], expected_type: ShapeType) -> Result<Option<Shape>, 
             let mut part_starts = Vec::with_capacity(num_parts);
             for i in 0..num_parts {
                 let base = 44 + i * 4;
-                part_starts.push(i32::from_le_bytes(data[base..base + 4].try_into().unwrap()) as usize);
+                part_starts.push(i32::from_le_bytes(data[base..base + 4].try_into().map_err(|_| ShapefileError::Invalid("truncated part data".to_string()))?) as usize);
             }
 
             // Points array: num_points × (f64 x, f64 y)
             let mut all_points = Vec::with_capacity(num_points);
             for i in 0..num_points {
                 let base = parts_end + i * 16;
-                let x = f64::from_le_bytes(data[base..base + 8].try_into().unwrap());
-                let y = f64::from_le_bytes(data[base + 8..base + 16].try_into().unwrap());
+                let x = f64::from_le_bytes(data[base..base + 8].try_into().map_err(|_| ShapefileError::Invalid("truncated point data".to_string()))?);
+                let y = f64::from_le_bytes(data[base + 8..base + 16].try_into().map_err(|_| ShapefileError::Invalid("truncated point data".to_string()))?);
                 all_points.push([x, y]);
             }
 
@@ -287,9 +287,9 @@ fn parse_dbf(data: &[u8]) -> Result<Vec<std::collections::HashMap<String, String
     }
 
     // Header
-    let num_records = u32::from_le_bytes(data[4..8].try_into().unwrap()) as usize;
-    let header_size = u16::from_le_bytes(data[8..10].try_into().unwrap()) as usize;
-    let record_size = u16::from_le_bytes(data[10..12].try_into().unwrap()) as usize;
+    let num_records = u32::from_le_bytes(data[4..8].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [4..8]".to_string()))?) as usize;
+    let header_size = u16::from_le_bytes(data[8..10].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [8..10]".to_string()))?) as usize;
+    let record_size = u16::from_le_bytes(data[10..12].try_into().map_err(|_| ShapefileError::Invalid("truncated data at offset [10..12]".to_string()))?) as usize;
 
     // Field descriptors start at byte 32, each is 32 bytes, terminated by 0x0D
     let mut fields: Vec<(String, char, usize)> = Vec::new(); // (name, type, length)

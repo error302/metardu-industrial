@@ -90,23 +90,75 @@ fn profile_path() -> PathBuf {
     };
     PathBuf::from(base)
         .join("metardu-industrial")
-        .join("profile.json")
+        .join("profile.dat") // .dat not .json — it's now encrypted
+}
+
+/// Derive an encryption key from the machine fingerprint.
+/// This ties the profile to the specific machine — can't be copied to
+/// another machine and read. Uses SHA-256 of a static app secret + the
+/// machine's hostname as a simple key derivation.
+fn derive_key() -> Vec<u8> {
+    use sha2::{Sha256, Digest};
+    let hostname = std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .or_else(|_| std::env::var("USER"))
+        .unwrap_or_else(|_| "metardu-default".to_string());
+    let mut hasher = Sha256::new();
+    hasher.update(b"metardu-industrial-profile-key-v1");
+    hasher.update(hostname.as_bytes());
+    hasher.finalize().to_vec()
+}
+
+/// Simple XOR-based encryption (obfuscation).
+/// Not military-grade — but prevents casual file inspection.
+/// For production, upgrade to AES-256-GCM via the `aes-gcm` crate.
+fn encrypt(data: &[u8], key: &[u8]) -> Vec<u8> {
+    let mut result = Vec::with_capacity(data.len());
+    for (i, byte) in data.iter().enumerate() {
+        result.push(byte ^ key[i % key.len()]);
+    }
+    result
+}
+
+/// Decrypt (XOR is symmetric — same function as encrypt).
+fn decrypt(data: &[u8], key: &[u8]) -> Vec<u8> {
+    encrypt(data, key) // XOR is its own inverse
 }
 
 /// Load the user profile from disk. Returns a default (empty) profile
-/// if no profile exists yet (new user).
+/// if no profile exists yet (new user). The profile is encrypted at rest
+/// using a machine-derived key.
 pub fn load_profile() -> UserProfile {
     let path = profile_path();
     if !path.exists() {
+        // Check for legacy unencrypted profile.json (migration)
+        let legacy_path = path.with_extension("json");
+        if legacy_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&legacy_path) {
+                if let Ok(profile) = serde_json::from_str::<UserProfile>(&content) {
+                    // Migrate to encrypted format
+                    let _ = save_profile(&profile);
+                    let _ = std::fs::remove_file(&legacy_path);
+                    return profile;
+                }
+            }
+        }
         return UserProfile::default();
     }
-    match std::fs::read_to_string(&path) {
-        Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+    match std::fs::read(&path) {
+        Ok(encrypted) => {
+            let key = derive_key();
+            let decrypted = decrypt(&encrypted, &key);
+            match String::from_utf8(decrypted) {
+                Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+                Err(_) => UserProfile::default(), // Corrupted — return empty
+            }
+        }
         Err(_) => UserProfile::default(),
     }
 }
 
-/// Save the user profile to disk.
+/// Save the user profile to disk (encrypted at rest).
 pub fn save_profile(profile: &UserProfile) -> Result<(), String> {
     let path = profile_path();
     if let Some(parent) = path.parent() {
@@ -114,7 +166,9 @@ pub fn save_profile(profile: &UserProfile) -> Result<(), String> {
     }
     let json = serde_json::to_string_pretty(profile)
         .map_err(|e| format!("serializing profile: {e}"))?;
-    std::fs::write(&path, json).map_err(|e| format!("writing profile: {e}"))?;
+    let key = derive_key();
+    let encrypted = encrypt(json.as_bytes(), &key);
+    std::fs::write(&path, encrypted).map_err(|e| format!("writing profile: {e}"))?;
     Ok(())
 }
 

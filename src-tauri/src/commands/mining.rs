@@ -27,10 +27,23 @@ pub async fn classify_ground(
     params: CsfParams,
     max_points: Option<u64>,
 ) -> Result<CsfResult, String> {
-    let path_buf = PathBuf::from(&path);
+    // Sprint 21: save recovery snapshot before long operation
+    let _snapshot = crate::recovery::save_recovery_snapshot(
+        &format!("{{\"operation\":\"classify_ground\",\"path\":\"{}\"}}", path),
+        "classify_ground",
+    );
+
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating LAS path for CSF", path, e))?;
     let points = crate::formats::read_las_points(&path_buf, max_points.unwrap_or(0))
         .map_err(|e| ctx!("reading LAS points for ground classification", path, e))?;
-    csf_classify(&points, &params).map_err(|e| ctx!("running CSF ground classification", path, e))
+    let result = csf_classify(&points, &params).map_err(|e| ctx!("running CSF ground classification", path, e))?;
+
+    // Clear recovery snapshot on success
+    if let Ok(ref snap) = _snapshot {
+        crate::recovery::clear_recovery_snapshot(snap);
+    }
+    Ok(result)
 }
 
 #[derive(Debug, Deserialize)]
