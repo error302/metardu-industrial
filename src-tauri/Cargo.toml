@@ -41,7 +41,7 @@ rsa = "0.9"
 # pure-Rust parsers cover the Phase 1 needs. Enable the 'geo' feature
 # when you need real CRS reprojection (Phase 2 marine work) or GDAL raster
 # operations.
-proj = { version = "0.27", optional = true }
+proj = { version = "0.31", optional = true }
 gdal = { version = "0.17", optional = true, features = ["bindgen"] }
 pdal-sys = { version = "0.1", optional = true }
 polars = { version = "0.42", optional = true, features = ["lazy", "csv", "parquet"] }
