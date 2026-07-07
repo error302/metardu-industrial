@@ -1,5 +1,4 @@
 import { withReportProfile } from "@/lib/report-profile";
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * EoM Reconciliation — single-screen practical tool.
  *
@@ -11,8 +10,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState } from "react";
 import {
-  X, Calculator, Loader2, FolderOpen, Copy, CheckCircle2, FileText,
-  TrendingUp, TrendingDown, Download,
+  Calculator, Loader2, FolderOpen, Copy, CheckCircle2, FileText,
+  TrendingUp, TrendingDown,
+  Download,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
@@ -23,6 +23,7 @@ import { pickFile, pickSaveFile } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
 import { useAppStore } from "@/stores/app-store";
 import { formatDatumNote } from "@/lib/crs-quickpicks";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -49,10 +50,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
-
-  const canCompute = prevPath && currPath;
+      const canCompute = prevPath && currPath;
 
   async function handleCompute() {
     setComputing(true); setError(null); setResult(null); setReportGenerated(false);
@@ -136,17 +134,21 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl">
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Calculator className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            EoM Production Reconciliation
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"><X className="h-4 w-4" /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5">
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="EOM Reconciliation"
+      icon={<Calculator className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-2xl"
+      subtitle="Monthly production reconciliation"
+      footerHint="Compare actual vs mine plan"
+      actions={
+        <>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
+    >
           {error && <div className="mb-4 rounded-md border p-3 text-xs" style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>{error}</div>}
 
           <div className="grid grid-cols-2 gap-5">
@@ -275,14 +277,7 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
               )}
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <span className="text-[10px] text-steel-gray">2.5D matrix subtraction · bench-by-bench breakdown · branded PDF report</span>
-          <button onClick={onClose} className="rounded-md px-3 py-1 text-xs font-medium" style={{ background: colors.pass, color: colors.navyBase }}>Close</button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 
