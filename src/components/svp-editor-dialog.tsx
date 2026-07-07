@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * SVP Editor — Sprint 3 Priority #3.
  *
@@ -10,10 +9,11 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState, useMemo } from "react";
-import { X, Waves, Upload, Loader2 } from "lucide-react";
+import { Waves, Upload, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors, rawColors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface SvpPoint {
   depth: number;
@@ -59,8 +59,6 @@ export function SvpEditorDialog({ open, onClose }: Props) {
     }).join(" ");
   }, [profile, speedRange, depthRange]);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleLoad() {
     if (!filePath.trim()) return;
@@ -82,28 +80,20 @@ export function SvpEditorDialog({ open, onClose }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="SVP Editor"
+      icon={<Waves className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-2xl"
+      subtitle="Sound velocity profile"
+      footerHint="Ray tracing correction"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Waves className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            SVP Editor (Sound Velocity Profile)
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* File input */}
           <div className="mb-4">
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
@@ -232,23 +222,7 @@ export function SvpEditorDialog({ open, onClose }: Props) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Sound velocity correction for multibeam ray tracing
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md px-4 py-1.5 text-xs font-medium"
-            style={{ background: colors.steelGray, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

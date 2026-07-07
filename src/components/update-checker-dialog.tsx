@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Update Checker Dialog — Production Edition.
  *
@@ -15,9 +14,10 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState } from "react";
 import {
-  X, RefreshCw, Download, CheckCircle2, Loader2, Info, AlertCircle, RotateCw,
+  RefreshCw, Download, CheckCircle2, Loader2, Info, AlertCircle, RotateCw,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   checkForUpdates, getCurrentVersion, downloadAndInstallUpdate,
   type UpdateInfo,
@@ -36,8 +36,6 @@ export function UpdateCheckerDialog({ open, onClose }: Props) {
   const [currentVer, setCurrentVer] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleCheck() {
     setPhase("checking");
@@ -90,30 +88,20 @@ export function UpdateCheckerDialog({ open, onClose }: Props) {
     // void relaunch();
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={phase === "downloading" ? undefined : onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Check for Updates"
+      icon={<RefreshCw className="h-4 w-4" />}
+      iconColor={colors.steelLight}
+      maxWidth="max-w-lg"
+      subtitle="Signed auto-updater"
+      footerHint="RSA-PSS packages"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-lg flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <RefreshCw className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            Check for Updates
-          </h2>
-          <button
-            onClick={onClose}
-            disabled={phase === "downloading"}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white disabled:opacity-40"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Error */}
           {phase === "error" && error && (
             <div className="rounded-md border p-3 text-xs"
@@ -262,22 +250,6 @@ export function UpdateCheckerDialog({ open, onClose }: Props) {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <span className="text-[10px] text-steel-gray">
-            Updates are signature-verified before installation
-          </span>
-          <button
-            onClick={onClose}
-            disabled={phase === "downloading"}
-            className="rounded-md px-3 py-1 text-xs font-medium disabled:opacity-40"
-            style={{ background: phase === "installed" ? colors.pass : colors.steelGray, color: colors.navyBase }}
-          >
-            {phase === "installed" ? "Restart later" : "Close"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

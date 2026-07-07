@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Vessel Lever-Arm Configuration — Sprint 3 Priority #5.
  *
@@ -10,8 +9,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState } from "react";
-import { X, Ship, Save } from "lucide-react";
+import { Anchor} from "lucide-react";
 import { colors, rawColors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -59,36 +59,26 @@ export function VesselConfigDialog({ open, onClose }: Props) {
   const [config, setConfig] = useState<VesselConfig>(DEFAULT_CONFIG);
   const [saved, setSaved] = useState(false);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   function update(field: keyof VesselConfig, value: string | number) {
     setConfig((c) => ({ ...c, [field]: value }));
     setSaved(false);
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Vessel Configuration"
+      icon={<Anchor className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-2xl"
+      subtitle="Lever-arm offsets"
+      footerHint="IMU to transducer to GNSS"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Ship className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            Vessel Configuration (Lever-Arms)
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* Vessel diagram */}
           <div className="mb-5 rounded-md border border-navy-border bg-navy-base p-4">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
@@ -195,23 +185,7 @@ export function VesselConfigDialog({ open, onClose }: Props) {
               ✓ Configuration saved — TPU calculations will use these lever-arms
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Lever-arm offsets are critical for real TPU — a 5° roll × 2m arm = 17cm error
-          </div>
-          <button
-            onClick={() => setSaved(true)}
-            className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium"
-            style={{ background: colors.marineTurquoise, color: colors.navyBase }}
-          >
-            <Save className="h-3 w-3" /> Save configuration
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

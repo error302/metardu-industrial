@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * License Manager Dialog — Sprint 7.
  *
@@ -12,9 +11,10 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState, useEffect } from "react";
 import {
-  X, ShieldCheck, Loader2, CheckCircle2, Key, Crown, Lock,
+  ShieldCheck, Loader2, CheckCircle2, Key, Crown, Lock,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   getLicenseStatus,
   activateLicense,
@@ -74,8 +74,6 @@ export function LicenseManagerDialog({ open, onClose }: Props) {
     }
   }, [open]);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleActivate() {
     setActivating(true);
@@ -103,28 +101,20 @@ export function LicenseManagerDialog({ open, onClose }: Props) {
   const currentTier = status?.tier ?? "core";
   const tierColor = TIER_COLORS[currentTier];
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="License Manager"
+      icon={<Key className="h-4 w-4" />}
+      iconColor={colors.steelLight}
+      maxWidth="max-w-2xl"
+      subtitle="RSA-PSS signed licenses"
+      footerHint="Core/Pro/Enterprise/Trial"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Key className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            License Manager
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {error && (
             <div className="rounded-md border p-3 text-xs"
               style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
@@ -217,23 +207,7 @@ export function LicenseManagerDialog({ open, onClose }: Props) {
               Or visit: https://metardu.example/pricing
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Licenses are HMAC-SHA256 signed. Tampering is detected.
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md px-4 py-1.5 text-xs font-medium"
-            style={{ background: colors.pass, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Project Manager Dialog — Sprint 8 (extended Sprint 11).
  *
@@ -9,9 +8,10 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState } from "react";
 import {
-  X, Save, FolderOpen, FilePlus, Clock, FileBox, Loader2, LayoutTemplate,
+  Save, FolderOpen, FilePlus, Clock, Loader2, LayoutTemplate,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   newProject, saveProject, loadProject,
   type MetarduProject,
@@ -43,8 +43,6 @@ export function ProjectManagerDialog({ open, onClose, currentProject, onProjectL
   const [newDomain, setNewDomain] = useState("both");
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate>(PROJECT_TEMPLATES[0]);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleSave() {
     if (!currentProject) return;
@@ -121,26 +119,20 @@ export function ProjectManagerDialog({ open, onClose, currentProject, onProjectL
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Project Manager"
+      icon={<FolderOpen className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-2xl"
+      subtitle="Save/load .metardu files"
+      footerHint="Auto-save + versioning"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <FileBox className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            Project Manager
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {error && (
             <div className="rounded-md border p-3 text-xs"
               style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
@@ -282,19 +274,6 @@ export function ProjectManagerDialog({ open, onClose, currentProject, onProjectL
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <span className="text-[10px] text-steel-gray">Projects save as .metardu JSON files</span>
-          <button
-            onClick={onClose}
-            className="rounded-md px-3 py-1 text-xs font-medium"
-            style={{ background: colors.pass, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Survey Deliverable Package Wizard — Sprint 5 Revenue Feature #7.
  *
@@ -18,8 +17,8 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState } from "react";
 import {
-  X, ArrowRight, ArrowLeft, Loader2, CheckCircle2,
-  Package, Download, Plus, Trash2, AlertTriangle,
+  Loader2, CheckCircle2,
+  Package, Plus, Trash2, AlertTriangle,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
@@ -29,6 +28,7 @@ import {
   type DeliverableSource,
 } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -36,7 +36,6 @@ interface Props {
 }
 
 type Step = 1 | 2 | 3 | 4 | 5;
-const STEP_LABELS = ["Metadata", "Files", "Generate", "Review", "Done"];
 
 const FILE_TYPES: { value: DeliverableFileType; label: string }[] = [
   { value: "geotiff", label: "GeoTIFF (bathymetric surface)" },
@@ -75,18 +74,8 @@ export function DeliverablePackageWizard({ open, onClose }: Props) {
   const [result, setResult] = useState<DeliverablePackageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
-  const metadataValid = vessel && sonar && surveyArea && surveyDate && epsg && clientName && surveyorName;
-  const sourcesValid = sources.filter((s) => s.path).length >= 1;
-  const canNext =
-    step === 1 ? !!metadataValid :
-    step === 2 ? sourcesValid :
-    step === 3 ? result !== null :
-    step === 4 ? true :
-    false;
-
+      
   function addSource() {
     setSources([...sources, { description: "", path: "", fileType: "other" }]);
   }
@@ -131,49 +120,20 @@ export function DeliverablePackageWizard({ open, onClose }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Deliverable Package"
+      icon={<Package className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-2xl"
+      subtitle="ZIP + ISO 19115 metadata"
+      footerHint="Branded manifest"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Package className="h-4 w-4" style={{ color: "#6366F1" }} />
-            Survey Deliverable Package Wizard
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Step indicator */}
-        <div className="flex border-b border-navy-border px-5 py-2">
-          {STEP_LABELS.map((label, i) => (
-            <div key={i} className="flex items-center gap-1.5 px-2">
-              <div
-                className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
-                style={{
-                  background: step > i + 1 ? colors.pass : step === i + 1 ? "#6366F1" : colors.navyBorder,
-                  color: step >= i + 1 ? colors.navyBase : colors.steelGray,
-                }}
-              >
-                {step > i + 1 ? "✓" : i + 1}
-              </div>
-              <span className="text-[10px] font-medium" style={{ color: step >= i + 1 ? colors.white : colors.steelGray }}>
-                {label}
-              </span>
-              {i < STEP_LABELS.length - 1 && <span className="text-steel-gray">→</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {error && (
             <div className="mb-4 rounded-md border p-3 text-xs" style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
               {error}
@@ -450,39 +410,7 @@ export function DeliverablePackageWizard({ open, onClose }: Props) {
               </p>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <button
-            onClick={() => setStep((s) => Math.max(1, s - 1) as Step)}
-            disabled={step === 1 || step === 5}
-            className="flex items-center gap-1 text-xs text-steel-light hover:text-white disabled:opacity-30"
-          >
-            <ArrowLeft className="h-3 w-3" /> Back
-          </button>
-          {step < 3 && (
-            <button
-              onClick={() => setStep((s) => (s + 1) as Step)}
-              disabled={!canNext}
-              className="flex items-center gap-1 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: canNext ? "#6366F1" : colors.steelGray, color: "white" }}
-            >
-              Next <ArrowRight className="h-3 w-3" />
-            </button>
-          )}
-          {step === 5 && (
-            <button
-              onClick={onClose}
-              className="flex items-center gap-1 rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.pass, color: colors.navyBase }}
-            >
-              <Download className="h-3 w-3" /> Finish
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 
