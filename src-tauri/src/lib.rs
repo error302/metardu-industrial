@@ -37,6 +37,7 @@ mod formats;
 mod geodesy;
 mod i18n;
 mod interpolation;
+mod map_layout;
 mod topology;
 mod license;
 mod marine;
@@ -78,7 +79,8 @@ use commands::{
     eom::start_eom_watch_folder, eom::start_ntrip_cmd, eom::stop_eom_watch_folder,
     gis_features::interpolate_idw_cmd, gis_features::read_shapefile_cmd,
     gis_features::write_shapefile_cmd, gis_features::validate_polygons_cmd,
-    gis_features::validate_lines_cmd,
+    gis_features::validate_lines_cmd, gis_features::read_orthomosaic_cmd,
+    gis_features::generate_map_layout_cmd,
     eom::stop_ntrip_cmd, eom::verify_eom_license_cmd, generate_report_cmd, get_settings,
     init_module, is_proj_available, list_modules, marine::check_s44_compliance_cmd,
     marine::compute_cross_sections_cmd, marine::compute_dredge_audit_cmd,

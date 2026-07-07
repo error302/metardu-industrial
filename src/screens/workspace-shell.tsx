@@ -146,6 +146,10 @@ const KeyboardShortcutsHelp = lazy(() => import("@/components/keyboard-shortcuts
 // Sprint 13 — UI priorities
 const SavedViewsDialog = lazy(() => import("@/components/saved-views-dialog").then(m => ({ default: m.SavedViewsDialog })));
 const CustomizeToolbarDialog = lazy(() => import("@/components/customize-toolbar-dialog").then(m => ({ default: m.CustomizeToolbarDialog })));
+// Sprint 16 — GIS gap feature dialogs
+const IdwInterpolationDialog = lazy(() => import("@/components/idw-interpolation-dialog").then(m => ({ default: m.IdwInterpolationDialog })));
+const ShapefileImportDialog = lazy(() => import("@/components/shapefile-import-dialog").then(m => ({ default: m.ShapefileImportDialog })));
+const TopologyValidatorDialog = lazy(() => import("@/components/topology-validator-dialog").then(m => ({ default: m.TopologyValidatorDialog })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
@@ -236,6 +240,10 @@ export function WorkspaceShell() {
   const [savedViewsOpen, setSavedViewsOpen] = useState(false);
   const [customizeToolbarOpen, setCustomizeToolbarOpen] = useState(false);
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  // Sprint 16 — GIS gap feature dialogs
+  const [idwOpen, setIdwOpen] = useState(false);
+  const [shapefileOpen, setShapefileOpen] = useState(false);
+  const [topologyOpen, setTopologyOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -434,7 +442,10 @@ export function WorkspaceShell() {
       mbesSurveyOpen ||
       stockpileChangeOpen ||
       roverStreamOpen ||
-      tideGaugeOpen;
+      tideGaugeOpen ||
+      idwOpen ||
+      shapefileOpen ||
+      topologyOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -485,6 +496,9 @@ export function WorkspaceShell() {
     stockpileChangeOpen,
     roverStreamOpen,
     tideGaugeOpen,
+    idwOpen,
+    shapefileOpen,
+    topologyOpen,
   ]);
 
   // Command palette actions
@@ -541,6 +555,9 @@ export function WorkspaceShell() {
     onOpenSavedViews: () => setSavedViewsOpen(true),
     onOpenCustomizeToolbar: () => setCustomizeToolbarOpen(true),
     onToggleTheme: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+    onOpenIdw: () => setIdwOpen(true),
+    onOpenShapefile: () => setShapefileOpen(true),
+    onOpenTopology: () => setTopologyOpen(true),
   }), [themeMode, setThemeMode]);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -619,6 +636,9 @@ export function WorkspaceShell() {
     onOpenShortcuts: () => shortcutsHelp.setOpen(true),
     onOpenSavedViews: () => setSavedViewsOpen(true),
     onToggleTheme: () => setThemeMode(themeMode === "dark" ? "light" : "dark"),
+    onOpenIdw: () => setIdwOpen(true),
+    onOpenShapefile: () => setShapefileOpen(true),
+    onOpenTopology: () => setTopologyOpen(true),
   };
 
   return (
@@ -857,6 +877,10 @@ export function WorkspaceShell() {
         }}
       />
       <CustomizeToolbarDialog open={customizeToolbarOpen} onClose={() => setCustomizeToolbarOpen(false)} />
+      {/* Sprint 16 — GIS gap feature dialogs */}
+      <IdwInterpolationDialog open={idwOpen} onClose={() => setIdwOpen(false)} />
+      <ShapefileImportDialog open={shapefileOpen} onClose={() => setShapefileOpen(false)} />
+      <TopologyValidatorDialog open={topologyOpen} onClose={() => setTopologyOpen(false)} />
       </Suspense>
     </div>
   );
@@ -1010,6 +1034,9 @@ function LeftSidebar({
   onOpenShortcuts,
   onOpenSavedViews,
   onToggleTheme,
+  onOpenIdw,
+  onOpenShapefile,
+  onOpenTopology,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -1063,6 +1090,9 @@ function LeftSidebar({
   onOpenShortcuts: () => void;
   onOpenSavedViews: () => void;
   onToggleTheme: () => void;
+  onOpenIdw: () => void;
+  onOpenShapefile: () => void;
+  onOpenTopology: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1297,6 +1327,25 @@ function LeftSidebar({
             />
           </SidebarSection>
         )}
+
+        {/* ── GIS Tools ── (Sprint 16) */}
+        <SidebarSection title="GIS Tools" icon={<Grid3x3 className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<FileSearch className="h-3 w-3" />}
+            label="Shapefile Import"
+            onClick={onOpenShapefile}
+          />
+          <SidebarItem
+            icon={<TrendingUp className="h-3 w-3" />}
+            label="IDW Interpolation"
+            onClick={onOpenIdw}
+          />
+          <SidebarItem
+            icon={<ShieldCheck className="h-3 w-3" />}
+            label="Topology Validator"
+            onClick={onOpenTopology}
+          />
+        </SidebarSection>
 
         {/* ── Deliverables ── */}
         <SidebarSection title="Deliverables" icon={<Package className="h-3 w-3" />}>

@@ -18,6 +18,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
 import { useEscapeKey } from "@/lib/use-escape-key";
+import { ValidatedNumberInput } from "@/components/validated-number-input";
 
 interface MineGrid {
   name: string;
@@ -173,21 +174,23 @@ export function MineGridDialog({ open, onClose }: Props) {
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">{inputLabel}</label>
               <div className="space-y-1.5">
-                <input
-                  type="number"
+                <ValidatedNumberInput
                   value={inputE}
-                  step="0.001"
-                  onChange={(e) => setInputE(e.target.value)}
+                  onChange={setInputE}
+                  validationType="custom"
+                  step={0.001}
+                  min={-1000000}
+                  max={1000000}
                   placeholder="Easting"
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
                 />
-                <input
-                  type="number"
+                <ValidatedNumberInput
                   value={inputN}
-                  step="0.001"
-                  onChange={(e) => setInputN(e.target.value)}
+                  onChange={setInputN}
+                  validationType="custom"
+                  step={0.001}
+                  min={-1000000}
+                  max={1000000}
                   placeholder="Northing"
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
                 />
               </div>
             </div>

@@ -1,8 +1,10 @@
 // Sprint 15 GIS gap feature IPC commands — IDW interpolation, Shapefile, topology.
+// Sprint 16: orthomosaic reader.
 
 use crate::interpolation::{interpolate_idw, IdwParams, IdwResult, Point3D};
 use crate::topology::{validate_lines, validate_polygons, TopologyParams, TopologyReport};
 use crate::formats::shapefile::{read_shapefile, write_shapefile, Shapefile, ShapefileFeature};
+use crate::formats::orthomosaic::{read_orthomosaic, Orthomosaic};
 
 // ── IDW Interpolation ──
 
@@ -59,6 +61,33 @@ pub fn validate_lines_cmd(
     params: TopologyParams,
 ) -> TopologyReport {
     validate_lines(&lines, &params)
+}
+
+// ── Orthomosaic (Sprint 16) ──
+
+#[tauri::command]
+pub async fn read_orthomosaic_cmd(path: String) -> Result<Orthomosaic, String> {
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating orthomosaic path", path, e))?;
+    let label = path.clone();
+    tokio::task::spawn_blocking(move || {
+        read_orthomosaic(&path_buf).map_err(|e| ctx!("reading orthomosaic", label, e))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+// ── Map layout composer (Sprint 16) ──
+
+#[tauri::command]
+pub async fn generate_map_layout_cmd(
+    request: crate::map_layout::MapLayoutRequest,
+) -> Result<crate::map_layout::MapLayoutResult, String> {
+    tokio::task::spawn_blocking(move || {
+        crate::map_layout::generate_map_layout(&request)
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
 }
 
 #[cfg(test)]

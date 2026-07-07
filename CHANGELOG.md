@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 16: Orthomosaic + Map Layout + 3 GIS Dialogs + Dialog Migration
+
+- **Orthomosaic RGB reader** (`src-tauri/src/formats/orthomosaic.rs`,
+  ~240 lines, 3 unit tests):
+  - Extends the existing GeoTIFF reader to handle 3-band RGB orthomosaic
+    GeoTIFFs from ODM (OpenDroneMap) and other photogrammetry software
+  - Supports 8-bit, 16-bit (downscaled to 8-bit), and 32-bit float samples
+  - Returns flat `Vec<u8>` RGB data + world bounds + CRS + pixel size
+  - 100M pixel limit (10000×10000) to prevent OOM
+  - New IPC command `read_orthomosaic_cmd`
+  - Fills the Drone/Reality Mapping agent gap (orthomosaic display)
+- **Map layout composer** (`src-tauri/src/map_layout.rs`, ~280 lines,
+  5 unit tests):
+  - Generates print-quality map sheet PDFs with title block, north arrow,
+    scale bar, coordinate grid labels, legend, and border
+  - Uses the existing `printpdf` crate (no new dependency)
+  - Page sizes: A4, A3, Letter (portrait or landscape)
+  - Map image passed as base64 PNG from the frontend canvas
+  - Legend entries with configurable color swatches
+  - Corner coordinate labels from map bounds
+  - Footer with generation timestamp
+  - New IPC command `generate_map_layout_cmd`
+  - Fills the GIS Analyst + Cartography agent gap (print-quality output)
+- **IDW interpolation dialog** (`src/components/idw-interpolation-dialog.tsx`):
+  - Frontend for `interpolate_idw_cmd` IPC command
+  - LAS file input via `FileInput` (Browse button + recent files)
+  - 4 `ValidatedNumberInput` fields: power, cell size, search radius, max points
+  - Results: grid size, interpolated/NODATA cell counts, value range
+  - Uses `DialogShell` + `DialogButton` for consistent styling
+- **Shapefile import dialog** (`src/components/shapefile-import-dialog.tsx`):
+  - Frontend for `read_shapefile_cmd` IPC command
+  - File input via `FileInput` with .shp filtering
+  - Summary stats: shape type, feature count, attribute count, bounds
+  - Feature table with all attributes (scrollable, click to select)
+  - Selected feature detail (JSON view of geometry + attributes)
+  - Activated the Spatial Data Engineer agent methodology for ETL
+- **Topology validator dialog** (`src/components/topology-validator-dialog.tsx`):
+  - Frontend for `validate_polygons_cmd` + `validate_lines_cmd`
+  - Geometry type toggle (polygon / line)
+  - 3 `ValidatedNumberInput` fields: min area, max gap, tolerance
+  - Text-area input for coordinates (one feature per line)
+  - Results: pass/fail summary, error/warning counts, error table
+    with rule, severity, message, feature indices
+  - Activated the GIS QA Engineer agent methodology
+- **Dialog migration** — migrated `mine-grid-dialog.tsx` to use
+  `ValidatedNumberInput` for the 2 coordinate inputs (E/N). Combined
+  with the Sprint 15 migration of `stockpile-change-dialog.tsx`, that's
+  2 dialogs fully migrated as the pattern for the remaining 18.
+- **New sidebar section** "GIS Tools" with 3 items: Shapefile Import,
+  IDW Interpolation, Topology Validator
+- **3 new command palette entries** with fuzzy-searchable keywords
+
+Stats: 2 new Rust modules (~520 lines), 8 new Rust unit tests, 2 new
+IPC commands, 3 new frontend dialogs (~700 lines), 1 dialog migrated,
+1 new sidebar section, 3 new command palette actions. TypeScript
+compiles clean.
+
 ### Added — Sprint 15: GIS Agent Gap Features (3 of 5) + Dialog Migration
 
 - **IDW interpolation** (`src-tauri/src/interpolation.rs`, ~280 lines,

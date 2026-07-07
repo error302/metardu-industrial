@@ -16,9 +16,9 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Search, ArrowRight, Calculator, Layers3, Terminal, Shield,
   Waves, Anchor, Brain, History, GitBranch, Settings, Radio,
-  TrendingUp, FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
+  FileText, Boxes, Bomb, ShieldAlert, ShieldCheck, Ruler, Package, Scissors,
   Key, Gauge, Activity, FolderOpen, RefreshCw, Package as PackageIcon, Cpu,
-  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite, Keyboard, Bookmark, Palette,
+  Clock, Crosshair, Grid3x3, SquareDashed, FileSearch, Satellite, Keyboard, Bookmark, Palette, TrendingUp,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 
@@ -295,6 +295,10 @@ export function createCommandActions(callbacks: {
   onOpenSavedViews: () => void;
   onOpenCustomizeToolbar: () => void;
   onToggleTheme: () => void;
+  // Sprint 16 — GIS gap features
+  onOpenIdw: () => void;
+  onOpenShapefile: () => void;
+  onOpenTopology: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -356,5 +360,9 @@ export function createCommandActions(callbacks: {
     { id: "saved_views", label: "Saved Views", category: "App · Map", keywords: ["saved", "view", "bookmark", "extent", "zoom", "restore", "snapshot"], icon: <Bookmark className={icon} />, action: callbacks.onOpenSavedViews },
     { id: "customize_toolbar", label: "Customize Toolbar", category: "App · UI", keywords: ["customize", "toolbar", "pin", "actions", "shortcuts", "favorites"], icon: <Settings className={icon} />, action: callbacks.onOpenCustomizeToolbar },
     { id: "toggle_theme", label: "Toggle Theme (Dark/Light)", category: "App · UI", keywords: ["theme", "dark", "light", "daylight", "cabin", "toggle", "mode"], icon: <Palette className={icon} />, action: callbacks.onToggleTheme },
+    // ── Sprint 16: GIS gap features ──
+    { id: "idw", label: "IDW Interpolation", category: "GIS Tools · Interpolation", keywords: ["idw", "interpolation", "inverse", "distance", "weighting", "dem", "gap", "fill", "surface", "grid"], icon: <TrendingUp className={icon} />, action: callbacks.onOpenIdw },
+    { id: "shapefile", label: "Shapefile Import", category: "GIS Tools · Import", keywords: ["shapefile", "shp", "esri", "import", "load", "overlay", "surpac", "datamine", "vulcan"], icon: <FileSearch className={icon} />, action: callbacks.onOpenShapefile },
+    { id: "topology", label: "Topology Validator", category: "GIS Tools · QA", keywords: ["topology", "validate", "quality", "qa", "qc", "gap", "overlap", "dangle", "sliver", "self-intersection"], icon: <ShieldCheck className={icon} />, action: callbacks.onOpenTopology },
   ];
 }
