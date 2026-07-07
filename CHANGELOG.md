@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 14: UX Friction Fixes + Backend Error Handling + GIS Agent Gap Analysis
+
+- **GIS agent gap analysis** (`docs/GIS_AGENT_GAP_ANALYSIS.md`) — assessed
+  all 12 GIS agents (excluding GeoAI/ML per user direction). Found
+  MetaRDU covers 7/12 specialties well, with 5 high-value gaps for
+  mining + marine: Shapefile I/O, map layout composer, orthomosaic
+  viewer, topology validator, IDW interpolation. Sprint 14 implements
+  the UX + Backend prerequisites first; Sprint 15 will build the 5 gaps.
+- **FileInput component** (`src/components/file-input.tsx`) — eliminates
+  the #1 UX friction point (22 dialogs requiring typed file paths):
+  - "Browse" button opens native OS file picker via `pickFile()`
+  - File-type filtering (e.g., only show .las/.laz)
+  - Recent files dropdown (last 10 paths per input type, localStorage)
+  - Red border if path looks invalid (no extension)
+  - Works in save mode (uses save dialog) or open mode
+  - Tooltip on Browse button explaining browser-mode limitation
+- **ValidatedNumberInput component**
+  (`src/components/validated-number-input.tsx`) — eliminates the #3 UX
+  friction point (24 number inputs lacking step/min/max):
+  - Wires to existing `qc/range_checks.rs` IPC commands on blur
+  - 7 validation types: lat, lon, bearing, distance, elevation, volume,
+    positive, custom
+  - Red border + error tooltip on invalid values
+  - Green checkmark on valid values
+  - Client-side fallback when in browser mode
+  - Optional `validateOnChange` mode for real-time validation
+- **ProgressBar component** (`src/components/progress-bar.tsx`):
+  - Determinate mode (caller provides 0-100% + optional ETA)
+  - Indeterminate mode (animated sliding bar for unknown total)
+  - Elapsed time display (mm:ss, updates every second)
+  - Optional ETA display
+  - Optional cancel button
+  - Status message with spinner
+- **MetarduError enum** (`src-tauri/src/error_types.rs`):
+  - Structured error type with 11 variants: FileNotFound, ParseError,
+    PermissionDenied, InvalidInput, CalculationError, IoError, Timeout,
+    BrowserMode, LicenseRequired, Internal
+  - Serialized as JSON with `kind` tag so frontend can pattern-match
+  - `Display` impl produces human-readable strings (backwards compat)
+  - Conversions from `std::io::Error` and `serde_json::Error`
+  - `with_timeout()` async wrapper for spawn_blocking commands
+  - `DEFAULT_TIMEOUT_SECS = 300` (5 min), `LONG_TIMEOUT_SECS = 600` (10 min)
+  - 9 unit tests (display, serde roundtrip, all variants, conversions,
+    timeout success, timeout expiry)
+- **Timeout-wrapped volume command**
+  (`compute_volumes_verified_timed_cmd`) — proof-of-concept for the
+  Backend Architect's timeout recommendation. Wraps the verified volume
+  calculation in a 5-minute timeout, returns `MetarduError::Timeout` on
+  expiry, and uses structured `MetarduError` variants throughout instead
+  of flat `String` errors. Pattern for migrating the remaining 23
+  spawn_blocking commands.
+
+Stats: 3 new frontend components (~600 lines), 1 new Rust module (~300
+lines), 1 new IPC command, 9 new Rust unit tests, 1 gap analysis doc.
+TypeScript compiles clean.
+
 ### Added — Sprint 13: UI Priorities + UX/Backend Audits
 
 - **UX Researcher audit** (`docs/UX_RESEARCHER_AUDIT.md`) — cognitive

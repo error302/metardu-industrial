@@ -348,6 +348,53 @@ pub async fn compute_volumes_verified_cmd(
     .map_err(|e| format!("task join error: {e}"))?
 }
 
+/// Compute volumes with uncertainty + cross-check, wrapped in a 5-minute
+/// timeout (Sprint 14 Backend Architect audit fix #3).
+///
+/// Returns `MetarduError::Timeout` if the operation doesn't complete
+/// within `timeout_secs` seconds (default 300 = 5 minutes).
+#[tauri::command]
+pub async fn compute_volumes_verified_timed_cmd(
+    current_path: String,
+    reference_path: String,
+    sigma_z_m: f64,
+    timeout_secs: Option<u64>,
+) -> Result<crate::mining::volume::VerifiedVolumeResult, crate::error_types::MetarduError> {
+    use crate::error_types::{with_timeout, MetarduError, DEFAULT_TIMEOUT_SECS};
+    use crate::formats::read_geotiff_header;
+    let timeout = timeout_secs.unwrap_or(DEFAULT_TIMEOUT_SECS);
+    let cur_path = PathBuf::from(&current_path);
+    let ref_path = PathBuf::from(&reference_path);
+    let cur_label = current_path.clone();
+    let ref_label = reference_path.clone();
+
+    with_timeout("compute_volumes_verified", timeout, async {
+        tokio::task::spawn_blocking(move || -> Result<crate::mining::volume::VerifiedVolumeResult, MetarduError> {
+            let cur_header = read_geotiff_header(&cur_path)
+                .map_err(|e| MetarduError::parse_error("GeoTIFF", format!("reading header: {e}")))?;
+            let cur_grid = read_dem_grid(&cur_path, &cur_header)
+                .map_err(|e| MetarduError::io_error(format!("reading current DEM grid: {e}")))?;
+            let ref_grid = if reference_path.starts_with("flat:") {
+                let z: f64 = reference_path.strip_prefix("flat:").and_then(|s| s.parse().ok())
+                    .ok_or_else(|| MetarduError::invalid_input("reference_path", ref_label.clone(), "invalid flat:Z reference"))?;
+                vec![z; cur_grid.len()]
+            } else {
+                let ref_header = read_geotiff_header(&ref_path)
+                    .map_err(|e| MetarduError::parse_error("GeoTIFF", format!("reading reference header: {e}")))?;
+                read_dem_grid(&ref_path, &ref_header)
+                    .map_err(|e| MetarduError::io_error(format!("reading reference DEM grid: {e}")))?
+            };
+            let cell_w = if let Some(ps) = cur_header.model_pixel_scale { ps[0] } else { 1.0 };
+            let cell_h = if let Some(ps) = cur_header.model_pixel_scale { ps[1] } else { 1.0 };
+            crate::mining::volume::compute_volumes_verified(
+                &cur_grid, &ref_grid, cell_w, cell_h, 0.0, sigma_z_m,
+            ).map_err(|e| MetarduError::calculation_error("compute_volumes_verified", e.to_string()))
+        })
+        .await
+        .map_err(|e| MetarduError::internal(format!("task join error: {e}")))?
+    }).await
+}
+
 /// Compute cut/fill volumes using the average end-area method.
 ///
 /// Takes a list of cross-sections (chainage + cut area + fill area)

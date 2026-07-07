@@ -17,6 +17,7 @@
 // come before `mod commands;` and any other module that wraps errors.
 #[macro_use]
 mod error_context;
+mod error_types;
 
 #[allow(dead_code)]
 mod ar_companion;
@@ -84,7 +85,8 @@ use commands::{
     mining::compute_setout_cmd, mining::mine_grid_to_crs_cmd, mining::crs_to_mine_grid_cmd,
     mining::analyze_tunnel_profile_cmd, mining::generate_safety_report_cmd,
     mining::parse_drone_manifest, mining::compute_stockpile_change_cmd,
-    mining::compute_volumes_verified_cmd, mining::compute_end_area_volumes_cmd,
+    mining::compute_volumes_verified_cmd, mining::compute_volumes_verified_timed_cmd,
+    mining::compute_end_area_volumes_cmd,
     ml::analyze_fragmentation_cmd, ml::classify_habitat_cmd,
     monitoring::analyze_highwall_cmd, monitoring::compute_epoch_diff_cmd,
     monitoring::compute_progression_cmd, ping, pipelines::check_odm_availability,
