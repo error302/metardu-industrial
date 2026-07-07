@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * S-57 Export Dialog — Phase 2 Marine MVP.
  *
@@ -9,8 +8,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState } from "react";
-import { X, Download, Plus, Trash2, Anchor } from "lucide-react";
+import { Plus, Trash2, Anchor } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   exportS57,
   type S57Attribute,
@@ -55,12 +55,10 @@ export function S57ExportDialog({ open, onClose }: Props) {
     },
   ]);
   const [exportPath, setExportPath] = useState("/tmp/metardu_export.000");
-  const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   function addFeature() {
     setFeatures((prev) => [
@@ -144,31 +142,23 @@ export function S57ExportDialog({ open, onClose }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="S-57 Export"
+      icon={<Anchor className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-lg"
+      subtitle="IHO S-57 ENC export"
+      footerHint="Wrecks + obstructions"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleExport} disabled={exporting}>Export</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Anchor className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            S-57 ENC Export
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* Features list */}
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
@@ -300,27 +290,6 @@ export function S57ExportDialog({ open, onClose }: Props) {
               ✓ {result}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            IHO S-57 Edition 3.1 · ISO 8211 binary · Phase 2 simplified writer
-          </div>
-          <button
-            onClick={handleExport}
-            disabled={exporting || features.length === 0}
-            className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
-            style={{
-              background: exporting ? colors.steelGray : colors.marineTurquoise,
-              color: colors.navyBase,
-            }}
-          >
-            <Download className="h-3 w-3" />
-            {exporting ? "Exporting…" : "Export S-57"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

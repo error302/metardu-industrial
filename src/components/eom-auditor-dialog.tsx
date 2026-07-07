@@ -23,7 +23,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import {
-  X,
   Loader2,
   FolderOpen,
   Download,
@@ -44,10 +43,10 @@ import {
   Layers,
   KeyRound,
 } from "lucide-react";
-import { useEscapeKey } from "@/lib/use-escape-key";
 import { pickFile, pickSaveFile, pickFolder } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   runEomPipeline,
   generateEomReport,
@@ -121,7 +120,6 @@ export function EomAuditorDialog({ open, onClose }: Props) {
   const [watchRunning, setWatchRunning] = useState(false);
   const [watchEvents, setWatchEvents] = useState<EomWatchEventRpc[]>([]);
 
-  useEscapeKey(onClose, open);
 
   // All hooks MUST be before the early return — React rules of hooks.
   // Refresh license status when the dialog opens.
@@ -154,7 +152,6 @@ export function EomAuditorDialog({ open, onClose }: Props) {
     };
   }, [open]);
 
-  if (!open) return null;
 
   const canRun = !!currentLasPath && !running;
 
@@ -302,45 +299,22 @@ export function EomAuditorDialog({ open, onClose }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="EOM Volumetric Auditor"
+      icon={<ShieldCheck className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-5xl"
+      subtitle="LAS to signed PDF volume report"
+      footerHint="CSF + IDW + 2.5D matrix + SHA-256 audit trail"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* ─── Header ─── */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <ShieldCheck className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            EOM Volumetric Auditor
-            <span
-              className="ml-1 rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
-              style={{
-                background: `${colors.industrialOrange}20`,
-                color: colors.industrialOrange,
-                border: `1px solid ${colors.industrialOrange}40`,
-              }}
-            >
-              Commercial
-            </span>
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-            aria-label="Close dialog"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* ─── License banner ─── */}
-        <LicenseBanner status={license} />
-
-        {/* ─── Body ─── */}
-        <div className="flex-1 overflow-y-auto p-5">
+      {/* License banner */}
+      <LicenseBanner status={license} />
           {error && (
             <div
               className="mb-4 rounded-md border p-3 text-xs"
@@ -615,24 +589,7 @@ export function EomAuditorDialog({ open, onClose }: Props) {
               )}
             </div>
           </div>
-        </div>
-
-        {/* ─── Footer ─── */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3 text-[10px] text-steel-gray">
-          <span>
-            CSF cloth simulation · IDW DEM rasterization · 2.5D matrix subtraction ·
-            SHA-256 audit trail
-          </span>
-          <button
-            onClick={onClose}
-            className="rounded-md px-3 py-1 text-xs font-medium"
-            style={{ background: colors.pass, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

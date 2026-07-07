@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * ML Classification Dialog — Phase 3.
  *
@@ -7,8 +6,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState } from "react";
-import { X, Brain, Loader2, Waves, Bomb } from "lucide-react";
+import { Brain, Loader2, Waves, Bomb } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   analyzeFragmentation,
   classifyHabitat,
@@ -26,28 +26,21 @@ type Tab = "habitat" | "fragmentation";
 export function MlClassificationDialog({ open, onClose }: Props) {
   const [tab, setTab] = useState<Tab>("habitat");
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="ML Classification"
+      icon={<Brain className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-2xl"
+      subtitle="Habitat + fragmentation analysis"
+      footerHint="Geometric feature extraction"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Brain className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            ML Classification
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
         {/* Tab switcher */}
         <div className="flex border-b border-navy-border px-5 pt-3">
           <TabButton active={tab === "habitat"} onClick={() => setTab("habitat")} icon={<Waves className="h-3 w-3" />} label="Seafloor Habitat" accent={colors.marineTurquoise} />
@@ -57,8 +50,7 @@ export function MlClassificationDialog({ open, onClose }: Props) {
         <div className="flex-1 overflow-y-auto p-5">
           {tab === "habitat" ? <HabitatTab /> : <FragmentationTab />}
         </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

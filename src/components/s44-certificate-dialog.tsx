@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * S-44 Compliance Certificate — Sprint 2 Revenue Feature #3.
  *
@@ -10,8 +9,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState } from "react";
-import { X, Shield, FileText, Loader2, CheckCircle2, Download } from "lucide-react";
+import { FileText, CheckCircle2 } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   checkS44Compliance,
   generateReport,
@@ -57,8 +57,6 @@ export function S44CertificateDialog({ open, onClose }: Props) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleCheck() {
     setChecking(true);
@@ -154,28 +152,24 @@ export function S44CertificateDialog({ open, onClose }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="S-44 Certificate"
+      icon={<FileText className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-2xl"
+      subtitle="Compliance certificate PDF"
+      footerHint="TPU budget + per-order stats"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleCheck} disabled={checking}>Check</DialogButton>
+          <DialogButton variant="marine" onClick={handleGenerateCert} disabled={generating}>Generate</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Shield className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            S-44 Compliance Certificate
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {error && (
             <div className="mb-4 rounded-md border p-3 text-xs" style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
               {error}
@@ -272,47 +266,6 @@ export function S44CertificateDialog({ open, onClose }: Props) {
               </p>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">IHO S-44 6th edition (2022)</div>
-          {!done ? (
-            <div className="flex gap-2">
-              {!result && (
-                <button
-                  onClick={handleCheck}
-                  disabled={checking}
-                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-                  style={{ background: checking ? colors.steelGray : colors.marineTurquoise, color: colors.navyBase }}
-                >
-                  {checking ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
-                  {checking ? "Checking…" : "Check compliance"}
-                </button>
-              )}
-              {result && !done && (
-                <button
-                  onClick={handleGenerateCert}
-                  disabled={generating}
-                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-                  style={{ background: generating ? colors.steelGray : colors.industrialOrange, color: colors.navyBase }}
-                >
-                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                  {generating ? "Generating…" : "Generate certificate"}
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={onClose}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.pass, color: colors.navyBase }}
-            >
-              <Download className="h-3 w-3" /> Done
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
