@@ -121,7 +121,7 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
   const range = stats ? Math.max(0.001, stats.max - stats.min) : 1;
 
   function intensityToColor(v: number): string {
-    if (v === mosaic!.nodata) return "#1E293B";
+    if (v === mosaic!.nodata) return colors.panel;
     const t = (v - stats!.min) / range;
     // Viridis-like: dark purple → blue → green → yellow
     const r = Math.round(255 * Math.min(1, Math.max(0, t * 1.5)));

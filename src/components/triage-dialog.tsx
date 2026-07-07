@@ -43,10 +43,10 @@ const KIND_ICONS: Record<string, React.ReactNode> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  ok: "#10B981",
-  warning: "#F59E0B",
-  error: "#EF4444",
-  empty: "#6B7280",
+  ok: colors.pass,
+  warning: colors.warn,
+  error: colors.fail,
+  empty: colors.steelGray,
 };
 
 export function TriageDialog({ open, onClose }: Props) {

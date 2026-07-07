@@ -38,6 +38,7 @@
  */
 
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import { useEscapeKey } from "@/lib/use-escape-key";
@@ -76,6 +77,53 @@ export function DialogShell({
   disableBackdropClose = false,
 }: DialogShellProps) {
   useEscapeKey(onClose, open);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap — when the dialog is open, Tab cycles within the dialog
+  // (Sprint 19 WCAG fix). Also moves focus into the dialog on open and
+  // returns focus to the trigger on close.
+  useEffect(() => {
+    if (!open) return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    // Move focus into the dialog
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const firstFocusable = dialog.querySelector<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    firstFocusable?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      const focusable = dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    dialog.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      dialog.removeEventListener("keydown", handleKeyDown);
+      // Return focus to the trigger element
+      previouslyFocused?.focus();
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -86,6 +134,10 @@ export function DialogShell({
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-title"
         onClick={(e) => e.stopPropagation()}
         className={`flex max-h-[88vh] w-full ${maxWidth} flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl`}
       >
@@ -94,7 +146,7 @@ export function DialogShell({
           <div className="flex items-center gap-2 min-w-0">
             {icon && <span className="flex-shrink-0" style={{ color: iconColor }}>{icon}</span>}
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-white truncate">{title}</h2>
+              <h2 id="dialog-title" className="text-sm font-semibold text-white truncate">{title}</h2>
               {subtitle && (
                 <p className="text-[10px] text-steel-gray truncate">{subtitle}</p>
               )}

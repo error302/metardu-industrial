@@ -209,7 +209,7 @@ export function MachineControlTool({ open, onClose }: Props) {
 
               {result.warnings.length > 0 && (
                 <div className="rounded-md border p-2 text-[10px]"
-                  style={{ borderColor: "#F59E0B40", background: "#F59E0B10", color: "#F59E0B" }}>
+                  style={{ borderColor: `${colors.warn}40`, background: `${colors.warn}10`, color: colors.warn }}>
                   {result.warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
                 </div>
               )}

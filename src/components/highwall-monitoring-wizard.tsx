@@ -43,10 +43,10 @@ type Step = 1 | 2 | 3 | 4 | 5;
 const STEP_LABELS = ["Epochs", "Thresholds", "Analyze", "Report", "Done"];
 
 const ALERT_COLORS: Record<AlertLevel, string> = {
-  none: "#10B981",
-  advisory: "#F59E0B",
-  watch: "#F97316",
-  critical: "#DC2626",
+  none: colors.pass,
+  advisory: colors.warn,
+  watch: colors.accent,
+  critical: colors.failDim,
 };
 
 const ALERT_LABELS: Record<AlertLevel, string> = {
@@ -242,7 +242,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <ShieldAlert className="h-4 w-4" style={{ color: "#DC2626" }} />
+            <ShieldAlert className="h-4 w-4" style={{ color: colors.failDim }} />
             Highwall Deformation Monitoring Wizard
           </h2>
           <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
@@ -257,7 +257,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
               <div
                 className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
                 style={{
-                  background: step > i + 1 ? colors.pass : step === i + 1 ? "#DC2626" : colors.navyBorder,
+                  background: step > i + 1 ? colors.pass : step === i + 1 ? colors.failDim : colors.navyBorder,
                   color: step >= i + 1 ? colors.navyBase : colors.steelGray,
                 }}
               >
@@ -288,7 +288,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
               </p>
               {epochs.map((epoch, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-md border border-navy-border bg-navy-base p-2">
-                  <span className="rounded px-2 py-1 text-[10px] font-bold" style={{ background: "#DC262620", color: "#DC2626" }}>
+                  <span className="rounded px-2 py-1 text-[10px] font-bold" style={{ background: `${colors.failDim}20`, color: colors.failDim }}>
                     EPOCH {i + 1}
                   </span>
                   <select
@@ -331,16 +331,16 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
           {/* Step 2: Thresholds + metadata */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="rounded-md border p-3" style={{ borderColor: "#DC262640", background: "#DC262610" }}>
-                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#DC2626" }}>
+              <div className="rounded-md border p-3" style={{ borderColor: `${colors.failDim}40`, background: `${colors.failDim}10` }}>
+                <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider" style={{ color: colors.failDim }}>
                   <AlertTriangle className="h-3 w-3" /> Thresholds (USACE EM 1110-2-1900 defaults)
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <ThresholdField label="Advisory (mm)" value={advisoryMm} onChange={setAdvisoryMm} color="#F59E0B" />
-                  <ThresholdField label="Watch (mm)" value={watchMm} onChange={setWatchMm} color="#F97316" />
-                  <ThresholdField label="Critical (mm)" value={criticalMm} onChange={setCriticalMm} color="#DC2626" />
-                  <ThresholdField label="Velocity Watch (mm/day)" value={velocityWatch} onChange={setVelocityWatch} color="#F97316" step={0.1} />
-                  <ThresholdField label="Velocity Critical (mm/day)" value={velocityCritical} onChange={setVelocityCritical} color="#DC2626" step={0.1} />
+                  <ThresholdField label="Advisory (mm)" value={advisoryMm} onChange={setAdvisoryMm} color={colors.warn} />
+                  <ThresholdField label="Watch (mm)" value={watchMm} onChange={setWatchMm} color={colors.accent} />
+                  <ThresholdField label="Critical (mm)" value={criticalMm} onChange={setCriticalMm} color={colors.failDim} />
+                  <ThresholdField label="Velocity Watch (mm/day)" value={velocityWatch} onChange={setVelocityWatch} color={colors.accent} step={0.1} />
+                  <ThresholdField label="Velocity Critical (mm/day)" value={velocityCritical} onChange={setVelocityCritical} color={colors.failDim} step={0.1} />
                 </div>
               </div>
 
@@ -408,7 +408,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                 onClick={handleAnalyze}
                 disabled={analyzing}
                 className="flex items-center gap-2 rounded-md px-6 py-2.5 text-sm font-bold transition-colors disabled:opacity-40"
-                style={{ background: "#DC2626", color: "white" }}
+                style={{ background: colors.failDim, color: "white" }}
               >
                 {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
                 {analyzing ? "Analyzing…" : "Run Highwall Analysis"}
@@ -488,7 +488,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
                 onClick={handleGenerateReport}
                 disabled={generating}
                 className="flex items-center gap-2 rounded-md px-5 py-2 text-sm font-bold transition-colors disabled:opacity-40"
-                style={{ background: "#DC2626", color: "white" }}
+                style={{ background: colors.failDim, color: "white" }}
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                 {generating ? "Generating report…" : "Generate Compliance Report"}
@@ -554,7 +554,7 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
               onClick={() => setStep((s) => (s + 1) as Step)}
               disabled={!canNext}
               className="flex items-center gap-1 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: canNext ? "#DC2626" : colors.steelGray, color: "white" }}
+              style={{ background: canNext ? colors.failDim : colors.steelGray, color: "white" }}
             >
               Next <ArrowRight className="h-3 w-3" />
             </button>

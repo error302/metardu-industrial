@@ -55,7 +55,7 @@ mod plugins;
 mod project;
 mod qc;
 mod realtime;
-mod recovery;
+pub mod recovery;
 mod report_engine;
 mod slice_editor;
 #[allow(dead_code)]

@@ -198,7 +198,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Ruler className="h-4 w-4" style={{ color: "#0EA5E9" }} />
+            <Ruler className="h-4 w-4" style={{ color: colors.marine }} />
             Cross-Section Profiler Wizard
           </h2>
           <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
@@ -213,7 +213,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
               <div
                 className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
                 style={{
-                  background: step > i + 1 ? colors.pass : step === i + 1 ? "#0EA5E9" : colors.navyBorder,
+                  background: step > i + 1 ? colors.pass : step === i + 1 ? colors.marine : colors.navyBorder,
                   color: step >= i + 1 ? colors.navyBase : colors.steelGray,
                 }}
               >
@@ -252,7 +252,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                     value={surveyPath}
                     onChange={(e) => setSurveyPath(e.target.value)}
                     className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:outline-none"
-                    style={{ borderColor: surveyPath ? "#0EA5E9" : undefined }}
+                    style={{ borderColor: surveyPath ? colors.marine : undefined }}
                   >
                     <option value="">— Select survey DEM —</option>
                     {geotiffFiles.map((f) => (
@@ -330,7 +330,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                     onClick={() => setDesignMode("flat")}
                     className="rounded-md border p-2.5 text-left text-xs transition-colors"
                     style={{
-                      borderColor: designMode === "flat" ? "#0EA5E9" : colors.navyBorder,
+                      borderColor: designMode === "flat" ? colors.marine : colors.navyBorder,
                       background: designMode === "flat" ? "#0EA5E910" : colors.navyBase,
                     }}
                   >
@@ -340,7 +340,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                     onClick={() => setDesignMode("tiff")}
                     className="rounded-md border p-2.5 text-left text-xs transition-colors"
                     style={{
-                      borderColor: designMode === "tiff" ? "#0EA5E9" : colors.navyBorder,
+                      borderColor: designMode === "tiff" ? colors.marine : colors.navyBorder,
                       background: designMode === "tiff" ? "#0EA5E910" : colors.navyBase,
                     }}
                   >
@@ -415,7 +415,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                 onClick={handleCompute}
                 disabled={computing}
                 className="flex items-center gap-2 rounded-md px-6 py-2.5 text-sm font-bold transition-colors disabled:opacity-40"
-                style={{ background: "#0EA5E9", color: colors.navyBase }}
+                style={{ background: colors.marine, color: colors.navyBase }}
               >
                 {computing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ruler className="h-4 w-4" />}
                 {computing ? "Computing…" : "Compute Cross-Sections"}
@@ -494,7 +494,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
                 onClick={handleGenerateReport}
                 disabled={generating}
                 className="flex items-center gap-2 rounded-md px-5 py-2 text-sm font-bold transition-colors disabled:opacity-40"
-                style={{ background: "#0EA5E9", color: colors.navyBase }}
+                style={{ background: colors.marine, color: colors.navyBase }}
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                 {generating ? "Generating report…" : "Generate Cross-Section Report"}
@@ -551,7 +551,7 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
               onClick={() => setStep((s) => (s + 1) as Step)}
               disabled={!canNext}
               className="flex items-center gap-1 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: canNext ? "#0EA5E9" : colors.steelGray, color: colors.navyBase }}
+              style={{ background: canNext ? colors.marine : colors.steelGray, color: colors.navyBase }}
             >
               Next <ArrowRight className="h-3 w-3" />
             </button>

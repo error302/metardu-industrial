@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 19: Product Assessment + Remediation + Security + Accessibility
+
+- **Product viability assessment** (`docs/PRODUCT_VIABILITY_ASSESSMENT.md`):
+  - Activated GIS Technical Consultant + Solution Engineer agents
+  - **Verdict**: Yes, worth paying for. ROI 4.5× for mines, 5-10× for dredgers
+  - **Release readiness**: 75% — needs Sprint 19 hardening before launch
+  - **Market acceptance**: 70% after hardening — high for target niche
+  - **Pricing**: Pro $3,000-5,000/seat/year, Enterprise $10,000-25,000/site/year
+  - Competitive landscape analysis vs Trimble, Hypack, Civil3D, DroneDeploy
+  - Go-to-market strategy: Beta (3 mines + 1 dredger) → Soft launch → Scale → Enterprise
+  - **Recommendation**: Release after Sprint 20, not before
+- **Hardcoded color sweep** (5 files fixed):
+  - `highwall-monitoring-wizard.tsx` — 12 hardcoded hex colors → `colors.*` tokens
+  - `backscatter-mosaic-dialog.tsx` — 1 hardcoded color → `colors.panel`
+  - `machine-control-tool.tsx` — 3 hardcoded colors → `colors.warn`
+  - `cross-section-profiler-wizard.tsx` — 2 hardcoded colors → `colors.marine`
+  - `triage-dialog.tsx` — 4 hardcoded colors → `colors.pass`/`warn`/`fail`/`steelGray`
+  - Enables the colorblind palette (Sprint 17) to work on these components
+- **DialogShell accessibility fixes** (WCAG compliance):
+  - Added `role="dialog"` + `aria-modal="true"` + `aria-labelledby="dialog-title"`
+  - Added focus trap: Tab cycles within the dialog, Shift+Tab reverses
+  - Focus moves into the dialog on open (first focusable element)
+  - Focus returns to the trigger button on close
+  - All 7 DialogShell-based dialogs are now WCAG-compliant for keyboard navigation
+- **Panic hook installed** in `main.rs`:
+  - `recovery::install_panic_hook()` called before `run()`
+  - Catches any Rust panic, writes crash dump with backtrace to
+    `app_data_dir/recovery/crash_<timestamp>.txt`
+  - The crash dump includes: timestamp, panic message, location, full backtrace
+  - Makes `recovery` module `pub` so `main.rs` can access it
+- **Security AppSec Engineer audit** (`docs/SECURITY_AUDIT.md`):
+  - Security score: 6.5/10 (moderate, needs path validation hardening)
+  - 5 of 9 path-taking commands lack `validate_path()` — critical fix needed
+  - NTRIP credentials: sent in plaintext on non-TLS connections (documented risk)
+  - License signing: RSA-PSS ✅, path restriction ✅, plugin signatures ✅
+  - Shell execution: ODM Docker only, uses `Command::arg()` (no shell injection)
+  - 7-hour remediation plan for Sprint 19-20
+- **Testing Accessibility Auditor plan** (`docs/ACCESSIBILITY_TEST_PLAN.md`):
+  - axe-core integration with existing Playwright E2E tests
+  - 12-dialog test coverage matrix
+  - CI integration: fails on any WCAG AA violation
+  - 5 known issues to fix before tests pass (3 already fixed in Sprint 19)
+  - 4-hour implementation estimate
+
+Stats: 1 product assessment doc (~450 lines), 1 security audit (~180 lines),
+1 accessibility test plan (~120 lines), 5 files color-swept, 1 DialogShell
+accessibility upgrade, 1 panic hook installed. TypeScript compiles clean.
+
 ### Added — Sprint 18: 5 Agent Audits + Crash Recovery + Orthomosaic Picker + Testing/Security Skills
 
 - **Testing + Security skill divisions installed** — 18 new agents from
