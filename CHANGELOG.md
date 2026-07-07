@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 20: Account System + Registration
+
+- **User account / registration system** — the critical missing piece
+  for a commercial app. Users now create an account on first launch
+  with name, email, company, and optional registration number + phone.
+  The profile is stored locally (no server required) and used in all
+  PDF reports for chain-of-custody.
+  - `src-tauri/src/account.rs` (~300 lines, 12 unit tests):
+    - `UserProfile` struct: user_id, name, email, company, registration_number,
+      phone, created_at, updated_at, onboarded, license_key, license_tier
+    - `create_account()` — validates name/email/company, generates unique
+      user_id from email+timestamp hash, saves to `app_data_dir/profile.json`
+    - `update_profile()` — partial updates (only provided fields change)
+    - `link_license()` — associates a license key + tier with the profile
+      (called after successful license activation)
+    - `delete_profile()` — account deletion / reset
+    - `load_profile()` — returns empty profile for new users
+    - `is_complete()` / `is_new()` helper methods
+  - 6 new IPC commands: `get_profile_cmd`, `create_account_cmd`,
+    `update_profile_cmd`, `link_license_cmd`, `delete_account_cmd`,
+    `is_onboarded_cmd`
+  - `src/components/account-dialog.tsx` (~250 lines):
+    - Create Account form for new users (name*, email*, company*, reg#, phone)
+    - Edit Profile form for existing users (same fields, pre-filled)
+    - License section showing current tier + key (masked)
+    - Privacy note: "stored locally, no server required"
+    - Supports onboarding mode (can't be dismissed on first launch)
+    - Success/error messages with icons
+    - Uses DialogShell + DialogButton for consistent styling
+  - Sidebar: "My Account" item in Enterprise section
+  - Command palette: "My Account / Profile" with fuzzy keywords
+  - Integration with existing license system (Sprint 7):
+    - After license activation, `link_license_cmd` ties the key to the profile
+    - License tier displayed in the account dialog
+    - User name + company from profile used in PDF report generation
+  - Integration with onboarding:
+    - `is_onboarded_cmd` checks if user has completed account creation
+    - Frontend can use this on app launch to show onboarding vs workspace
+
+Stats: 1 new Rust module (~300 lines), 12 new Rust unit tests, 6 new IPC
+commands, 1 new frontend dialog (~250 lines), 1 new sidebar item, 1 new
+command palette entry. TypeScript compiles clean.
+
 ### Added — Sprint 19: Product Assessment + Remediation + Security + Accessibility
 
 - **Product viability assessment** (`docs/PRODUCT_VIABILITY_ASSESSMENT.md`):

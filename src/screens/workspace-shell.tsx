@@ -64,6 +64,7 @@ import {
   SunMoon,
   Map as MapIcon,
   Eye,
+  User,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -154,6 +155,8 @@ const ShapefileImportDialog = lazy(() => import("@/components/shapefile-import-d
 const TopologyValidatorDialog = lazy(() => import("@/components/topology-validator-dialog").then(m => ({ default: m.TopologyValidatorDialog })));
 // Sprint 17 — UI features + map layout
 const MapLayoutDialog = lazy(() => import("@/components/map-layout-dialog").then(m => ({ default: m.MapLayoutDialog })));
+// Sprint 20 — account management
+const AccountDialog = lazy(() => import("@/components/account-dialog").then(m => ({ default: m.AccountDialog })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
@@ -256,6 +259,8 @@ export function WorkspaceShell() {
   const [mapLayoutOpen, setMapLayoutOpen] = useState(false);
   const [orthoPath, setOrthoPath] = useState<string | null>(null);
   const colorblind = useColorblindPalette();
+  // Sprint 20 — account management
+  const [accountOpen, setAccountOpen] = useState(false);
 
   // Sprint 18 — orthomosaic file picker (opens native dialog, triggers overlay)
   const handlePickOrthomosaic = useCallback(async () => {
@@ -474,7 +479,8 @@ export function WorkspaceShell() {
       tideGaugeOpen ||
       idwOpen ||
       shapefileOpen ||
-      topologyOpen;
+      topologyOpen ||
+      accountOpen;
     document.body.classList.toggle("has-open-dialog", anyDialogOpen);
     return () => document.body.classList.remove("has-open-dialog");
   }, [
@@ -528,6 +534,7 @@ export function WorkspaceShell() {
     idwOpen,
     shapefileOpen,
     topologyOpen,
+    accountOpen,
   ]);
 
   // Command palette actions
@@ -589,6 +596,7 @@ export function WorkspaceShell() {
     onOpenTopology: () => setTopologyOpen(true),
     onOpenMapLayout: () => setMapLayoutOpen(true),
     onToggleColorblind: () => colorblind.toggle(),
+    onOpenAccount: () => setAccountOpen(true),
   }), [themeMode, setThemeMode, colorblind]);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
@@ -673,6 +681,7 @@ export function WorkspaceShell() {
     onOpenMapLayout: () => setMapLayoutOpen(true),
     onToggleColorblind: () => colorblind.toggle(),
     onPickOrthomosaic: handlePickOrthomosaic,
+    onOpenAccount: () => setAccountOpen(true),
   };
 
   return (
@@ -925,6 +934,8 @@ export function WorkspaceShell() {
       <IdwInterpolationDialog open={idwOpen} onClose={() => setIdwOpen(false)} />
       <ShapefileImportDialog open={shapefileOpen} onClose={() => setShapefileOpen(false)} />
       <TopologyValidatorDialog open={topologyOpen} onClose={() => setTopologyOpen(false)} />
+      {/* Sprint 20 — account management */}
+      <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} />
       {/* Sprint 17 — map layout + orthomosaic */}
       <MapLayoutDialog
         open={mapLayoutOpen}
@@ -1092,6 +1103,7 @@ function LeftSidebar({
   onOpenMapLayout,
   onToggleColorblind,
   onPickOrthomosaic,
+  onOpenAccount,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -1151,6 +1163,7 @@ function LeftSidebar({
   onOpenMapLayout: () => void;
   onToggleColorblind: () => void;
   onPickOrthomosaic: () => void;
+  onOpenAccount: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1440,6 +1453,11 @@ function LeftSidebar({
 
         {/* ── Enterprise ── */}
         <SidebarSection title="Enterprise" icon={<Shield className="h-3 w-3" />}>
+          <SidebarItem
+            icon={<User className="h-3 w-3" />}
+            label="My Account"
+            onClick={onOpenAccount}
+          />
           <SidebarItem
             icon={<Radio className="h-3 w-3" />}
             label="NTRIP Client"

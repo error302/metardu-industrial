@@ -21,6 +21,7 @@ mod error_types;
 mod export_formats;
 
 #[allow(dead_code)]
+mod account;
 mod ar_companion;
 mod automation;
 #[allow(dead_code)]
@@ -75,6 +76,8 @@ use commands::{
     automation::serialize_pipeline_cmd, bottleneck_tools::compile_machine_control_cmd,
     bottleneck_tools::render_dem_cmd, bottleneck_tools::run_density_gates_cmd,
     bottleneck_tools::run_tidal_correction_cmd, deliverable::generate_deliverable_package_cmd,
+    account::get_profile_cmd, account::create_account_cmd, account::update_profile_cmd,
+    account::link_license_cmd, account::delete_account_cmd, account::is_onboarded_cmd,
     eom::check_license_status_cmd, eom::consume_report_cmd, eom::detect_machine_fingerprint_cmd,
     eom::generate_eom_report_cmd, eom::get_ntrip_status_cmd, eom::import_dxf_surface_cmd,
     eom::is_eom_watch_folder_running, eom::run_eom_pipeline_cmd, eom::run_triage_cmd,

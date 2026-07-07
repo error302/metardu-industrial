@@ -302,6 +302,7 @@ export function createCommandActions(callbacks: {
   // Sprint 17
   onOpenMapLayout: () => void;
   onToggleColorblind: () => void;
+  onOpenAccount: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -370,5 +371,7 @@ export function createCommandActions(callbacks: {
     // ── Sprint 17 ──
     { id: "map_layout", label: "Generate Map Sheet (PDF)", category: "GIS Tools · Export", keywords: ["map", "layout", "sheet", "pdf", "print", "title", "block", "north", "arrow", "scale", "legend"], icon: <FileText className={icon} />, action: callbacks.onOpenMapLayout },
     { id: "colorblind", label: "Toggle Colorblind Palette", category: "App · Accessibility", keywords: ["colorblind", "colour", "blind", "palette", "accessibility", "wcag", "deuteranopia", "protanopia"], icon: <Palette className={icon} />, action: callbacks.onToggleColorblind },
+    // ── Sprint 20: Account ──
+    { id: "account", label: "My Account / Profile", category: "App · Account", keywords: ["account", "profile", "register", "login", "user", "name", "email", "company", "license", "activation"], icon: <FileText className={icon} />, action: callbacks.onOpenAccount },
   ];
 }
