@@ -299,6 +299,9 @@ export function createCommandActions(callbacks: {
   onOpenIdw: () => void;
   onOpenShapefile: () => void;
   onOpenTopology: () => void;
+  // Sprint 17
+  onOpenMapLayout: () => void;
+  onToggleColorblind: () => void;
 }): CommandAction[] {
   const icon = "h-4 w-4";
   return [
@@ -364,5 +367,8 @@ export function createCommandActions(callbacks: {
     { id: "idw", label: "IDW Interpolation", category: "GIS Tools · Interpolation", keywords: ["idw", "interpolation", "inverse", "distance", "weighting", "dem", "gap", "fill", "surface", "grid"], icon: <TrendingUp className={icon} />, action: callbacks.onOpenIdw },
     { id: "shapefile", label: "Shapefile Import", category: "GIS Tools · Import", keywords: ["shapefile", "shp", "esri", "import", "load", "overlay", "surpac", "datamine", "vulcan"], icon: <FileSearch className={icon} />, action: callbacks.onOpenShapefile },
     { id: "topology", label: "Topology Validator", category: "GIS Tools · QA", keywords: ["topology", "validate", "quality", "qa", "qc", "gap", "overlap", "dangle", "sliver", "self-intersection"], icon: <ShieldCheck className={icon} />, action: callbacks.onOpenTopology },
+    // ── Sprint 17 ──
+    { id: "map_layout", label: "Generate Map Sheet (PDF)", category: "GIS Tools · Export", keywords: ["map", "layout", "sheet", "pdf", "print", "title", "block", "north", "arrow", "scale", "legend"], icon: <FileText className={icon} />, action: callbacks.onOpenMapLayout },
+    { id: "colorblind", label: "Toggle Colorblind Palette", category: "App · Accessibility", keywords: ["colorblind", "colour", "blind", "palette", "accessibility", "wcag", "deuteranopia", "protanopia"], icon: <Palette className={icon} />, action: callbacks.onToggleColorblind },
   ];
 }

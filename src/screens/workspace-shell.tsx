@@ -62,6 +62,8 @@ import {
   Keyboard,
   Bookmark,
   SunMoon,
+  Map as MapIcon,
+  Eye,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
@@ -150,6 +152,8 @@ const CustomizeToolbarDialog = lazy(() => import("@/components/customize-toolbar
 const IdwInterpolationDialog = lazy(() => import("@/components/idw-interpolation-dialog").then(m => ({ default: m.IdwInterpolationDialog })));
 const ShapefileImportDialog = lazy(() => import("@/components/shapefile-import-dialog").then(m => ({ default: m.ShapefileImportDialog })));
 const TopologyValidatorDialog = lazy(() => import("@/components/topology-validator-dialog").then(m => ({ default: m.TopologyValidatorDialog })));
+// Sprint 17 — UI features + map layout
+const MapLayoutDialog = lazy(() => import("@/components/map-layout-dialog").then(m => ({ default: m.MapLayoutDialog })));
 import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
@@ -159,6 +163,9 @@ import { MapOverlays, type MapLayer } from "@/components/map-overlays";
 import { useKeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
 import { CustomizableToolbar } from "@/components/customizable-toolbar";
 import { useTheme } from "@/lib/theme-auto";
+import { BasemapSwitcher } from "@/components/basemap-switcher";
+import { OrthomosaicOverlay } from "@/components/orthomosaic-overlay";
+import { useColorblindPalette } from "@/lib/colorblind-palette";
 import {
   colors,
   domainAccent,
@@ -234,6 +241,7 @@ export function WorkspaceShell() {
     { id: "dem", label: "DEM Hillshade", visible: true, icon: "dem" },
     { id: "cube", label: "CUBE Surface", visible: true, icon: "cube" },
     { id: "stream", label: "Live Stream", visible: false, icon: "stream" },
+    { id: "orthomosaic", label: "Orthomosaic", visible: true, icon: "dem" },
   ]);
   const [mapRotation, setMapRotation] = useState(0);
   // Sprint 13 — saved views + customize toolbar + theme
@@ -244,6 +252,12 @@ export function WorkspaceShell() {
   const [idwOpen, setIdwOpen] = useState(false);
   const [shapefileOpen, setShapefileOpen] = useState(false);
   const [topologyOpen, setTopologyOpen] = useState(false);
+  // Sprint 17 — map layout + orthomosaic + colorblind
+  const [mapLayoutOpen, setMapLayoutOpen] = useState(false);
+  const [orthoPath, setOrthoPath] = useState<string | null>(null);
+  // setOrthoPath will be wired to a file-picker in a future sprint
+  void setOrthoPath;
+  const colorblind = useColorblindPalette();
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -558,7 +572,9 @@ export function WorkspaceShell() {
     onOpenIdw: () => setIdwOpen(true),
     onOpenShapefile: () => setShapefileOpen(true),
     onOpenTopology: () => setTopologyOpen(true),
-  }), [themeMode, setThemeMode]);
+    onOpenMapLayout: () => setMapLayoutOpen(true),
+    onToggleColorblind: () => colorblind.toggle(),
+  }), [themeMode, setThemeMode, colorblind]);
 
   // Start/stop UDP streaming listener when the Radio button is toggled
   useEffect(() => {
@@ -639,6 +655,8 @@ export function WorkspaceShell() {
     onOpenIdw: () => setIdwOpen(true),
     onOpenShapefile: () => setShapefileOpen(true),
     onOpenTopology: () => setTopologyOpen(true),
+    onOpenMapLayout: () => setMapLayoutOpen(true),
+    onToggleColorblind: () => colorblind.toggle(),
   };
 
   return (
@@ -702,6 +720,16 @@ export function WorkspaceShell() {
             layers={mapLayers}
             onToggleLayer={(id) => setMapLayers((prev) => prev.map((l) => l.id === id ? { ...l, visible: !l.visible } : l))}
           />
+          {/* Sprint 17 — orthomosaic overlay (georeferenced RGB) */}
+          <OrthomosaicOverlay
+            map={mapInstance}
+            orthoPath={orthoPath}
+            visible={mapLayers.find((l) => l.id === "orthomosaic")?.visible ?? true}
+          />
+          {/* Sprint 17 — basemap switcher */}
+          <div className="absolute right-3 top-16 z-10">
+            <BasemapSwitcher map={mapInstance} />
+          </div>
           <CubeSurfaceOverlay map={mapInstance} surface={cubeSurface} />
           <PointCloudLayer
             map={mapInstance}
@@ -881,6 +909,14 @@ export function WorkspaceShell() {
       <IdwInterpolationDialog open={idwOpen} onClose={() => setIdwOpen(false)} />
       <ShapefileImportDialog open={shapefileOpen} onClose={() => setShapefileOpen(false)} />
       <TopologyValidatorDialog open={topologyOpen} onClose={() => setTopologyOpen(false)} />
+      {/* Sprint 17 — map layout + orthomosaic */}
+      <MapLayoutDialog
+        open={mapLayoutOpen}
+        onClose={() => setMapLayoutOpen(false)}
+        map={mapInstance}
+        defaultProjectName={currentProject?.name ?? ""}
+        defaultCrs={settings.defaultEpsg}
+      />
       </Suspense>
     </div>
   );
@@ -1037,6 +1073,8 @@ function LeftSidebar({
   onOpenIdw,
   onOpenShapefile,
   onOpenTopology,
+  onOpenMapLayout,
+  onToggleColorblind,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -1093,6 +1131,8 @@ function LeftSidebar({
   onOpenIdw: () => void;
   onOpenShapefile: () => void;
   onOpenTopology: () => void;
+  onOpenMapLayout: () => void;
+  onToggleColorblind: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1345,6 +1385,11 @@ function LeftSidebar({
             label="Topology Validator"
             onClick={onOpenTopology}
           />
+          <SidebarItem
+            icon={<MapIcon className="h-3 w-3" />}
+            label="Generate Map Sheet"
+            onClick={onOpenMapLayout}
+          />
         </SidebarSection>
 
         {/* ── Deliverables ── */}
@@ -1431,6 +1476,11 @@ function LeftSidebar({
           icon={<SunMoon className="h-3 w-3" />}
           label="Toggle Theme"
           onClick={onToggleTheme}
+        />
+        <SidebarItem
+          icon={<Eye className="h-3 w-3" />}
+          label="Colorblind Palette"
+          onClick={onToggleColorblind}
         />
       </div>
     </aside>

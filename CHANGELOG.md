@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 17: Orthomosaic Overlay + Map Layout Frontend + Tier 2 GIS Features + Skills Audit
+
+- **Orthomosaic map overlay** (`src/components/orthomosaic-overlay.tsx`):
+  - Calls `read_orthomosaic_cmd` to get RGB pixel data + bounds from Rust
+  - Converts raw RGB bytes to PNG via canvas (ImageData with RGBA)
+  - Creates OpenLayers ImageLayer with ImageStatic source, georeferenced
+    to the orthomosaic's world bounds
+  - Auto-fits the map view to the orthomosaic extent on load
+  - 85% opacity so the survey data is still visible underneath
+  - Toggleable via the map layer toggle (Sprint 12 MapOverlays)
+  - New "Orthomosaic" entry in the layer toggle panel
+- **Map layout frontend** (`src/components/map-layout-dialog.tsx`):
+  - Captures the current OL map canvas at 2× resolution for print quality
+  - Sends the PNG (base64) + layout parameters to `generate_map_layout_cmd`
+  - Title block fields: project name, surveyor, date, scale, CRS
+  - Page size: A3 / A4 / Letter, portrait or landscape
+  - Editable legend with color picker + label per entry
+  - Corner coordinate labels from map bounds
+  - North arrow rotation from map view
+  - Output PDF path with Browse button (save dialog)
+  - Success result shows file path + size
+- **Colorblind-safe palette** (`src/lib/colorblind-palette.ts`):
+  - `useColorblindPalette()` hook with toggle
+  - Wong (2011) palette: red → orange, green → sky blue
+  - Applied via `data-palette` attribute on `<html>`
+  - Persisted in localStorage
+  - `getSemanticColor()` + `COLORBLIND_MAP` for programmatic access
+  - Sidebar "Colorblind Palette" toggle + command palette entry
+- **Basemap switcher** (`src/components/basemap-switcher.tsx`):
+  - 4 basemaps: Streets (OSM), Satellite (ESRI World Imagery), Terrain
+    (OpenTopoMap), Blank (no basemap)
+  - All free, no API keys required
+  - `applyBasemap()` function swaps the base TileLayer source
+  - Persisted in localStorage
+  - Compact icon-button bar with tooltips
+  - Positioned top-right of the map, below FloatingActions
+- **GeoJSON + KML export** (`src-tauri/src/export_formats.rs`, ~270 lines,
+  5 unit tests):
+  - `export_geojson()` — converts Shapefile features to RFC 7946 GeoJSON
+    FeatureCollection (Point, MultiPoint, LineString, MultiLineString,
+    Polygon with holes)
+  - `export_kml()` — converts to OGC KML 2.2 with Placemark elements,
+    MultiGeometry for multi-part features, outerBoundaryIs/innerBoundaryIs
+    for polygon holes
+  - Proper JSON/XML escaping
+  - New IPC commands `export_geojson_cmd`, `export_kml_cmd`
+- **CRS consistency audit** (`audit_crs_consistency_cmd`):
+  - Takes a list of file paths, detects the CRS of each (GeoTIFF via
+    EPSG GeoKey, LAS via WKT VLR, Shapefile flagged as no-CRS)
+  - Returns list of files with detected CRS + file type
+  - Flags mismatch when project has files in >1 CRS
+  - Warning message lists the conflicting CRSs
+- **Skills audit** (`docs/SKILLS_AUDIT.md`):
+  - Inventoried all 62 installed skills (13 GIS + 9 design + 6 spatial +
+    34 engineering)
+  - 5 already activated (UI Designer, UX Researcher, Backend Architect,
+    GIS QA Engineer, Spatial Data Engineer)
+  - 14 high-value agents not yet activated, ranked by ROI
+  - Top 5 to activate in Sprint 18: Brand Guardian, Code Reviewer,
+    Inclusive Visuals Specialist, SRE, Database Optimizer
+  - Recommends installing Testing + Security divisions from upstream
+    before v1.0
+
+Stats: 4 new frontend components (~700 lines), 1 new Rust module (~270
+lines), 5 new Rust unit tests, 3 new IPC commands, 1 skills audit doc
+(~280 lines). TypeScript compiles clean.
+
 ### Added — Sprint 16: Orthomosaic + Map Layout + 3 GIS Dialogs + Dialog Migration
 
 - **Orthomosaic RGB reader** (`src-tauri/src/formats/orthomosaic.rs`,

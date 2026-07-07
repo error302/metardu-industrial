@@ -90,6 +90,119 @@ pub async fn generate_map_layout_cmd(
     .map_err(|e| format!("task join error: {e}"))?
 }
 
+// ── GeoJSON + KML export (Sprint 17) ──
+
+#[tauri::command]
+pub async fn export_geojson_cmd(shp_path: String, output_path: String) -> Result<(), String> {
+    let shp_path_buf = crate::path_validation::validate_path(&shp_path)
+        .map_err(|e| ctx!("validating shapefile path", shp_path, e))?;
+    let out_path = crate::path_validation::validate_path(&output_path)
+        .map_err(|e| ctx!("validating output path", output_path, e))?;
+    let shp_label = shp_path.clone();
+    tokio::task::spawn_blocking(move || {
+        let shp = crate::formats::shapefile::read_shapefile(&shp_path_buf)
+            .map_err(|e| ctx!("reading shapefile", shp_label, e))?;
+        crate::export_formats::export_geojson(&shp, &out_path)
+            .map_err(|e| format!("exporting GeoJSON: {e}"))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+#[tauri::command]
+pub async fn export_kml_cmd(shp_path: String, output_path: String, document_name: String) -> Result<(), String> {
+    let shp_path_buf = crate::path_validation::validate_path(&shp_path)
+        .map_err(|e| ctx!("validating shapefile path", shp_path, e))?;
+    let out_path = crate::path_validation::validate_path(&output_path)
+        .map_err(|e| ctx!("validating output path", output_path, e))?;
+    let shp_label = shp_path.clone();
+    tokio::task::spawn_blocking(move || {
+        let shp = crate::formats::shapefile::read_shapefile(&shp_path_buf)
+            .map_err(|e| ctx!("reading shapefile", shp_label, e))?;
+        crate::export_formats::export_kml(&shp, &out_path, &document_name)
+            .map_err(|e| format!("exporting KML: {e}"))
+    })
+    .await
+    .map_err(|e| format!("task join error: {e}"))?
+}
+
+// ── CRS consistency audit (Sprint 17) ──
+
+#[derive(serde::Serialize)]
+pub struct CrsAuditResult {
+    pub files: Vec<CrsAuditEntry>,
+    pub unique_crs: Vec<String>,
+    pub has_mismatch: bool,
+    pub warning: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+pub struct CrsAuditEntry {
+    pub path: String,
+    pub detected_crs: String,
+    pub file_type: String,
+}
+
+#[tauri::command]
+pub async fn audit_crs_consistency_cmd(file_paths: Vec<String>) -> Result<CrsAuditResult, String> {
+    let mut entries = Vec::new();
+    for path_str in &file_paths {
+        let path = std::path::PathBuf::from(path_str);
+        let (crs, file_type) = if path_str.ends_with(".tif") || path_str.ends_with(".tiff") {
+            match crate::formats::read_geotiff_header(&path) {
+                Ok(h) => {
+                    let crs = h.epsg.map(|e| format!("EPSG:{}", e)).unwrap_or_else(|| "unknown".to_string());
+                    (crs, "GeoTIFF".to_string())
+                }
+                Err(_) => ("error".to_string(), "GeoTIFF".to_string()),
+            }
+        } else if path_str.ends_with(".las") || path_str.ends_with(".laz") {
+            match crate::formats::read_las_header(&path) {
+                Ok(h) => {
+                    let crs = h.crs_wkt.unwrap_or_else(|| "unknown".to_string());
+                    (crs, "LAS".to_string())
+                }
+                Err(_) => ("error".to_string(), "LAS".to_string()),
+            }
+        } else if path_str.ends_with(".shp") {
+            ("shapefile-no-crs".to_string(), "Shapefile".to_string())
+        } else {
+            ("unknown".to_string(), "unknown".to_string())
+        };
+        entries.push(CrsAuditEntry {
+            path: path_str.clone(),
+            detected_crs: crs,
+            file_type,
+        });
+    }
+
+    let unique_crs: Vec<String> = entries
+        .iter()
+        .map(|e| e.detected_crs.clone())
+        .filter(|c| c != "unknown" && c != "error" && c != "shapefile-no-crs")
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+
+    let has_mismatch = unique_crs.len() > 1;
+    let warning = if has_mismatch {
+        Some(format!(
+            "Project has files in {} different CRSs: {}. Reproject all files to a common CRS before computing volumes or areas.",
+            unique_crs.len(),
+            unique_crs.join(", ")
+        ))
+    } else {
+        None
+    };
+
+    Ok(CrsAuditResult {
+        files: entries,
+        unique_crs,
+        has_mismatch,
+        warning,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
