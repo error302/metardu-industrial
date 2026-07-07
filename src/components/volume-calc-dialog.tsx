@@ -16,7 +16,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState, useCallback } from "react";
 import {
-  X, Calculator, Loader2, TrendingUp, TrendingDown, FolderOpen,
+  Calculator, Loader2, TrendingUp, TrendingDown, FolderOpen,
   Copy, CheckCircle2, FileText, Layers,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
@@ -26,6 +26,7 @@ import {
 } from "@/lib/tauri-ipc";
 import { pickFile } from "@/lib/file-picker";
 import { useSurveyStore } from "@/stores/survey-store";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -222,35 +223,29 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Volume Calculator"
+      icon={<Calculator className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-3xl"
+      subtitle="Pure Rust volume engine · 2.5D matrix subtraction"
+      footerHint="IHO S-44 compliant · grid + TIN cross-check"
+      actions={
+        <>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Calculator className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            Volume Calculator
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        {error && (
+          <div className="mb-4 rounded-md border p-3 text-xs"
+            style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
+            {error}
+          </div>
+        )}
 
-        {/* Body — single screen, two columns: inputs left, results right */}
-        <div className="flex-1 overflow-y-auto p-5">
-          {error && (
-            <div className="mb-4 rounded-md border p-3 text-xs"
-              style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
-              {error}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-5">
             {/* ── LEFT: Inputs ── */}
             <div className="space-y-4">
               {/* Current survey */}
@@ -564,21 +559,7 @@ export function VolumeCalcDialog({ open, onClose }: Props) {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Pure Rust volume engine · 2.5D matrix subtraction · IHO S-44 compliant
-          </div>
-          <button onClick={onClose}
-            className="rounded-md px-3 py-1 text-xs font-medium"
-            style={{ background: colors.pass, color: colors.navyBase }}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

@@ -26,7 +26,7 @@ export function CustomizableToolbar({ onOpenDialog, onCustomize }: Props) {
     .filter((a): a is NonNullable<typeof a> => a != null);
 
   return (
-    <div className="flex items-center gap-1 border-b border-navy-border bg-navy-panel px-2 py-1 overflow-x-auto">
+    <div className="toolbar-enterprise flex items-center gap-1 border-b border-navy-border px-2 py-1 overflow-x-auto">
       {pinnedActions.map((action) => {
         const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[action.icon] || Icons.Circle;
         return (

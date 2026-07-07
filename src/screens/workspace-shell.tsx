@@ -972,7 +972,7 @@ function TitleBar({
   // users don't click expecting the app to minimize.
   const showWindowControls = isNative();
   return (
-    <header className="title-bar flex items-center justify-between gap-2 border-b border-navy-border bg-navy-panel px-2 sm:px-3">
+    <header className="title-bar title-bar-enterprise flex items-center justify-between gap-2 border-b border-navy-border px-2 sm:px-3">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           onClick={onToggleSidebar}
@@ -1169,7 +1169,7 @@ function LeftSidebar({
 
   return (
     <aside
-      className={`sidebar-transition flex h-full flex-col border-r border-navy-border bg-navy-panel ${
+      className={`sidebar-transition sidebar-enterprise flex h-full flex-col border-r border-navy-border ${
         railMode ? "sidebar-rail w-14" : "w-[260px]"
       }`}
     >
@@ -2037,7 +2037,7 @@ function StatusBar({ domain, epsg, map, onOpenShortcuts }: { domain: DomainMode;
   const redo = useUndoStore((s) => s.redo);
 
   return (
-    <footer className="status-bar">
+    <footer className="status-bar status-bar-enterprise">
       <div className="status-bar-item" style={{ color: colors.pass }}>
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: colors.pass }} />
         Ready

@@ -139,7 +139,7 @@ export function DialogShell({
         aria-modal="true"
         aria-labelledby="dialog-title"
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[88vh] w-full ${maxWidth} flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl`}
+        className={`dialog-enter-enterprise flex max-h-[88vh] w-full ${maxWidth} flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">

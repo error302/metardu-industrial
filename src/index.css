@@ -642,3 +642,234 @@ kbd {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ────────────────────────────────────────────────────────────
+   Sprint 21 — Enterprise UI/UX Polish
+   ──────────────────────────────────────────────────────────── */
+
+/* Enterprise-grade dialog entrance animation */
+@keyframes dialog-enter-enterprise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dialog-enter-enterprise {
+  animation: dialog-enter-enterprise 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Backdrop fade-in */
+@keyframes backdrop-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Enterprise sidebar — subtle gradient + improved hover states */
+.sidebar-enterprise {
+  background: linear-gradient(180deg, var(--color-panel) 0%, var(--color-base) 100%);
+}
+.sidebar-item-enterprise {
+  position: relative;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sidebar-item-enterprise::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--color-accent);
+  border-radius: 0 2px 2px 0;
+  transition: height 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sidebar-item-enterprise:hover::before {
+  height: 60%;
+}
+.sidebar-item-enterprise.is-active::before {
+  height: 100%;
+}
+
+/* Enterprise title bar — glassmorphism */
+.title-bar-enterprise {
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+/* Enterprise status bar — refined */
+.status-bar-enterprise {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(71, 85, 105, 0.2);
+}
+
+/* Enterprise card — subtle shadow + border */
+.card-enterprise {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+.card-enterprise:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);
+  border-color: var(--color-border-light);
+}
+
+/* Enterprise button — micro-interaction */
+.btn-enterprise {
+  position: relative;
+  overflow: hidden;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-enterprise::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 300ms ease, height 300ms ease;
+}
+.btn-enterprise:active::after {
+  width: 200%;
+  height: 200%;
+  transition: width 0ms, height 0ms;
+}
+
+/* Enterprise input — focus glow */
+.input-enterprise {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.input-enterprise:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+/* Enterprise table — striped rows + hover */
+.table-enterprise tbody tr:nth-child(even) {
+  background: rgba(30, 41, 59, 0.3);
+}
+.table-enterprise tbody tr:hover {
+  background: rgba(51, 65, 85, 0.4);
+}
+
+/* Enterprise scrollbar — refined dark */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+  border: 2px solid var(--color-base);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-light);
+}
+
+/* Enterprise tooltip — glassmorphism */
+.tooltip-enterprise {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Enterprise badge — refined */
+.badge-enterprise {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Enterprise loading spinner — refined */
+@keyframes enterprise-spin {
+  to { transform: rotate(360deg); }
+}
+.spinner-enterprise {
+  animation: enterprise-spin 800ms linear infinite;
+}
+
+/* Enterprise progress bar — gradient + glow */
+.progress-enterprise {
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-light));
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+  border-radius: 9999px;
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enterprise divider — subtle gradient */
+.divider-enterprise {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-border), transparent);
+  border: none;
+  margin: 16px 0;
+}
+
+/* Enterprise empty state — refined */
+.empty-state-enterprise {
+  padding: 48px 24px;
+  text-align: center;
+}
+.empty-state-enterprise .icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  opacity: 0.4;
+}
+
+/* Enterprise toast notification */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toast-enterprise {
+  animation: toast-slide-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Enterprise map controls — refined dark */
+.ol-control-enterprise {
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-border) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Enterprise toolbar — refined */
+.toolbar-enterprise {
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+}
+
+/* Print styles — for map sheet export */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+}
