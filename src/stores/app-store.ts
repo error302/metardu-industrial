@@ -194,16 +194,29 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     if (persistedTheme) nextSettings.theme = persistedTheme;
 
+    // Sprint 20 — check if the user has created an account (is_onboarded_cmd).
+    // If they haven't, force the onboarding phase so the AccountDialog shows.
+    let accountOnboarded = true; // default: assume onboarded (browser mode)
+    if (isNative()) {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        accountOnboarded = await invoke<boolean>("is_onboarded_cmd");
+      } catch {
+        // If the command fails, fall through to the old behavior
+        accountOnboarded = true;
+      }
+    }
+
+    const hasCompletedOldOnboarding =
+      Boolean(rustSettings) || Boolean(browserSettings) || onboardedFlag;
+    const fullyOnboarded = hasCompletedOldOnboarding && accountOnboarded;
+
     set({
       settings: nextSettings,
       activeDomain: nextSettings.defaultDomain,
-      // Skip onboarding on subsequent boots — but ONLY if we have
-      // either a Rust settings file (Tauri mode) or a localStorage
-      // blob (browser mode). The bare onboardedFlag is a third-line
-      // signal so we don't re-show onboarding if the user completed
-      // it but never opened Settings.
-      hasCompletedOnboarding:
-        Boolean(rustSettings) || Boolean(browserSettings) || onboardedFlag,
+      // Skip onboarding only if BOTH the old onboarding (settings) AND
+      // the new account onboarding (profile.json) are complete.
+      hasCompletedOnboarding: fullyOnboarded,
       hydrated: true,
     });
   },

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added — Sprint 20: Account System + Registration
+### Added — Sprint 20: Account System + Registration + Onboarding Flow + Report Integration
 
 - **User account / registration system** — the critical missing piece
   for a commercial app. Users now create an account on first launch
@@ -21,34 +21,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       user_id from email+timestamp hash, saves to `app_data_dir/profile.json`
     - `update_profile()` — partial updates (only provided fields change)
     - `link_license()` — associates a license key + tier with the profile
-      (called after successful license activation)
     - `delete_profile()` — account deletion / reset
     - `load_profile()` — returns empty profile for new users
-    - `is_complete()` / `is_new()` helper methods
   - 6 new IPC commands: `get_profile_cmd`, `create_account_cmd`,
     `update_profile_cmd`, `link_license_cmd`, `delete_account_cmd`,
     `is_onboarded_cmd`
   - `src/components/account-dialog.tsx` (~250 lines):
-    - Create Account form for new users (name*, email*, company*, reg#, phone)
-    - Edit Profile form for existing users (same fields, pre-filled)
-    - License section showing current tier + key (masked)
-    - Privacy note: "stored locally, no server required"
-    - Supports onboarding mode (can't be dismissed on first launch)
-    - Success/error messages with icons
-    - Uses DialogShell + DialogButton for consistent styling
-  - Sidebar: "My Account" item in Enterprise section
-  - Command palette: "My Account / Profile" with fuzzy keywords
-  - Integration with existing license system (Sprint 7):
-    - After license activation, `link_license_cmd` ties the key to the profile
-    - License tier displayed in the account dialog
-    - User name + company from profile used in PDF report generation
-  - Integration with onboarding:
-    - `is_onboarded_cmd` checks if user has completed account creation
-    - Frontend can use this on app launch to show onboarding vs workspace
+    - Create Account / Edit Profile form
+    - License section with tier + masked key
+    - Privacy note: stored locally, no server
+  - Sidebar: "My Account" in Enterprise section
+  - Command palette: "My Account / Profile"
+- **Onboarding flow wired** (Sprint 20):
+  - `app-store.ts` `hydrate()` now calls `is_onboarded_cmd` on launch
+  - If the user hasn't created an account, `hasCompletedOnboarding` is
+    `false` → the ModuleLoadingScreen transitions to the OnboardingScreen
+  - `OnboardingScreen` now has 2 steps:
+    1. Domain + CRS selection (skippable)
+    2. Account creation (required — can't proceed without name + email + company)
+  - After account creation, `completeOnboarding()` is called → workspace loads
+  - Back button to return to domain step
+  - Privacy note shown in the account step
+  - On subsequent launches, `is_onboarded_cmd` returns `true` → workspace loads directly
+- **Profile data in PDF reports** (`report_engine.rs`):
+  - `ReportSpec` now includes `surveyor_name`, `surveyor_company`,
+    `surveyor_registration` fields
+  - PDF header now shows: "Surveyor: {name}" + "{company}" + "Generated: {timestamp}"
+  - Surveyor registration number shown in metadata section if provided
+  - Frontend `generate_report_cmd` callers include profile data automatically
 
-Stats: 1 new Rust module (~300 lines), 12 new Rust unit tests, 6 new IPC
-commands, 1 new frontend dialog (~250 lines), 1 new sidebar item, 1 new
-command palette entry. TypeScript compiles clean.
+Stats: 1 new Rust module (~300 lines), 12 Rust unit tests, 6 new IPC
+commands, 2 modified frontend files (onboarding + app-store), 1 modified
+Rust file (report_engine), 1 new frontend dialog (~250 lines). TypeScript
+compiles clean.
 
 ### Added — Sprint 19: Product Assessment + Remediation + Security + Accessibility
 

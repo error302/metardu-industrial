@@ -14,6 +14,16 @@ pub struct ReportSpec {
     pub subtitle: String,
     #[serde(default)]
     pub client: String,
+    /// Surveyor name (from the user profile, Sprint 20).
+    /// Shown in the report title block for chain-of-custody.
+    #[serde(default)]
+    pub surveyor_name: String,
+    /// Surveyor's company / organization (from the user profile).
+    #[serde(default)]
+    pub surveyor_company: String,
+    /// Surveyor's registration number (from the user profile, if any).
+    #[serde(default)]
+    pub surveyor_registration: Option<String>,
     #[serde(default)]
     pub metadata: HashMap<String, String>,
     #[serde(default)]
@@ -175,9 +185,25 @@ fn render_html(spec: &ReportSpec) -> String {
     h.push_str(&format!(
         "<div class='hdr'><div class='hdr-l'><div class='logo'>M</div><div>\
         <div class='hdr-t'>{}</div><div class='hdr-s'>{}</div></div></div>\
-        <div class='hdr-r'><div><strong>{}</strong></div><div>Generated: epoch {ts}</div></div></div>",
-        esc(&spec.title), esc(&spec.subtitle), esc(&spec.client)
+        <div class='hdr-r'><div><strong>{}</strong></div>\
+        <div>Surveyor: {surveyor}</div>\
+        <div>{company}</div>\
+        <div>Generated: epoch {ts}</div></div></div>",
+        esc(&spec.title), esc(&spec.subtitle), esc(&spec.client),
+        surveyor = if spec.surveyor_name.is_empty() { "—".into() } else { esc(&spec.surveyor_name) },
+        company = if spec.surveyor_company.is_empty() { String::new() } else { esc(&spec.surveyor_company) },
+        ts = ts
     ));
+
+    // Surveyor registration number (if provided)
+    if let Some(ref reg) = spec.surveyor_registration {
+        if !reg.is_empty() {
+            h.push_str(&format!(
+                "<div class='meta'><div><strong>Surveyor Registration:</strong> {}</div></div>",
+                esc(reg)
+            ));
+        }
+    }
 
     // Metadata
     if !spec.metadata.is_empty() {

@@ -1,12 +1,13 @@
 /**
  * First-Run Onboarding Screen
- * Two questions: which domain(s) + default CRS.
- * Selections configure default panels, shortcuts, color mode.
- * Skippable — power users can configure later in Settings.
+ * Three steps: domain selection → CRS selection → account creation.
+ * Sprint 20: added account creation step (required, can't skip).
+ * Skippable for domain/CRS — power users can configure later in Settings.
+ * Account creation is required (can't proceed without name + email + company).
  */
 
 import { useState } from "react";
-import { Mountain, Ship, ArrowRight, Search } from "lucide-react";
+import { Mountain, Ship, ArrowRight, Search, ArrowLeft, CheckCircle2 } from "lucide-react";
 import {
   colors,
   domainAccent,
@@ -16,8 +17,11 @@ import {
 import { BrandLogoMark } from "@/components/brand-logo";
 import { useAppStore } from "@/stores/app-store";
 import { useViewport } from "@/lib/use-viewport";
-
+import { invoke } from "@tauri-apps/api/core";
+import { isNative } from "@/lib/tauri-ipc";
 import { CRS_QUICKPICKS } from "@/lib/crs-quickpicks";
+
+type OnboardingStep = "domain" | "account";
 
 export function OnboardingScreen() {
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
@@ -25,6 +29,16 @@ export function OnboardingScreen() {
   const [domain, setDomain] = useState<DomainMode | null>(null);
   const [epsg, setEpsg] = useState("EPSG:4326");
   const [search, setSearch] = useState("");
+  const [step, setStep] = useState<OnboardingStep>("domain");
+
+  // Account fields
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [regNumber, setRegNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const filteredCrs = CRS_QUICKPICKS.filter(
     (c) =>
@@ -57,6 +71,7 @@ export function OnboardingScreen() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
+        {step === "domain" && (
         <div className="mx-auto max-w-3xl px-4 sm:px-8 py-6 sm:py-10">
           <h1 className="text-xl sm:text-2xl font-bold text-white">
             Welcome to {APP_NAME}
@@ -199,24 +214,149 @@ export function OnboardingScreen() {
             </div>
             <button
               disabled={!domain}
-              onClick={() =>
-                domain &&
-                completeOnboarding({
-                  defaultDomain: domain,
-                  defaultEpsg: epsg,
-                })
-              }
+              onClick={() => setStep("account")}
               className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               style={{
                 background: domain ? colors.industrialOrange : colors.steelGray,
                 color: colors.navyBase,
               }}
             >
-              Get started
+              Continue
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
+        )}
+
+        {/* Account creation step (Sprint 20) */}
+        {step === "account" && (
+          <div className="mx-auto max-w-lg px-4 sm:px-8 py-6 sm:py-10">
+            <button
+              onClick={() => setStep("domain")}
+              className="mb-4 flex items-center gap-1 text-xs text-steel-gray hover:text-white"
+            >
+              <ArrowLeft className="h-3 w-3" /> Back
+            </button>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">
+              Create Your Account
+            </h1>
+            <p className="mt-2 text-sm text-steel-light">
+              Your profile is stored locally and used in PDF reports for chain-of-custody.
+              No server required — MetaRDU is a desktop app.
+            </p>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+                  Full Name <span style={{ color: colors.fail }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Sarah Mitchell"
+                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+                  Email <span style={{ color: colors.fail }}>*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="sarah@mine.com"
+                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+                  Company / Organization <span style={{ color: colors.fail }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="BHP Gold Mine — WA"
+                  className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 text-sm text-white focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+                    Registration No.
+                  </label>
+                  <input
+                    type="text"
+                    value={regNumber}
+                    onChange={(e) => setRegNumber(e.target.value)}
+                    placeholder="SV12345"
+                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-accent focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+61 400 000 000"
+                    className="w-full rounded-md border border-navy-border bg-navy-base px-3 py-2 font-mono text-xs text-white focus:border-accent focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="rounded-md border p-3 text-xs" style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
+                  {error}
+                </div>
+              )}
+
+              <div className="rounded-md bg-navy-base p-2 text-[10px] leading-relaxed text-steel-gray">
+                <strong className="text-steel-light">Privacy:</strong> Your profile is stored locally on this
+                machine only. MetaRDU does not send your personal data to any server.
+              </div>
+
+              <button
+                disabled={creating || !name.trim() || !email.trim() || !company.trim()}
+                onClick={async () => {
+                  setCreating(true);
+                  setError(null);
+                  try {
+                    if (!isNative()) {
+                      // Browser mode — just complete onboarding
+                      completeOnboarding({ defaultDomain: domain ?? "both", defaultEpsg: epsg });
+                      return;
+                    }
+                    await invoke("create_account_cmd", {
+                      name,
+                      email,
+                      company,
+                      registrationNumber: regNumber.trim() || null,
+                      phone: phone.trim() || null,
+                    });
+                    completeOnboarding({ defaultDomain: domain ?? "both", defaultEpsg: epsg });
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setCreating(false);
+                  }
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                style={{
+                  background: name && email && company ? colors.industrialOrange : colors.steelGray,
+                  color: colors.navyBase,
+                }}
+              >
+                {creating ? "Creating…" : "Create Account & Start"}
+                {!creating && <CheckCircle2 className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
