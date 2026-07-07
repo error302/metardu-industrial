@@ -18,11 +18,11 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { X, Satellite, Loader2, Play, Square } from "lucide-react";
+import { Satellite, Loader2, Play, Square } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface RoverPosition {
   timestamp: number;
@@ -73,8 +73,6 @@ export function RoverStreamDialog({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   // Poll for updates at 5 Hz when running
   useEffect(() => {
@@ -153,26 +151,20 @@ export function RoverStreamDialog({ open, onClose }: Props) {
     return H - pad - ((lat - bounds.minLat) / latRange) * (H - 2 * pad);
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="RTK Rover Stream"
+      icon={<Satellite className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-3xl"
+      subtitle="NMEA over TCP"
+      footerHint="GGA + RMC + 5Hz polling"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Satellite className="h-4 w-4" style={{ color: colors.marine }} />
-            RTK Rover Stream
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Connection controls */}
           <div className="grid grid-cols-[1fr_120px_auto] items-end gap-3">
             <div>
@@ -313,22 +305,7 @@ export function RoverStreamDialog({ open, onClose }: Props) {
               Lon → · Lat ↑ · Scale auto-fit to trail bounds
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            NMEA 0183 · GGA / RMC / GLL / GSA / VTG · 5 Hz polling
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md px-4 py-1.5 text-xs font-medium"
-            style={{ background: colors.steelGray, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

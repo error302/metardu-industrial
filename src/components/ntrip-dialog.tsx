@@ -7,11 +7,11 @@
  */
 
 import { useState, useEffect } from "react";
-import { useEscapeKey } from "@/lib/use-escape-key";
 import {
-  X, Radio, Loader2, Wifi, WifiOff, AlertTriangle, RefreshCw,
+  Radio, Loader2, Wifi, WifiOff, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   startNtrip, stopNtrip, getNtripStatus,
   type NtripConfigRpc, type NtripStatusRpc,
@@ -62,7 +62,6 @@ export function NtripDialog({ open, onClose }: Props) {
   // tick is what makes the displayed age actually count up live.
   const [, setTick] = useState(0);
 
-  useEscapeKey(onClose, open);
 
   // All hooks MUST be before the early return — React rules of hooks.
   useEffect(() => {
@@ -78,7 +77,6 @@ export function NtripDialog({ open, onClose }: Props) {
     };
   }, [open]);
 
-  if (!open) return null;
 
   const correctionAge = describeCorrectionAge(status, Date.now());
 
@@ -115,41 +113,20 @@ export function NtripDialog({ open, onClose }: Props) {
 
   const isConnected = status?.connected ?? false;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="NTRIP Client"
+      icon={<Radio className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-2xl"
+      subtitle="RTCM3 correction stream"
+      footerHint="TCP + TLS + base64 auth"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-lg flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl animate-scale-in"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Radio className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            NTRIP Client
-            {isConnected && (
-              <span
-                className="flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase"
-                style={{ background: `${colors.pass}20`, color: colors.pass }}
-              >
-                <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: colors.pass }} />
-                Connected
-              </span>
-            )}
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {error && (
             <div
               className="rounded-md border p-3 text-xs"
@@ -381,13 +358,6 @@ export function NtripDialog({ open, onClose }: Props) {
             )}
             {connecting ? "Connecting…" : isConnected ? "Disconnect" : "Connect"}
           </button>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-2 text-[10px] text-steel-gray">
-          <div>RTCM v3 corrections — eliminates the need for a separate NTRIP client.</div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

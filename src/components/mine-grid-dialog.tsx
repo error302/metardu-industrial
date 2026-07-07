@@ -13,12 +13,12 @@
  */
 
 import { useState } from "react";
-import { X, Grid3x3, ArrowRightLeft, Loader2 } from "lucide-react";
+import { Grid3x3, ArrowRightLeft, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
 import { ValidatedNumberInput } from "@/components/validated-number-input";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface MineGrid {
   name: string;
@@ -52,8 +52,6 @@ export function MineGridDialog({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleConvert() {
     setLoading(true);
@@ -94,26 +92,20 @@ export function MineGridDialog({ open, onClose }: Props) {
   const inputLabel = dir === "grid_to_crs" ? "Mine Grid Coord" : `Parent CRS (${grid.parent_crs})`;
   const outputLabel = dir === "grid_to_crs" ? `Parent CRS (${grid.parent_crs})` : "Mine Grid Coord";
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Mine Grid Transform"
+      icon={<Grid3x3 className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-2xl"
+      subtitle="Bidirectional CRS transform"
+      footerHint="Rotation + scale"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Grid3x3 className="h-4 w-4" style={{ color: colors.mining }} />
-            Mine Grid Transform
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Grid Definition */}
           <section>
             <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
@@ -232,20 +224,7 @@ export function MineGridDialog({ open, onClose }: Props) {
             transform applies: <span className="font-mono">CRS = origin + scale × rotate(grid)</span>. Always validate
             against two known points before relying on the transform.
           </p>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">Local grid ↔ parent CRS with rotation + scale</div>
-          <button
-            onClick={onClose}
-            className="rounded-md px-4 py-1.5 text-xs font-medium"
-            style={{ background: colors.steelGray, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

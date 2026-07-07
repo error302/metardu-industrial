@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * CUBE Hypothesis Disambiguation — Sprint 3 Priority #6.
  *
@@ -10,9 +9,12 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState, useMemo } from "react";
-import { X, Waves, AlertTriangle, Check, ChevronRight } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight,
+  Layers3,
+} from "lucide-react";
 import { colors, rawColors } from "@/lib/tokens";
 import type { CubeSurfaceRpc } from "@/lib/tauri-ipc";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -24,7 +26,6 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
   const [selectedCell, setSelectedCell] = useState<number | null>(null);
   const [resolvedCells, setResolvedCells] = useState<Set<number>>(new Set());
 
-  useEscapeKey(onClose, open);
 
   // Find ambiguous cells (hypothesis_count > 1).
   // NOTE: This useMemo MUST run before the early return below — React's
@@ -52,28 +53,20 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
   const gridW = cols * cellSize;
   const gridH = rows * cellSize;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="CUBE Disambiguation"
+      icon={<Layers3 className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-3xl"
+      subtitle="Hypothesis selection UI"
+      footerHint="Resolve ambiguous depth cells"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Waves className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            CUBE Hypothesis Disambiguation
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* Summary */}
           <div className="mb-4 grid grid-cols-4 gap-2">
             <div className="rounded-md border p-2.5" style={{ borderColor: `${colors.investigate}40`, background: `${colors.investigate}10` }}>
@@ -215,22 +208,6 @@ export function CubeDisambiguationDialog({ open, onClose, surface }: Props) {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            {unresolved.length} unresolved · {resolvedCells.size} accepted
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md px-4 py-1.5 text-xs font-medium"
-            style={{ background: colors.steelGray, color: colors.navyBase }}
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
