@@ -73,6 +73,8 @@ pub enum GeoTiffError {
     Truncated,
     #[error("invalid IFD entry at offset {0}")]
     InvalidIFDEntry(u64),
+    #[error("invalid format: {0}")]
+    InvalidFormat(String),
 }
 
 // TIFF tag IDs we care about

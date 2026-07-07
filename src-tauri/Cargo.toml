@@ -55,6 +55,9 @@ wasmtime = { version = "21", optional = true, default-features = false, features
 # ZIP archive creation for Survey Deliverable Package (Sprint 5)
 # Pure Rust — no system deps. ~120KB binary cost.
 zip = { version = "2", default-features = false, features = ["deflate"] }
+# PDF generation for report engine + map layout composer
+printpdf = "0.7"
+lru = "0.12"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

@@ -859,7 +859,7 @@ fn parse_bathymetry_datagram(
 /// Find the nearest entry in a time-sorted buffer by binary search.
 /// Uses a simple linear scan from the last position (sequential access
 /// pattern makes this O(1) amortized).
-fn find_nearest<T: Timestamped>(buffer: &[T], last_idx: &mut usize, target_time: f64) -> Option<T> {
+fn find_nearest<T: Timestamped + Clone>(buffer: &[T], last_idx: &mut usize, target_time: f64) -> Option<T> {
     if buffer.is_empty() {
         return None;
     }

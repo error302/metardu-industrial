@@ -75,7 +75,7 @@ pub enum DesignPointType {
     Custom,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ControlPoint {
     pub id: String,
     pub easting: f64,
@@ -164,7 +164,8 @@ pub fn compute_visible_points(
                     .partial_cmp(&dist_b)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
-            .unwrap_or(std::cmp::Ordering::Equal);
+            .cloned()
+            .unwrap_or_else(|| package.control_points.first().cloned().unwrap_or_default());
 
         // Offset from control point to design point
         let de = point.easting - nearest.easting;
