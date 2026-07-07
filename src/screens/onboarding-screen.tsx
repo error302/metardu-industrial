@@ -39,6 +39,7 @@ export function OnboardingScreen() {
   const [phone, setPhone] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [telemetryOptIn, setTelemetryOptIn] = useState(false);
 
   const filteredCrs = CRS_QUICKPICKS.filter(
     (c) =>
@@ -320,6 +321,26 @@ export function OnboardingScreen() {
                 machine only. MetaRDU does not send your personal data to any server.
               </div>
 
+              {/* Telemetry opt-in (Sprint 21) */}
+              <label className="flex items-start gap-2 rounded-md border border-navy-border bg-navy-base p-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={telemetryOptIn}
+                  onChange={(e) => setTelemetryOptIn(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5"
+                />
+                <div>
+                  <div className="text-xs font-medium text-steel-light">
+                    Send anonymous usage statistics
+                  </div>
+                  <div className="text-[10px] text-steel-gray mt-0.5">
+                    Help improve MetaRDU by sending anonymous crash reports + feature usage counts.
+                    No personal data, file paths, or coordinates are ever sent. You can change
+                    this in Settings → Telemetry at any time.
+                  </div>
+                </div>
+              </label>
+
               <button
                 disabled={creating || !name.trim() || !email.trim() || !company.trim()}
                 onClick={async () => {
@@ -338,6 +359,21 @@ export function OnboardingScreen() {
                       registrationNumber: regNumber.trim() || null,
                       phone: phone.trim() || null,
                     });
+                    // Initialize telemetry with the user's opt-in choice
+                    if (telemetryOptIn) {
+                      try {
+                        await invoke("init_telemetry_cmd", {
+                          config: {
+                            enabled: true,
+                            crashAutoSubmit: true,
+                            endpointUrl: "",
+                            anonymousId: "",
+                          },
+                        });
+                      } catch {
+                        // Telemetry init failure is non-fatal
+                      }
+                    }
                     completeOnboarding({ defaultDomain: domain ?? "both", defaultEpsg: epsg });
                   } catch (err) {
                     setError(err instanceof Error ? err.message : String(err));
