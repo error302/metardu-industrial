@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 18: 5 Agent Audits + Crash Recovery + Orthomosaic Picker + Testing/Security Skills
+
+- **Testing + Security skill divisions installed** — 18 new agents from
+  the upstream agency-agents repo:
+  - Testing (8): Accessibility Auditor, Evidence Collector, Workflow
+    Optimizer, API Tester, Tool Evaluator, Test Results Analyzer, Reality
+    Checker, Performance Benchmarker
+  - Security (10): Threat Detection Engineer, Compliance Auditor, AppSec
+    Engineer, Cloud Security Architect, Senior SecOps, Security Architect,
+    Blockchain Security Auditor, Penetration Tester, Incident Responder,
+    Threat Intelligence Analyst
+  - Total installed skills: 62 → 80
+- **Brand Guardian audit** (`docs/BRAND_GUARDIAN_AUDIT.md`):
+  - Visual consistency score: 4.2/10 (strong foundation, poor adoption)
+  - 7 of 54 dialogs use DialogShell (13%); 47 use hand-rolled boilerplate
+  - 119 button-padding occurrences across 6 variants; only 7 use DialogButton
+  - 10+ components with hardcoded hex colors (bypassing tokens)
+  - 10-sprint migration plan (5 dialogs per sprint)
+  - Highest-ROI: hardcoded color sweep (2 hours, enables colorblind palette)
+- **Code Reviewer audit** (`docs/CODE_REVIEWER_AUDIT.md`):
+  - Code quality score: 6.8/10 (good foundation, panic-prone)
+  - 260 `unwrap()` calls in production Rust code (crash risk)
+  - 3 `unsafe` blocks (2 fixable, 1 legitimate WASM FFI)
+  - 4 `panic!()` calls
+  - 5 functions over 100 lines (need decomposition)
+  - 173 `clone()` calls (potential perf issue)
+  - TypeScript: excellent (2 `any`, 0 `@ts-ignore`)
+  - Sprint 18-19 hardening plan: 22 hours to production-grade
+- **Inclusive Visuals Specialist / WCAG audit** (`docs/WCAG_AUDIT.md`):
+  - WCAG 2.1 AA compliance score: 5.8/10
+  - aria-label coverage: 37 across 150+ interactive elements (25%)
+  - No `role="dialog"` or `aria-modal` on dialog containers
+  - No focus trap in dialogs (Tab escapes to background)
+  - Contrast: most text passes AAA; muted text (Slate-500) fails AA
+  - 22-hour remediation plan to reach WCAG AA
+- **SRE crash recovery design** (`docs/SRE_CRASH_RECOVERY.md`):
+  - Documents the 4-part crash recovery system: auto-save, panic hook,
+    session restore, crash reporting
+  - 4 reliability scenarios (crash during volume calc, ODM, power loss,
+    disk full)
+  - SLOs: 99% of crashes recoverable, <30s recovery time
+  - 15-hour implementation plan
+- **Crash recovery implementation** (`src-tauri/src/recovery.rs`,
+  ~230 lines, 5 unit tests):
+  - `save_recovery_snapshot()` — saves project JSON + operation name
+    to app_data_dir/recovery/ before long operations
+  - `clear_recovery_snapshot()` — deletes the snapshot on success
+  - `check_recovery_files()` — returns the most recent snapshot on launch
+  - `install_panic_hook()` — catches Rust panics, writes crash dump with
+    backtrace + system info
+  - `clear_all_recovery_files()` — cleans up after successful save
+  - 5 new IPC commands: `save_recovery_snapshot_cmd`,
+    `clear_recovery_snapshot_cmd`, `check_recovery_files_cmd`,
+    `delete_recovery_file_cmd`, `clear_all_recovery_files_cmd`
+- **Orthomosaic file picker** — wired `setOrthoPath` to a native file
+  picker:
+  - Sidebar "Load Orthomosaic" item in GIS Tools section
+  - Opens OS file picker filtered to .tif/.tiff
+  - Sets `orthoPath` which triggers the OrthomosaicOverlay to load +
+    render the RGB data on the map
+  - Auto-fits the map view to the orthomosaic bounds
+
+Stats: 2 new Rust modules (~530 lines), 10 new Rust unit tests, 5 new
+IPC commands, 4 audit docs (~1,400 lines), 18 new skill agents installed,
+1 orthomosaic file picker wired. TypeScript compiles clean.
+
 ### Added — Sprint 17: Orthomosaic Overlay + Map Layout Frontend + Tier 2 GIS Features + Skills Audit
 
 - **Orthomosaic map overlay** (`src/components/orthomosaic-overlay.tsx`):

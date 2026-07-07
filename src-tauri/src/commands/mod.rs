@@ -14,6 +14,7 @@ pub mod monitoring;
 pub mod pipelines;
 pub mod qc;
 pub mod realtime;
+pub mod recovery;
 pub mod sprint6;
 pub mod sprint7;
 pub mod sprint8;

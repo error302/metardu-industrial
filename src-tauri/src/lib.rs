@@ -55,6 +55,7 @@ mod plugins;
 mod project;
 mod qc;
 mod realtime;
+mod recovery;
 mod report_engine;
 mod slice_editor;
 #[allow(dead_code)]
@@ -83,6 +84,9 @@ use commands::{
     gis_features::validate_lines_cmd, gis_features::read_orthomosaic_cmd,
     gis_features::generate_map_layout_cmd, gis_features::export_geojson_cmd,
     gis_features::export_kml_cmd, gis_features::audit_crs_consistency_cmd,
+    recovery::save_recovery_snapshot_cmd, recovery::clear_recovery_snapshot_cmd,
+    recovery::check_recovery_files_cmd, recovery::delete_recovery_file_cmd,
+    recovery::clear_all_recovery_files_cmd,
     eom::stop_ntrip_cmd, eom::verify_eom_license_cmd, generate_report_cmd, get_settings,
     init_module, is_proj_available, list_modules, marine::check_s44_compliance_cmd,
     marine::compute_cross_sections_cmd, marine::compute_dredge_audit_cmd,

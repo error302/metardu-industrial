@@ -255,9 +255,24 @@ export function WorkspaceShell() {
   // Sprint 17 — map layout + orthomosaic + colorblind
   const [mapLayoutOpen, setMapLayoutOpen] = useState(false);
   const [orthoPath, setOrthoPath] = useState<string | null>(null);
-  // setOrthoPath will be wired to a file-picker in a future sprint
-  void setOrthoPath;
   const colorblind = useColorblindPalette();
+
+  // Sprint 18 — orthomosaic file picker (opens native dialog, triggers overlay)
+  const handlePickOrthomosaic = useCallback(async () => {
+    try {
+      const { pickFile } = await import("@/lib/file-picker");
+      const path = await pickFile({
+        extensions: ["tif", "tiff"],
+        filterName: "GeoTIFF Orthomosaic",
+        title: "Select orthomosaic GeoTIFF",
+      });
+      if (path) {
+        setOrthoPath(path);
+      }
+    } catch (err) {
+      console.error("Orthomosaic file picker error:", err);
+    }
+  }, []);
   const [currentProject, setCurrentProject] = useState<MetarduProject | null>(null);
   const [layout, setLayout] = useState<LayoutProfile>(() => {
     // Initialize from persisted state
@@ -657,6 +672,7 @@ export function WorkspaceShell() {
     onOpenTopology: () => setTopologyOpen(true),
     onOpenMapLayout: () => setMapLayoutOpen(true),
     onToggleColorblind: () => colorblind.toggle(),
+    onPickOrthomosaic: handlePickOrthomosaic,
   };
 
   return (
@@ -1075,6 +1091,7 @@ function LeftSidebar({
   onOpenTopology,
   onOpenMapLayout,
   onToggleColorblind,
+  onPickOrthomosaic,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -1133,6 +1150,7 @@ function LeftSidebar({
   onOpenTopology: () => void;
   onOpenMapLayout: () => void;
   onToggleColorblind: () => void;
+  onPickOrthomosaic: () => void;
 }) {
   const accent = domainAccent[domain].primary;
 
@@ -1389,6 +1407,11 @@ function LeftSidebar({
             icon={<MapIcon className="h-3 w-3" />}
             label="Generate Map Sheet"
             onClick={onOpenMapLayout}
+          />
+          <SidebarItem
+            icon={<Satellite className="h-3 w-3" />}
+            label="Load Orthomosaic"
+            onClick={onPickOrthomosaic}
           />
         </SidebarSection>
 
