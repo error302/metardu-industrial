@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * ODM Pipeline Dialog — Phase 1.
  *
@@ -16,7 +15,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useEffect, useState } from "react";
-import { X, Play, Loader2, CheckCircle2, AlertCircle, Terminal } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Terminal } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { colors } from "@/lib/tokens";
 import {
@@ -27,6 +26,7 @@ import {
   type OdmRunStatus,
 } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -55,7 +55,6 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
   const addFileFromPath = useSurveyStore((s) => s.addFileFromPath);
 
   // Subscribe to ODM progress events
-  useEscapeKey(onClose, open);
   useEffect(() => {
     if (!open) return;
     const unlisten = listen<OdmRunStatus>("odm://progress", (event) => {
@@ -96,14 +95,8 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
       });
   }, [open, config.image]);
 
-  if (!open) return null;
 
-  const canRun =
-    check?.docker_available &&
-    check?.image_pulled &&
-    config.images_dir !== "" &&
-    !running;
-
+  
   function handleRun() {
     setRunning(true);
     setError(null);
@@ -114,31 +107,23 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
     });
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="ODM Pipeline"
+      icon={<Terminal className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-2xl"
+      subtitle="Drone photos to point cloud"
+      footerHint="OpenDroneMap Docker integration"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleRun} disabled={running}>Run</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Terminal className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            ODM Pipeline Runner
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* Docker check */}
           <section className="mb-5">
             <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
@@ -307,27 +292,6 @@ export function OdmPipelineDialog({ open, onClose }: Props) {
               )}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Requires Docker + opendronemap/odm image.
-          </div>
-          <button
-            onClick={handleRun}
-            disabled={!canRun}
-            className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
-            style={{
-              background: canRun ? colors.industrialOrange : colors.steelGray,
-              color: colors.navyBase,
-            }}
-          >
-            {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
-            {running ? "Running…" : "Run pipeline"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

@@ -14,11 +14,11 @@
  */
 
 import { useState, useMemo } from "react";
-import { X, Grid3x3, Loader2, Upload } from "lucide-react";
+import { Grid3x3 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface BackscatterSample {
   across_track: number;
@@ -57,8 +57,6 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   // Stats from mosaic data
   const stats = useMemo(() => {
@@ -130,26 +128,23 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
     return `rgb(${r},${g},${b})`;
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Backscatter Mosaic Builder"
+      icon={<Grid3x3 className="h-4 w-4" />}
+      iconColor={colors.marine}
+      maxWidth="max-w-4xl"
+      subtitle="Gridded intensity mosaic"
+      footerHint="Lambert correction + mean/max gridding"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleBuild} disabled={loading || !filePath.trim()}>Build Mosaic</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Grid3x3 className="h-4 w-4" style={{ color: colors.marine }} />
-            Backscatter Mosaic Builder
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 grid grid-cols-[300px_1fr] gap-5">
           {/* Left: controls */}
           <div className="space-y-3">
             <div>
@@ -261,33 +256,7 @@ export function BackscatterMosaicDialog({ open, onClose }: Props) {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Lambert correction normalizes intensity for grazing angle → comparable seabed return
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleBuild}
-              disabled={loading || !filePath.trim()}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.marine, color: colors.navyBase }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-              {loading ? "Building…" : "Build Mosaic"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * 4D Monitoring Dialog — Phase 3.
  *
@@ -30,7 +29,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState } from "react";
-import { X, TrendingUp, Loader2, Activity, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Activity, AlertTriangle, ShieldAlert } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
   computeEpochDiff,
@@ -38,6 +37,7 @@ import {
   type Monitoring4DParams,
 } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -146,11 +146,8 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
   const [result, setResult] = useState<EpochDiff | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
-  const canCompute = prevPath && currPath && prevPath !== currPath;
-
+  
   async function handleCompute() {
     setLoading(true);
     setError(null);
@@ -182,26 +179,23 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
   // user changes the threshold without recomputing.
   const anomalies = result ? detectAnomalies(result, hotspotThreshold) : [];
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="4D Pit Monitoring"
+      icon={<Activity className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-2xl"
+      subtitle="Multi-epoch surface differencing"
+      footerHint="Per-cell displacement time-series"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleCompute} disabled={loading}>Compute</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <TrendingUp className="h-4 w-4" style={{ color: colors.miningYellow }} />
-            4D Pit Monitoring
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5">
           {demFiles.length < 2 ? (
             <div className="input-enterprise rounded-md border border-navy-border bg-navy-base p-4 text-center text-xs text-steel-gray">
               Drop at least 2 GeoTIFF DEM files (previous + current survey) to compute differences.
@@ -362,22 +356,7 @@ export function Monitoring4DDialog({ open, onClose }: Props) {
               )}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">Multi-temporal surface differencing</div>
-          <button
-            onClick={handleCompute}
-            disabled={!canCompute || loading}
-            className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
-            style={{ background: canCompute && !loading ? colors.miningYellow : colors.steelGray, color: colors.navyBase }}
-          >
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
-            {loading ? "Computing…" : "Compute diff"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

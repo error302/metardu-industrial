@@ -12,11 +12,11 @@
  */
 
 import { useState } from "react";
-import { X, ShieldAlert, Loader2, Plus, Trash2, Copy } from "lucide-react";
+import { ShieldAlert, Plus, Trash2, Copy } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 type HazardType =
   | "wall_instability" | "rockfall" | "water_inflow" | "equipment"
@@ -87,8 +87,6 @@ export function SafetyReportDialog({ open, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   function addHazard() {
     setInspection({
@@ -139,26 +137,23 @@ export function SafetyReportDialog({ open, onClose }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Safety Inspection Report"
+      icon={<ShieldAlert className="h-4 w-4" />}
+      iconColor={colors.fail}
+      maxWidth="max-w-4xl"
+      subtitle="Hazard register + compliance"
+      footerHint="Regulator-ready text report"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleGenerate} disabled={loading}>Generate</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <ShieldAlert className="h-4 w-4" style={{ color: colors.fail }} />
-            Safety Inspection Report
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 grid grid-cols-2 gap-5">
           {/* Left: form */}
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -326,33 +321,7 @@ export function SafetyReportDialog({ open, onClose }: Props) {
 {report || "Click \"Generate Report\" to produce the inspection text.\n\nFill in inspector name and area, add hazards and recommendations, then click Generate."}
             </pre>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Severity 1=low · 5=critical · Status open / mitigated / resolved
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.fail, color: colors.white }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldAlert className="h-3 w-3" />}
-              {loading ? "Generating…" : "Generate Report"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

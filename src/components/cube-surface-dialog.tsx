@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * CUBE Surface Dialog — Phase 2 Marine MVP.
  *
@@ -10,8 +9,9 @@ import { useEscapeKey } from "@/lib/use-escape-key";
  */
 
 import { useState } from "react";
-import { X, Waves, Loader2, Database } from "lucide-react";
+import { Waves, Database } from "lucide-react";
 import { colors } from "@/lib/tokens";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 import {
   generateCubeSurface,
   type CubeParams,
@@ -65,8 +65,6 @@ export function CubeSurfaceDialog({ open, onClose, onSurfaceGenerated }: Props) 
   const [result, setResult] = useState<CubeSurfaceRpc | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleGenerate() {
     setLoading(true);
@@ -113,31 +111,23 @@ export function CubeSurfaceDialog({ open, onClose, onSurfaceGenerated }: Props) 
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="CUBE Surface Generation"
+      icon={<Waves className="h-4 w-4" />}
+      iconColor={colors.marine}
+      maxWidth="max-w-2xl"
+      subtitle="Bathymetric surface from soundings"
+      footerHint="Hypothesis tracking + disambiguation"
+      actions={
+        <>
+          <DialogButton variant="primary" onClick={handleGenerate} disabled={loading}>Generate</DialogButton>
+          <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Waves className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            CUBE Surface Generation
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* Sounding source */}
           <section className="mb-5">
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
@@ -250,28 +240,7 @@ export function CubeSurfaceDialog({ open, onClose, onSurfaceGenerated }: Props) 
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Calder &amp; Mayer (2003) — Bayesian hypothesis tracking
-          </div>
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium transition-colors disabled:opacity-40"
-            style={{
-              background: loading ? colors.steelGray : colors.marineTurquoise,
-              color: colors.navyBase,
-            }}
-          >
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Waves className="h-3 w-3" />}
-            {loading ? "Generating…" : "Generate surface"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 
