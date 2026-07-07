@@ -14,9 +14,8 @@
  */
 
 import { useState, useCallback } from "react";
-import { useEscapeKey } from "@/lib/use-escape-key";
 import {
-  X, FolderOpen, Loader2, CheckCircle2, AlertTriangle, AlertCircle,
+  FolderOpen, Loader2, CheckCircle2, AlertTriangle, AlertCircle,
   FileText, MapPin, Clock, HardDrive, Database, Radio, FileBox,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
@@ -26,6 +25,7 @@ import {
   type TriageFileRpc,
 } from "@/lib/tauri-ipc";
 import { pickFolder } from "@/lib/file-picker";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -55,7 +55,6 @@ export function TriageDialog({ open, onClose }: Props) {
   const [report, setReport] = useState<TriageReportRpc | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
 
   // NOTE: useCallback MUST run before the early return below — React's
   // Rules of Hooks require hook call order to be identical on every render.
@@ -66,7 +65,6 @@ export function TriageDialog({ open, onClose }: Props) {
     if (p) setFolderPath(p);
   }, []);
 
-  if (!open) return null;
 
   const handleRun = async () => {
     if (!folderPath) return;
@@ -101,32 +99,20 @@ export function TriageDialog({ open, onClose }: Props) {
     return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
   };
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Mission Data Triage"
+      icon={<FolderOpen className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-4xl"
+      subtitle="Field data validation"
+      footerHint="EXIF GPS + CRS mismatch"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl animate-scale-in"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <FolderOpen className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            Mission Data Triage
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {error && (
             <div
               className="mb-4 rounded-md border p-3 text-xs flex items-start gap-2"
@@ -310,15 +296,7 @@ export function TriageDialog({ open, onClose }: Props) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-2 text-[10px] text-steel-gray">
-          <div>Prevents costly return trips — verify coverage before leaving the field.</div>
-          <div>v0.1.0</div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

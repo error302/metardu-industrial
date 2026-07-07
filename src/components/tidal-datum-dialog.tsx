@@ -15,11 +15,11 @@
  */
 
 import { useState, useMemo } from "react";
-import { X, Waves, ArrowRight, Loader2, Copy } from "lucide-react";
+import { Waves, ArrowRight, Copy } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 type Datum = "mllw" | "msl" | "cd" | "lat" | "navd88";
 
@@ -43,11 +43,10 @@ export function TidalDatumDialog({ open, onClose }: Props) {
   const [inputDepths, setInputDepths] = useState("12.5\n14.2\n18.7\n22.1\n9.8");
   const [outputDepths, setOutputDepths] = useState<number[] | null>(null);
   const [loading, setLoading] = useState(false);
+  void loading;
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   const parsedDepths = useMemo(() => {
     return inputDepths
@@ -93,26 +92,23 @@ export function TidalDatumDialog({ open, onClose }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Tidal Datum Converter"
+      icon={<Waves className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-3xl"
+      subtitle="MLLW/MSL/CD/LAT/NAVD88"
+      footerHint="Offset-based conversion"
+      actions={
+        <>
+        <DialogButton variant="primary" onClick={handleConvert}>Convert</DialogButton>
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Waves className="h-4 w-4" style={{ color: colors.marine }} />
-            Tidal Datum Converter
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Datum pair + offset */}
           <div className="grid grid-cols-[1fr_auto_1fr_auto] items-end gap-3">
             <div>
@@ -221,32 +217,6 @@ export function TidalDatumDialog({ open, onClose }: Props) {
               {error}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Source: NOAA CO-OPS / IHO Tides Committee conventions
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleConvert}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.marine, color: colors.navyBase }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Waves className="h-3 w-3" />}
-              {loading ? "Converting…" : "Convert Depths"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }

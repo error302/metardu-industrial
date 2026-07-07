@@ -14,11 +14,11 @@
  */
 
 import { useState } from "react";
-import { X, MapPin, Crosshair, Loader2, Copy, Plus, Trash2 } from "lucide-react";
+import { MapPin, Crosshair, Copy, Plus, Trash2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 type SetoutPointType =
   | "blast_hole" | "peg" | "bench_toe" | "bench_crest"
@@ -71,11 +71,10 @@ export function SetoutToolDialog({ open, onClose }: Props) {
   ]);
   const [results, setResults] = useState<SetoutResult[] | null>(null);
   const [loading, setLoading] = useState(false);
+  void loading;
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   function addPoint() {
     const idx = points.length + 1;
@@ -154,28 +153,23 @@ export function SetoutToolDialog({ open, onClose }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Setting Out & Markout"
+      icon={<Crosshair className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-4xl"
+      subtitle="Bearing + distance from reference"
+      footerHint="Total station / RTK setout"
+      actions={
+        <>
+        <DialogButton variant="primary" onClick={handleCompute}>Compute</DialogButton>
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Crosshair className="h-4 w-4" style={{ color: colors.mining }} />
-            Setting Out &amp; Markout
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
           {/* Reference Point */}
           <div className="mb-4 rounded-md border p-3" style={{ borderColor: `${colors.mining}40`, background: `${colors.mining}08` }}>
             <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: colors.mining }}>
@@ -333,34 +327,7 @@ export function SetoutToolDialog({ open, onClose }: Props) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Bearing 0°=N, clockwise. Slope angle positive = uphill from instrument.
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleCompute}
-              disabled={loading || points.length === 0}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.mining, color: colors.navyBase }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Crosshair className="h-3 w-3" />}
-              {loading ? "Computing…" : "Compute Setout"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

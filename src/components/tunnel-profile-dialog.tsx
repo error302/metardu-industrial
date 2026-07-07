@@ -14,11 +14,11 @@
  */
 
 import { useState, useMemo } from "react";
-import { X, SquareDashed, Loader2 } from "lucide-react";
+import { SquareDashed } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface TunnelProfileResult {
   area: number;
@@ -58,10 +58,9 @@ export function TunnelProfileDialog({ open, onClose }: Props) {
   ].join("\n"));
   const [result, setResult] = useState<TunnelProfileResult | null>(null);
   const [loading, setLoading] = useState(false);
+  void loading;
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   function parsePoints(text: string): [number, number][] {
     return text
@@ -144,26 +143,23 @@ export function TunnelProfileDialog({ open, onClose }: Props) {
     return [w || 0, h || 0] as [number, number];
   }), [design]);
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Tunnel Profile Analyzer"
+      icon={<SquareDashed className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-4xl"
+      subtitle="Area + overbreak/underbreak"
+      footerHint="SVG cross-section preview"
+      actions={
+        <>
+        <DialogButton variant="primary" onClick={handleAnalyze}>Analyze</DialogButton>
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <SquareDashed className="h-4 w-4" style={{ color: colors.mining }} />
-            Tunnel Profile Analyzer
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 grid grid-cols-2 gap-5">
           {/* Inputs */}
           <div className="space-y-3">
             <div>
@@ -269,33 +265,7 @@ export function TunnelProfileDialog({ open, onClose }: Props) {
               <span><span className="inline-block h-2 w-3 align-middle" style={{ background: colors.marine }} /> Design</span>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Width positive = right wall · Height positive = above floor
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleAnalyze}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.mining, color: colors.navyBase }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <SquareDashed className="h-3 w-3" />}
-              {loading ? "Analyzing…" : "Analyze Profile"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

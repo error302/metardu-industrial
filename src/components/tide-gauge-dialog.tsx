@@ -16,11 +16,11 @@
  */
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { X, Waves, Loader2, Download, CheckCircle2 } from "lucide-react";
+import { Waves, Download, CheckCircle2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface TideObservation {
   timestamp: number;
@@ -67,12 +67,11 @@ export function TideGaugeDialog({ open, onClose }: Props) {
 
   const [series, setSeries] = useState<TideSeries | null>(null);
   const [loading, setLoading] = useState(false);
+  void loading;
   const [error, setError] = useState<string | null>(null);
   const [applied, setApplied] = useState<number | null>(null);
   const tcpPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   // Clean up TCP polling on close
   useEffect(() => {
@@ -163,26 +162,23 @@ export function TideGaugeDialog({ open, onClose }: Props) {
     return { W, H, pad, minT, maxT, minL, maxL, points, path, mean, count: levels.length };
   }, [series]);
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Tide Gauge"
+      icon={<Waves className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-4xl"
+      subtitle="NOAA CO-OPS + TCP"
+      footerHint="6-min water level observations"
+      actions={
+        <>
+        <DialogButton variant="primary" onClick={handleFetch}>Fetch</DialogButton>
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Waves className="h-4 w-4" style={{ color: colors.marine }} />
-            Tide Gauge (NOAA CO-OPS / TCP)
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Source toggle */}
           <div className="flex gap-1 rounded-md border border-navy-border bg-navy-base p-1">
             <button
@@ -386,33 +382,7 @@ export function TideGaugeDialog({ open, onClose }: Props) {
               </div>
             </>
           )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            NOAA CO-OPS 6-min water level · spline interpolation · real-time correction
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleFetch}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.marine, color: colors.navyBase }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Waves className="h-3 w-3" />}
-              {loading ? "Fetching…" : "Fetch Tide"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

@@ -1,4 +1,3 @@
-import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Density Gates Tool — drag a folder → instant coverage heatmap.
  *
@@ -7,7 +6,7 @@ import { useEscapeKey } from "@/lib/use-escape-key";
 
 import { useState, useCallback } from "react";
 import {
-  X, Loader2, Activity, AlertTriangle, FolderOpen, Map as MapIcon,
+  Loader2, Activity, AlertTriangle, FolderOpen, Map as MapIcon,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
@@ -16,6 +15,7 @@ import {
   type CoverageStatus,
 } from "@/lib/tauri-ipc";
 import { pickFolder } from "@/lib/file-picker";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -70,31 +70,21 @@ export function DensityGatesTool({ open, onClose }: Props) {
     }
   }, [folderPath, targetOrder]);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Density Gates"
+      icon={<Activity className="h-4 w-4" />}
+      iconColor={colors.marineTurquoise}
+      maxWidth="max-w-3xl"
+      subtitle="Coverage validator"
+      footerHint="S-44 density compliance"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Activity className="h-4 w-4" style={{ color: colors.marineTurquoise }} />
-            Density Gates — Coverage Validator
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Body — single screen */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {error && (
             <div className="rounded-md border p-3 text-xs"
               style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
@@ -239,19 +229,7 @@ export function DensityGatesTool({ open, onClose }: Props) {
               <span className="mt-2 block">Green = meets S-44 density · Yellow = marginal · Red = gap detected</span>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3 text-[10px] text-steel-gray">
-          <span>Runs locally — no data leaves your machine. Catches coverage gaps while you're still on site.</span>
-          <button onClick={onClose}
-            className="rounded-md px-3 py-1 text-xs font-medium"
-            style={{ background: colors.pass, color: colors.navyBase }}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

@@ -13,13 +13,13 @@
  */
 
 import { useState, useMemo } from "react";
-import { X, History, Loader2, AlertTriangle } from "lucide-react";
+import { History, AlertTriangle } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
-import { useEscapeKey } from "@/lib/use-escape-key";
 import { FileInput } from "@/components/file-input";
 import { ValidatedNumberInput } from "@/components/validated-number-input";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface ChangeDetectionResult {
   cut_volume_m3: number;
@@ -54,8 +54,6 @@ export function StockpileChangeDialog({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   async function handleCompute() {
     setLoading(true);
@@ -137,26 +135,23 @@ export function StockpileChangeDialog({ open, onClose }: Props) {
     return { cells, dispCols, dispRows, cellPx, minD, maxD };
   }, [result]);
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Stockpile Change Detection"
+      icon={<History className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-5xl"
+      subtitle="Cut/fill heat map"
+      footerHint="Median rasterization"
+      actions={
+        <>
+        <DialogButton variant="primary" onClick={handleCompute}>Compute</DialogButton>
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+        </>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <History className="h-4 w-4" style={{ color: colors.mining }} />
-            Stockpile Change Detection (Cut / Fill)
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 grid grid-cols-[320px_1fr] gap-5">
           {/* Left: inputs + stats */}
           <div className="space-y-3">
             <div>
@@ -314,33 +309,7 @@ export function StockpileChangeDialog({ open, onClose }: Props) {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3">
-          <div className="text-[10px] text-steel-gray">
-            Median-of-cell rasterization · per-cell ΔZ · hotspot threshold = |ΔZ| &gt; {hotspotThreshold} m
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-md px-4 py-1.5 text-xs font-medium"
-              style={{ background: colors.steelGray, color: colors.navyBase }}
-            >
-              Close
-            </button>
-            <button
-              onClick={handleCompute}
-              disabled={loading || !currentPath.trim() || !previousPath.trim()}
-              className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-medium disabled:opacity-40"
-              style={{ background: colors.mining, color: colors.navyBase }}
-            >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <History className="h-3 w-3" />}
-              {loading ? "Computing…" : "Compute Change"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 

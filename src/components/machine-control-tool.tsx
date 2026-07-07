@@ -5,9 +5,8 @@
  */
 
 import { useState } from "react";
-import { useEscapeKey } from "@/lib/use-escape-key";
 import {
-  X, Loader2, Cpu, CheckCircle2, FileText, Download,
+  Loader2, Cpu, CheckCircle2, FileText, Download,
 } from "lucide-react";
 import { colors } from "@/lib/tokens";
 import {
@@ -16,6 +15,7 @@ import {
   type MachineControlResult,
 } from "@/lib/tauri-ipc";
 import { pickFile, pickSaveFile } from "@/lib/file-picker";
+import { DialogShell, DialogButton } from "@/components/dialog-shell";
 
 interface Props {
   open: boolean;
@@ -36,8 +36,6 @@ export function MachineControlTool({ open, onClose }: Props) {
   const [result, setResult] = useState<MachineControlResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEscapeKey(onClose, open);
-  if (!open) return null;
 
   // Auto-set output path when input + vendor change
   function updateInput(path: string) {
@@ -79,26 +77,20 @@ export function MachineControlTool({ open, onClose }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
+return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Machine Control Compiler"
+      icon={<Cpu className="h-4 w-4" />}
+      iconColor={colors.industrialOrange}
+      maxWidth="max-w-3xl"
+      subtitle="DXF to Leica/Trimble/Topcon"
+      footerHint=".svd / .tp3 / .top"
+      actions={
+        <DialogButton variant="secondary" onClick={onClose}>Close</DialogButton>
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col rounded-lg border border-navy-border bg-navy-panel shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b border-navy-border px-5 py-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Cpu className="h-4 w-4" style={{ color: colors.industrialOrange }} />
-            Machine Control Compiler
-          </h2>
-          <button onClick={onClose} className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {error && (
             <div className="rounded-md border p-3 text-xs"
               style={{ borderColor: `${colors.fail}40`, background: `${colors.fail}10`, color: colors.fail }}>
@@ -221,18 +213,7 @@ export function MachineControlTool({ open, onClose }: Props) {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-navy-border px-5 py-3 text-[10px] text-steel-gray">
-          <span>Reads DXF/LandXML → compiles to vendor-specific binary. Eliminates format conversion headaches.</span>
-          <button onClick={onClose}
-            className="rounded-md px-3 py-1 text-xs font-medium"
-            style={{ background: colors.pass, color: colors.navyBase }}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    </DialogShell>
   );
 }
 
