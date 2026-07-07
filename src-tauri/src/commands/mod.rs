@@ -6,6 +6,7 @@ pub mod automation;
 pub mod bottleneck_tools;
 pub mod deliverable;
 pub mod eom;
+pub mod gis_features;
 pub mod marine;
 pub mod mining;
 pub mod ml;

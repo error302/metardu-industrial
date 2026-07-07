@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Sprint 15: GIS Agent Gap Features (3 of 5) + Dialog Migration
+
+- **IDW interpolation** (`src-tauri/src/interpolation.rs`, ~280 lines,
+  8 unit tests):
+  - Inverse Distance Weighting for filling DEM gaps in sparse bathymetry
+    and generating continuous surfaces from scattered point observations
+  - Configurable power parameter (default p=2.0), search radius, max
+    points per cell
+  - Shepard's algorithm with exact-point-at-center shortcut
+  - Returns NODATA for cells with no points within search radius
+  - Grid bounds + cell size configurable; max 10000×10000 cells
+  - New IPC command `interpolate_idw_cmd`
+- **Shapefile reader/writer** (`src-tauri/src/formats/shapefile.rs`,
+  ~570 lines, 4 unit tests):
+  - Pure-Rust parser for ESRI Shapefiles (.shp + .shx + .dbf)
+  - Supports Point (1), Polyline (3), Polygon (5), MultiPoint (8) shape
+    types
+  - .dbf (dBase III+) parser reads attribute columns (Character,
+    Numeric, Date types)
+  - Writer produces .shp + .shx + .dbf for Point, Polyline, Polygon,
+    MultiPoint
+  - Field names truncated to 10 chars (dBase limit)
+  - The #1 interchange format for mining plans — surveyors can now
+    overlay Shapefiles from Surpac/Datamine/Vulcan on the map
+  - New IPC commands `read_shapefile_cmd`, `write_shapefile_cmd`
+- **Topology validator** (`src-tauri/src/topology.rs`, ~440 lines,
+  13 unit tests):
+  - Validates polygon + line topology for GIS quality assurance
+  - 8 topology rules: SelfIntersection, PolygonOverlap, PolygonGap,
+    Dangle, Sliver, NullGeometry, TooFewPoints, NotClosed
+  - Severity levels: Error (blocks publication) vs Warning (review needed)
+  - Configurable tolerance, minimum polygon area, max gap width
+  - Pairwise overlap check with bounding-box pre-filter
+  - Segment-segment intersection for self-intersection detection
+  - Point-in-polygon ray casting for overlap detection
+  - Shoelace area for sliver detection
+  - Dangle detection for line endpoints that don't connect
+  - Activated the GIS QA Engineer agent methodology
+  (`skills/agency-agents/gis/gis-qa-engineer.md`)
+  - New IPC commands `validate_polygons_cmd`, `validate_lines_cmd`
+- **Dialog migration proof-of-pattern** — migrated
+  `stockpile-change-dialog.tsx` to use the new Sprint 14 components:
+  - 2 file-path text inputs → `FileInput` with Browse button + recent
+    files + .las/.laz filtering
+  - 2 number inputs → `ValidatedNumberInput` with positive-range
+    validation + step + label
+  - Pattern for migrating the remaining 20 dialogs with file inputs
+    and 22 with number inputs
+
+### Deferred to Sprint 16
+
+- **Orthomosaic viewer** (RGB GeoTIFF support) — extends existing
+  GeoTIFF reader to handle RGB channels. ~600 lines. Next sprint.
+- **Map layout composer** (print-quality map sheets) — biggest gap
+  (~1,500 lines), requires extending report_engine.rs with map-sheet
+  templates. Next sprint.
+
+Stats: 3 new Rust modules (~1,290 lines), 25 new Rust unit tests
+(8 IDW + 4 Shapefile + 13 topology), 5 new IPC commands, 1 dialog
+migrated to new components. TypeScript compiles clean.
+
 ### Added — Sprint 14: UX Friction Fixes + Backend Error Handling + GIS Agent Gap Analysis
 
 - **GIS agent gap analysis** (`docs/GIS_AGENT_GAP_ANALYSIS.md`) — assessed

@@ -18,6 +18,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { colors } from "@/lib/tokens";
 import { isNative } from "@/lib/tauri-ipc";
 import { useEscapeKey } from "@/lib/use-escape-key";
+import { FileInput } from "@/components/file-input";
+import { ValidatedNumberInput } from "@/components/validated-number-input";
 
 interface ChangeDetectionResult {
   cut_volume_m3: number;
@@ -161,49 +163,45 @@ export function StockpileChangeDialog({ open, onClose }: Props) {
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                 Current Survey (newer)
               </label>
-              <input
-                type="text"
+              <FileInput
                 value={currentPath}
-                onChange={(e) => setCurrentPath(e.target.value)}
+                onChange={setCurrentPath}
+                extensions={["las", "laz"]}
+                filterName="LAS Point Cloud"
+                storageKey="stockpile-change-current"
                 placeholder="/path/to/month-2.las"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-mining focus:outline-none"
               />
             </div>
             <div>
               <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
                 Previous Survey (baseline)
               </label>
-              <input
-                type="text"
+              <FileInput
                 value={previousPath}
-                onChange={(e) => setPreviousPath(e.target.value)}
+                onChange={setPreviousPath}
+                extensions={["las", "laz"]}
+                filterName="LAS Point Cloud"
+                storageKey="stockpile-change-previous"
                 placeholder="/path/to/month-1.las"
-                className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-xs text-white focus:border-mining focus:outline-none"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Cell Size (m)</label>
-                <input
-                  type="number"
-                  value={cellSize}
-                  step="0.1"
-                  min="0.1"
-                  onChange={(e) => setCellSize(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-steel-gray">Hotspot (m)</label>
-                <input
-                  type="number"
-                  value={hotspotThreshold}
-                  step="0.1"
-                  min="0.1"
-                  onChange={(e) => setHotspotThreshold(e.target.value)}
-                  className="w-full rounded-md border border-navy-border bg-navy-base px-2 py-1.5 font-mono text-sm text-white focus:border-mining focus:outline-none"
-                />
-              </div>
+              <ValidatedNumberInput
+                value={cellSize}
+                onChange={setCellSize}
+                validationType="positive"
+                step={0.1}
+                min={0.1}
+                label="Cell Size (m)"
+              />
+              <ValidatedNumberInput
+                value={hotspotThreshold}
+                onChange={setHotspotThreshold}
+                validationType="positive"
+                step={0.1}
+                min={0.1}
+                label="Hotspot (m)"
+              />
             </div>
 
             {error && (
