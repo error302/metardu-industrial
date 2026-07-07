@@ -378,7 +378,7 @@ fn benchmark_license_verification(iterations: usize) -> BenchmarkResult {
     for _ in 0..iterations {
         let start = Instant::now();
         let file_content = generate_license_file(&payload);
-        let status = parse_license(&file_content).unwrap();
+        let status = parse_license(&file_content).unwrap_or_default();
         let elapsed = start.elapsed().as_secs_f64() * 1000.0;
         times.push(elapsed);
         std::hint::black_box(&status);
@@ -451,7 +451,7 @@ fn benchmark_json_serialization(iterations: usize) -> BenchmarkResult {
 
     for _ in 0..iterations {
         let start = Instant::now();
-        let json_str = serde_json::to_string(&data).unwrap();
+        let json_str = serde_json::to_string(&data).unwrap_or_default();
         let elapsed = start.elapsed().as_secs_f64() * 1000.0;
         times.push(elapsed);
         std::hint::black_box(&json_str);

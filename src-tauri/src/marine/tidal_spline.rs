@@ -112,8 +112,8 @@ pub fn run_tidal_correction(
     let mut max_corrected = f64::NEG_INFINITY;
     let mut count = 0usize;
 
-    let tide_min_ts = tide_sorted.first().unwrap().0;
-    let tide_max_ts = tide_sorted.last().unwrap().0;
+    let tide_min_ts = tide_sorted.first().map(|p| p.0).unwrap_or(0.0);
+    let tide_max_ts = tide_sorted.last().map(|p| p.0).unwrap_or(0.0);
 
     for (ts, raw_depth) in &sonar_data {
         // Clamp timestamps outside tide range (with warning)
@@ -121,7 +121,7 @@ pub fn run_tidal_correction(
             if warnings.is_empty() {
                 warnings.push(format!(
                     "some sonar pings are before tide range (tide starts at {}, sonar starts at {})",
-                    tide_min_ts, sonar_data.first().unwrap().0
+                    tide_min_ts, sonar_data.first().map(|p| p.0).unwrap_or(0.0)
                 ));
             }
             tide_min_ts
@@ -130,7 +130,7 @@ pub fn run_tidal_correction(
                 warnings.push(format!(
                     "some sonar pings are after tide range (tide ends at {}, sonar ends at {})",
                     tide_max_ts,
-                    sonar_data.last().unwrap().0
+                    sonar_data.last().map(|p| p.0).unwrap_or(0.0)
                 ));
             }
             tide_max_ts

@@ -164,7 +164,7 @@ pub fn compute_visible_points(
                     .partial_cmp(&dist_b)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
-            .unwrap();
+            .unwrap_or(std::cmp::Ordering::Equal);
 
         // Offset from control point to design point
         let de = point.easting - nearest.easting;

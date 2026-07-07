@@ -317,7 +317,7 @@ fn point_at_chainage(line: &[Point2D], mut chainage: f64) -> Point2D {
         }
         chainage -= seg_len;
     }
-    *line.last().unwrap()
+    *line.last().unwrap_or(&line[0])
 }
 
 /// Get the unit tangent vector at a given chainage.

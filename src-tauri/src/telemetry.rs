@@ -216,7 +216,7 @@ pub fn get_config() -> TelemetryConfig {
         *state = Some(s);
         return config;
     }
-    state.as_ref().unwrap().config.clone()
+    state.as_ref().map(|s| s.config.clone()).unwrap_or_default()
 }
 
 /// Record a telemetry event (UI or IPC).
@@ -235,7 +235,7 @@ pub fn record_event(
     if state.is_none() {
         *state = Some(TelemetryState::new());
     }
-    let s = state.as_mut().unwrap();
+    let s = match state.as_mut() { Some(s) => s, None => return Default::default() };
 
     let event = TelemetryEvent {
         timestamp_ms: now_ms(),
@@ -296,7 +296,7 @@ pub fn record_crash(command: &str, message: &str, stack_trace: &str, license_tie
     if state.is_none() {
         *state = Some(TelemetryState::new());
     }
-    let s = state.as_mut().unwrap();
+    let s = match state.as_mut() { Some(s) => s, None => return Default::default() };
 
     let crash_id = generate_crash_id();
     let crash = CrashDump {
@@ -567,7 +567,7 @@ mod tests {
         // Should auto-init if not initialized
         // (state may already be initialized from other tests — clear first)
         {
-            let mut state = TELEMETRY_STATE.lock().unwrap();
+            let mut state = TELEMETRY_STATE.lock().unwrap_or_else(|e| e.into_inner());
             *state = None;
         }
         record_event("ipc_call", "test_command", Some(100), true, None, "Pro");
@@ -578,7 +578,7 @@ mod tests {
     #[test]
     fn test_record_crash_returns_id() {
         {
-            let mut state = TELEMETRY_STATE.lock().unwrap();
+            let mut state = TELEMETRY_STATE.lock().unwrap_or_else(|e| e.into_inner());
             *state = None;
         }
         let crash_id = record_crash("test_cmd", "test error", "stack", "Pro");
@@ -592,7 +592,7 @@ mod tests {
     #[test]
     fn test_mark_crash_submitted() {
         {
-            let mut state = TELEMETRY_STATE.lock().unwrap();
+            let mut state = TELEMETRY_STATE.lock().unwrap_or_else(|e| e.into_inner());
             *state = None;
         }
         let crash_id = record_crash("cmd", "err", "", "Core");
@@ -604,7 +604,7 @@ mod tests {
     #[test]
     fn test_stats_aggregation() {
         {
-            let mut state = TELEMETRY_STATE.lock().unwrap();
+            let mut state = TELEMETRY_STATE.lock().unwrap_or_else(|e| e.into_inner());
             *state = None;
         }
         // Record 3 calls to cmd_a, 1 to cmd_b
@@ -630,7 +630,7 @@ mod tests {
     #[test]
     fn test_update_config() {
         {
-            let mut state = TELEMETRY_STATE.lock().unwrap();
+            let mut state = TELEMETRY_STATE.lock().unwrap_or_else(|e| e.into_inner());
             *state = None;
         }
         let mut config = TelemetryConfig::default();
@@ -645,7 +645,7 @@ mod tests {
     #[test]
     fn test_recent_events_order() {
         {
-            let mut state = TELEMETRY_STATE.lock().unwrap();
+            let mut state = TELEMETRY_STATE.lock().unwrap_or_else(|e| e.into_inner());
             *state = None;
         }
         record_event("ui", "event_1", None, true, None, "Pro");

@@ -154,7 +154,7 @@ pub fn interpolate_idw(
 
             // If a point is exactly at the center, use it directly
             if candidates.iter().any(|(d, _)| *d < 1e-12) {
-                let z = candidates.iter().find(|(d, _)| *d < 1e-12).unwrap().1;
+                let z = candidates.iter().find(|(d, _)| *d < 1e-12).map(|(_, z)| *z).unwrap_or(0.0);
                 grid[row * ncols + col] = z;
                 interpolated += 1;
                 min_val = min_val.min(z);

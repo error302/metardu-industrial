@@ -100,7 +100,7 @@ fn main() {
         msg_type: "connect".into(),
         worker_id: worker_id.clone(),
     })
-    .unwrap();
+    .ok();
 
     let mut writer = stream.try_clone().expect("failed to clone stream");
     writeln!(writer, "{connect}").expect("failed to send connect");
@@ -144,7 +144,7 @@ fn main() {
                     msg_type: "result".into(),
                     result,
                 })
-                .unwrap();
+                .ok();
 
                 writeln!(writer, "{result_msg}").expect("failed to send result");
                 println!("Completed in {elapsed:.2}s — status: {status}");

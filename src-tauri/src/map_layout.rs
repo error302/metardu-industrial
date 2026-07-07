@@ -247,7 +247,7 @@ fn base64_decode(s: &str) -> Result<Vec<u8>, String> {
             if b == b'=' { 0 } else {
                 TABLE.iter().position(|&t| t == b).unwrap_or(0) as u8
             }
-        }).collect::<Vec<_>>().try_into().unwrap();
+        }).collect::<Vec<_>>().try_into().map_err(|_| "invalid base64 data".to_string())?;
         result.push((vals[0] << 2) | (vals[1] >> 4));
         if chunk[2] != b'=' { result.push((vals[1] << 4) | (vals[2] >> 2)); }
         if chunk[3] != b'=' { result.push((vals[2] << 6) | vals[3]); }

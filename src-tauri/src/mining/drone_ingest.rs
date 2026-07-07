@@ -192,7 +192,7 @@ fn parse_dji_mmc(path: &Path) -> Result<ManifestParse, DroneIngestError> {
         }
         // Skip non-numeric lines
         let first_char = line.chars().next();
-        if first_char.is_none() || !first_char.unwrap().is_ascii_digit() {
+        if first_char.is_none() || !first_char.map(|c| c.is_ascii_digit()).unwrap_or(false) {
             continue;
         }
 
