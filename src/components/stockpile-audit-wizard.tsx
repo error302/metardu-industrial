@@ -1,3 +1,4 @@
+import { withReportProfile } from "@/lib/report-profile";
 import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Stockpile Inventory Audit Wizard — Sprint 4 Revenue Feature #4.
@@ -135,7 +136,9 @@ export function StockpileAuditWizard({ open, onClose }: Props) {
         ],
       };
 
+      const profileFields = await withReportProfile();
       const spec: ReportSpec = {
+        ...profileFields,
         report_type: "stockpile_audit",
         title: "Stockpile Inventory Audit Report",
         subtitle: stockpileName

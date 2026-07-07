@@ -9,7 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Sprint 20: Account System + Registration + Onboarding Flow + Report Integration
 
-- **User account / registration system** — the critical missing piece
+- **Profile data wired into all 5 report callers** (`src/lib/report-profile.ts`):
+  - `withReportProfile()` helper loads the user profile and returns
+    `surveyor_name`, `surveyor_company`, `surveyor_registration`
+  - All 5 report-generating dialogs now spread profile fields into
+    the ReportSpec before calling `generate_report_cmd`:
+    - Stockpile Audit Wizard
+    - Dredge Audit Wizard
+    - Highwall Monitoring Wizard
+    - Cross-Section Profiler Wizard
+    - EOM Reconciliation Wizard
+  - Every PDF report now shows the surveyor's name + company in the
+    title block (no more "Surveyor: —")
+  - Profile is cached per session to avoid repeated IPC calls
+- **5 unvalidated path commands fixed** (Security AppSec Engineer audit):
+  - `monitoring.rs::compute_epoch_diff_cmd` — validate previous + current paths
+  - `monitoring.rs::compute_progression_cmd` — validate all paths in array
+  - `monitoring.rs::analyze_highwall_cmd` — validate all epoch paths
+  - `sprint8.rs::save_project_cmd` + `load_project_cmd` — validate project path
+  - `eom.rs::import_dxf_surface_cmd` — validate DXF path
+  - `sprint6.rs::read_sss_pings_cmd` — validate XTF path
+  - All path-taking commands now reject `~/.ssh`, `~/.aws`, and other
+    denylisted directories
+- **Competitive analysis** (`docs/COMPETITIVE_ANALYSIS.md`):
+  - Feature comparison matrix vs Trimble, Hypack, Civil3D, DroneDeploy, QGIS
+  - Enterprise standards gap analysis (SOX, ISO 19115, WCAG, etc.)
+  - 30 prioritized improvement opportunities (Tier 1-4)
+  - 6 areas where MetaRDU already beats all competitors
+  - Pre-release sprint plan (Sprint 20-23)
+  - Marketing positioning: "Every volume has ± uncertainty + cross-check.
+    Every report is RSA-PSS signed with SHA-256 chain-of-custody."
   for a commercial app. Users now create an account on first launch
   with name, email, company, and optional registration number + phone.
   The profile is stored locally (no server required) and used in all

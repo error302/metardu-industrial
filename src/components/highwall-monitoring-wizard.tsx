@@ -1,3 +1,4 @@
+import { withReportProfile } from "@/lib/report-profile";
 import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Highwall Monitoring Wizard — Sprint 5 Revenue Feature #6.
@@ -195,7 +196,9 @@ export function HighwallMonitoringWizard({ open, onClose }: Props) {
           ]),
       };
 
+      const profileFields = await withReportProfile();
       const spec: ReportSpec = {
+        ...profileFields,
         report_type: "highwall_report",
         title: "Highwall Deformation Compliance Report",
         subtitle: siteName

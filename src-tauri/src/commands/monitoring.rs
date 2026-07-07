@@ -25,8 +25,10 @@ pub struct EpochDiffRequest {
 pub async fn compute_epoch_diff_cmd(
     request: EpochDiffRequest,
 ) -> Result<crate::mining::monitoring_4d::EpochDiff, String> {
-    let prev_path = PathBuf::from(&request.previous_path);
-    let curr_path = PathBuf::from(&request.current_path);
+    let prev_path = crate::path_validation::validate_path(&request.previous_path)
+        .map_err(|e| ctx!("validating previous path", request.previous_path, e))?;
+    let curr_path = crate::path_validation::validate_path(&request.current_path)
+        .map_err(|e| ctx!("validating current path", request.current_path, e))?;
 
     let prev_header = read_geotiff_header(&prev_path).map_err(|e| {
         ctx!(
@@ -66,7 +68,7 @@ pub async fn compute_progression_cmd(
 
     let mut surfaces = Vec::with_capacity(request.paths.len());
     for (i, path) in request.paths.iter().enumerate() {
-        let p = PathBuf::from(path);
+        let p = crate::path_validation::validate_path(path).map_err(|e| ctx!("validating path", path, e))?;
         let header = read_geotiff_header(&p)
             .map_err(|e| ctx!("reading progression DEM header (epoch {}", i, e))?;
         let grid = read_dem_grid(&p, &header)
@@ -120,7 +122,7 @@ pub async fn analyze_highwall_cmd(
 
     let mut surfaces = Vec::with_capacity(request.paths.len());
     for (i, path) in request.paths.iter().enumerate() {
-        let p = PathBuf::from(path);
+        let p = crate::path_validation::validate_path(path).map_err(|e| ctx!("validating path", path, e))?;
         let header = read_geotiff_header(&p)
             .map_err(|e| ctx!("reading highwall epoch DEM header (epoch {}", i, e))?;
         let grid = read_dem_grid(&p, &header)

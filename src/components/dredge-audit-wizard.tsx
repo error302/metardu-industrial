@@ -1,3 +1,4 @@
+import { withReportProfile } from "@/lib/report-profile";
 import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Dredge Audit Wizard — Sprint 4 Revenue Feature #2.
@@ -157,7 +158,9 @@ export function DredgeAuditWizard({ open, onClose }: Props) {
         ],
       };
 
+      const profileFields = await withReportProfile();
       const spec: ReportSpec = {
+        ...profileFields,
         report_type: "dredge_audit",
         title: "Dredge Pay-Volume Audit Report",
         subtitle: projectName ? `${projectName} — ${new Date().toLocaleDateString()}` : new Date().toLocaleDateString(),

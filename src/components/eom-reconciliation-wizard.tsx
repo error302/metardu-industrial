@@ -1,3 +1,4 @@
+import { withReportProfile } from "@/lib/report-profile";
 import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * EoM Reconciliation — single-screen practical tool.
@@ -88,7 +89,9 @@ export function EomReconciliationWizard({ open, onClose }: Props) {
         { label: "Cut Tonnage", value: (result.cut_volume * density).toFixed(0), unit: "t", color: colors.fail },
         { label: "Net Tonnage", value: (result.net_volume * density).toFixed(0), unit: "t", color: colors.industrialOrange },
       ];
+      const profileFields = await withReportProfile();
       const spec: ReportSpec = {
+        ...profileFields,
         report_type: "eom_reconciliation",
         title: "End-of-Month Production Reconciliation",
         subtitle: siteName || new Date().toLocaleDateString(),

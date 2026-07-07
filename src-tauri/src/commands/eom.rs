@@ -250,7 +250,8 @@ pub async fn consume_report_cmd(
 pub async fn import_dxf_surface_cmd(path: String, cell_size: f64) -> Result<DesignDem, String> {
     let label = path.clone();
     tokio::task::spawn_blocking(move || {
-        let dxf_path = PathBuf::from(&path);
+        let dxf_path = crate::path_validation::validate_path(&path)
+            .map_err(|e| ctx!("validating DXF path", label, e))?;
         let surface = import_dxf_surface(&dxf_path)
             .map_err(|e| format!("DXF import failed: {} — {}", label, e))?;
         let dem = rasterize_dxf_to_dem(&surface, cell_size, None)

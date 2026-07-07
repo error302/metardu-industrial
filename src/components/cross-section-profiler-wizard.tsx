@@ -1,3 +1,4 @@
+import { withReportProfile } from "@/lib/report-profile";
 import { useEscapeKey } from "@/lib/use-escape-key";
 /**
  * Cross-Section Profiler Wizard — Sprint 5 Revenue Feature #8.
@@ -153,7 +154,9 @@ export function CrossSectionProfilerWizard({ open, onClose }: Props) {
         ]),
       };
 
+      const profileFields = await withReportProfile();
       const spec: ReportSpec = {
+        ...profileFields,
         report_type: "cross_section",
         title: "Cross-Section Profile Report",
         subtitle: projectName ? `${projectName} — ${new Date().toLocaleDateString()}` : new Date().toLocaleDateString(),

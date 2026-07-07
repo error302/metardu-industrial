@@ -29,14 +29,16 @@ pub fn new_project_cmd(request: NewProjectRequest) -> MetarduProject {
 
 #[tauri::command]
 pub fn save_project_cmd(project: MetarduProject, path: String) -> Result<String, String> {
-    let path_buf = PathBuf::from(&path);
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating project save path", path, e))?;
     save_project(&project, &path_buf).map_err(|e| ctx!("saving project", path, e))?;
     Ok(path)
 }
 
 #[tauri::command]
 pub fn load_project_cmd(path: String) -> Result<MetarduProject, String> {
-    let path_buf = PathBuf::from(&path);
+    let path_buf = crate::path_validation::validate_path(&path)
+        .map_err(|e| ctx!("validating project load path", path, e))?;
     load_project(&path_buf).map_err(|e| ctx!("loading project", path, e))
 }
 

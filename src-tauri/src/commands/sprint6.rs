@@ -23,7 +23,8 @@ pub struct ReadSssRequest {
 /// pixel intensity = backscatter amplitude).
 #[tauri::command]
 pub async fn read_sss_pings_cmd(request: ReadSssRequest) -> Result<SssData, String> {
-    let path = std::path::PathBuf::from(&request.path);
+    let path = crate::path_validation::validate_path(&request.path)
+        .map_err(|e| ctx!("validating SSS XTF path", request.path, e))?;
     let max_pings = request.max_pings.unwrap_or(0);
     // XTF parsing is potentially slow (multi-GB files) — run in blocking task
     tokio::task::spawn_blocking(move || {
