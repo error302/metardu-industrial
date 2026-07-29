@@ -16,7 +16,7 @@ rand = "0.8"
 base64 = "0.22"
 rayon = "1"
 printpdf = "0.7"
-laz = "0.10"
+laz = "0.12"
 dxf = "0.5"
 kamadak-exif = "0.5"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
