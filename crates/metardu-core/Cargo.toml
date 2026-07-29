@@ -15,7 +15,7 @@ rsa = { version = "0.9", features = ["pem", "sha2", "getrandom"] }
 rand = "0.8"
 base64 = "0.22"
 rayon = "1"
-printpdf = "0.7"
+printpdf = "0.9"
 laz = "0.10"
 dxf = "0.5"
 kamadak-exif = "0.5"
