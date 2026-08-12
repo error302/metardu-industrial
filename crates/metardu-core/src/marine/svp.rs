@@ -125,6 +125,167 @@ pub fn interpolate_speed(profile: &SvpProfile, depth: f64) -> f64 {
     1500.0
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct RayTraceResult {
+    pub true_depth: f64,       // meters relative to transducer
+    pub horizontal_offset: f64, // meters relative to transducer along beam azimuth
+    pub true_beam_angle_deg: f64, // final angle at target depth
+    pub path_distance: f64,     // total curved distance along ray path
+}
+
+/// Perform Snell's Law ray tracing through multi-layer sound velocity profile.
+/// Given launch_angle_deg (0 deg = straight down, positive towards port/starboard)
+/// and one_way_travel_time_sec, returns the exact (true_depth, horizontal_offset).
+pub fn ray_trace_beam(
+    profile: &SvpProfile,
+    launch_angle_deg: f64,
+    one_way_travel_time_sec: f64,
+) -> RayTraceResult {
+    if profile.points.len() < 2 || one_way_travel_time_sec <= 0.0 {
+        let v = if profile.points.is_empty() {
+            1500.0
+        } else {
+            profile.points[0].speed
+        };
+        let rad = launch_angle_deg.to_radians();
+        let dist = v * one_way_travel_time_sec;
+        return RayTraceResult {
+            true_depth: dist * rad.cos(),
+            horizontal_offset: dist * rad.sin(),
+            true_beam_angle_deg: launch_angle_deg,
+            path_distance: dist,
+        };
+    }
+
+    let angle_rad = launch_angle_deg.abs().to_radians();
+    let sign = if launch_angle_deg < 0.0 { -1.0 } else { 1.0 };
+    let v0 = profile.points[0].speed;
+    let p = angle_rad.sin() / v0; // Ray parameter (Snell's Law invariant)
+
+    // Handle vertical beam (angle = 0)
+    if p.abs() < 1e-12 {
+        let mut time_rem = one_way_travel_time_sec;
+        let mut curr_z = profile.points[0].depth;
+        let mut total_dist = 0.0;
+
+        for i in 0..profile.points.len() - 1 {
+            let z1 = profile.points[i].depth;
+            let z2 = profile.points[i + 1].depth;
+            let v1 = profile.points[i].speed;
+            let v2 = profile.points[i + 1].speed;
+            let dz = z2 - z1;
+            if dz <= 0.0 {
+                continue;
+            }
+
+            let g = (v2 - v1) / dz;
+            let dt = if g.abs() < 1e-6 {
+                dz / v1
+            } else {
+                (v2 / v1).ln() / g
+            };
+
+            if time_rem <= dt {
+                let actual_dz = if g.abs() < 1e-6 {
+                    time_rem * v1
+                } else {
+                    v1 * ((g * time_rem).exp() - 1.0) / g
+                };
+                curr_z += actual_dz;
+                total_dist += actual_dz;
+                time_rem = 0.0;
+                break;
+            } else {
+                time_rem -= dt;
+                curr_z = z2;
+                total_dist += dz;
+            }
+        }
+
+        if time_rem > 0.0 {
+            let last_v = profile.points.last().unwrap().speed;
+            let extra_dz = time_rem * last_v;
+            curr_z += extra_dz;
+            total_dist += extra_dz;
+        }
+
+        return RayTraceResult {
+            true_depth: curr_z - profile.points[0].depth,
+            horizontal_offset: 0.0,
+            true_beam_angle_deg: 0.0,
+            path_distance: total_dist,
+        };
+    }
+
+    let mut time_rem = one_way_travel_time_sec;
+    let mut x_acc = 0.0;
+    let mut z_acc = 0.0;
+    let mut total_path = 0.0;
+    let mut current_angle_rad = angle_rad;
+
+    for i in 0..profile.points.len() - 1 {
+        let z1 = profile.points[i].depth;
+        let z2 = profile.points[i + 1].depth;
+        let v1 = profile.points[i].speed;
+        let v2 = profile.points[i + 1].speed;
+        let dz = z2 - z1;
+        if dz <= 0.0 {
+            continue;
+        }
+
+        let sin_theta1 = (p * v1).min(1.0);
+        let cos_theta1 = (1.0 - sin_theta1 * sin_theta1).sqrt();
+        let sin_theta2 = (p * v2).min(1.0);
+        let cos_theta2 = (1.0 - sin_theta2 * sin_theta2).sqrt();
+
+        let g = (v2 - v1) / dz;
+        let (dx, dt, actual_dz, next_angle) = if g.abs() < 1e-6 {
+            let tan_th = sin_theta1 / cos_theta1;
+            let dx_layer = dz * tan_th;
+            let dt_layer = dz / (v1 * cos_theta1);
+            (dx_layer, dt_layer, dz, angle_rad)
+        } else {
+            let dx_layer = (cos_theta1 - cos_theta2) / (p * g);
+            let dt_layer = (v2 * (1.0 + cos_theta1) / (v1 * (1.0 + cos_theta2))).ln() / g;
+            (dx_layer, dt_layer, dz, sin_theta2.asin())
+        };
+
+        if time_rem <= dt {
+            let frac = time_rem / dt;
+            x_acc += dx * frac;
+            z_acc += actual_dz * frac;
+            total_path += (dx * dx + actual_dz * actual_dz).sqrt() * frac;
+            current_angle_rad = sin_theta1.asin();
+            time_rem = 0.0;
+            break;
+        } else {
+            x_acc += dx;
+            z_acc += actual_dz;
+            total_path += (dx * dx + actual_dz * actual_dz).sqrt();
+            current_angle_rad = next_angle;
+            time_rem -= dt;
+        }
+    }
+
+    if time_rem > 0.0 {
+        let last_v = profile.points.last().unwrap().speed;
+        let sin_th = (p * last_v).min(1.0);
+        let cos_th = (1.0 - sin_th * sin_th).sqrt();
+        let dist = time_rem * last_v;
+        x_acc += dist * sin_th;
+        z_acc += dist * cos_th;
+        total_path += dist;
+        current_angle_rad = sin_th.asin();
+    }
+
+    RayTraceResult {
+        true_depth: z_acc,
+        horizontal_offset: x_acc * sign,
+        true_beam_angle_deg: current_angle_rad.to_degrees() * sign,
+        path_distance: total_path,
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum SvpError {
     #[error("file not found: {0}")]
@@ -189,4 +350,41 @@ mod tests {
         };
         assert!((interpolate_speed(&profile, 10.0) - 1500.0).abs() < 0.01);
     }
+
+    #[test]
+    fn test_ray_tracing_vertical_and_oblique() {
+        let profile = SvpProfile {
+            source: "test_cast".into(),
+            cast_count: 2,
+            points: vec![
+                SvpPoint {
+                    depth: 0.0,
+                    speed: 1500.0,
+                },
+                SvpPoint {
+                    depth: 100.0,
+                    speed: 1500.0,
+                },
+            ],
+            min_depth: 0.0,
+            max_depth: 100.0,
+            min_speed: 1500.0,
+            max_speed: 1500.0,
+            surface_speed: 1500.0,
+            bottom_speed: 1500.0,
+        };
+
+        // Vertical beam: 100m depth at 1500m/s takes 100/1500 = 0.066667s
+        let vert = ray_trace_beam(&profile, 0.0, 100.0 / 1500.0);
+        assert!((vert.true_depth - 100.0).abs() < 1e-4);
+        assert!((vert.horizontal_offset - 0.0).abs() < 1e-4);
+
+        // Oblique beam at 45 deg: 100m straight line distance takes 100/1500s
+        let obl = ray_trace_beam(&profile, 45.0, 100.0 / 1500.0);
+        let expected_depth = 100.0 * (45.0f64.to_radians().cos());
+        let expected_offset = 100.0 * (45.0f64.to_radians().sin());
+        assert!((obl.true_depth - expected_depth).abs() < 1e-3);
+        assert!((obl.horizontal_offset - expected_offset).abs() < 1e-3);
+    }
 }
+

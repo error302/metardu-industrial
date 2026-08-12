@@ -22,6 +22,11 @@
 // Protocol reference: RTCM 10410.1 (NTRIP v2)
 // Message reference:  RTCM 10403.2 (RTCM v3.2)
 
+pub mod sensor_bus;
+pub mod usv_gateway;
+
+pub use usv_gateway::{parse_usv_telemetry, summarize_usv_fleet, FleetStatusReport, UsvTelemetryFrame};
+
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::net::TcpStream;
