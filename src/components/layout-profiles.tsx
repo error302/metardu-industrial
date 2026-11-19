@@ -16,7 +16,6 @@
 
 import { useEffect } from "react";
 import { LayoutGrid, Database, Waves, Calculator } from "lucide-react";
-import { colors } from "@/lib/tokens";
 
 export type LayoutProfile = "default" | "data_ingest" | "bathymetry_clean" | "volume_reporting";
 
@@ -81,7 +80,7 @@ export function LayoutProfiles({ active, onChange }: Props) {
   }, [active]);
 
   return (
-    <div className="flex items-center gap-0.5 rounded-md border border-navy-border bg-navy-base/80 p-0.5">
+    <div className="flex items-center gap-0.5 rounded-md border border-[#263345] bg-[#0B0F17]/90 p-0.5">
       {PROFILES.map((p) => {
         const isActive = active === p.id;
         return (
@@ -89,13 +88,15 @@ export function LayoutProfiles({ active, onChange }: Props) {
             key={p.id}
             onClick={() => onChange(p.id)}
             title={p.description}
-            className="flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium transition-colors"
-            style={{
-              background: isActive ? colors.industrialOrange : "transparent",
-              color: isActive ? colors.navyBase : colors.steelLight,
-            }}
+            className={`flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium transition-all ${
+              isActive
+                ? "bg-[#1F2937] text-white shadow-sm border border-[#374151]"
+                : "text-slate-400 hover:text-slate-200 hover:bg-[#1F2937]/40"
+            }`}
           >
-            {p.icon}
+            <span className={isActive ? "text-[#F97316]" : "text-slate-400"}>
+              {p.icon}
+            </span>
             <span className="hidden lg:inline">{p.label}</span>
           </button>
         );

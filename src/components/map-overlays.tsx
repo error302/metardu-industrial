@@ -12,7 +12,6 @@
 
 import { useState } from "react";
 import { Navigation, Eye, EyeOff, Layers, Mountain, Waves } from "lucide-react";
-import { colors } from "@/lib/tokens";
 
 interface MapOverlayProps {
   /** Map rotation in radians (from OL view.getRotation()). 0 = North up. */
@@ -37,56 +36,50 @@ export function MapOverlays({ rotation, layers, onToggleLayer }: MapOverlayProps
 
   return (
     <>
-      {/* North arrow — top-left, below the OL Zoom control */}
+      {/* Sleek precision compass indicator — top-left beneath zoom */}
       <div
-        className="pointer-events-none absolute left-3 top-20 z-10 flex flex-col items-center"
-        title={`Map rotation: ${rotationDeg.toFixed(1)}°`}
+        className="pointer-events-none absolute left-3 top-[72px] z-10 flex items-center gap-1.5 rounded-md border border-[#263345] bg-[#0B0F17]/85 px-2 py-1 shadow-sm backdrop-blur"
+        title={`Map orientation: ${rotationDeg.toFixed(1)}°`}
       >
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-full border bg-navy-base/85 backdrop-blur"
-          style={{ borderColor: colors.border }}
-        >
-          <Navigation
-            className="h-5 w-5 transition-transform"
-            style={{
-              color: colors.accent,
-              transform: `rotate(${rotationDeg}deg)`,
-            }}
-          />
-        </div>
-        <span className="mt-0.5 text-[9px] font-bold text-white" style={{ color: colors.accent }}>N</span>
+        <Navigation
+          className="h-3.5 w-3.5 transition-transform text-[#F97316]"
+          style={{ transform: `rotate(${rotationDeg}deg)` }}
+        />
+        <span className="font-mono text-[10px] font-semibold text-slate-300">
+          {rotationDeg === 0 ? "N" : `${Math.round(rotationDeg)}°`}
+        </span>
       </div>
 
-      {/* Layer toggle — bottom-left, above the OL ScaleLine */}
-      <div className="absolute left-3 bottom-16 z-10">
+      {/* Layer toggle — bottom-left */}
+      <div className="absolute left-3 bottom-14 z-10">
         {expanded ? (
-          <div className="rounded-md border bg-navy-base/90 backdrop-blur p-2 shadow-lg" style={{ borderColor: colors.border }}>
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-steel-light">
-                <Layers className="h-3 w-3" /> Layers
+          <div className="rounded-md border border-[#263345] bg-[#0B0F17]/95 p-2 shadow-xl backdrop-blur min-w-[170px]">
+            <div className="mb-2 flex items-center justify-between border-b border-[#263345] pb-1">
+              <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-300">
+                <Layers className="h-3 w-3 text-[#F97316]" /> Map Layers
               </span>
               <button
                 onClick={() => setExpanded(false)}
-                className="text-steel-gray hover:text-white text-[10px]"
+                className="text-slate-400 hover:text-white text-xs px-1"
                 aria-label="Collapse layers"
               >
-                −
+                ✕
               </button>
             </div>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {layers.map((layer) => (
                 <button
                   key={layer.id}
                   onClick={() => onToggleLayer(layer.id)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-[10px] text-steel-light hover:bg-navy-elevated transition-colors"
+                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-[11px] text-slate-300 hover:bg-[#1F2937] transition-colors"
                   aria-label={`${layer.visible ? "Hide" : "Show"} ${layer.label}`}
                 >
                   <LayerIcon icon={layer.icon} />
                   <span className="flex-1 text-left truncate">{layer.label}</span>
                   {layer.visible ? (
-                    <Eye className="h-3 w-3" style={{ color: colors.pass }} />
+                    <Eye className="h-3 w-3 text-emerald-400" />
                   ) : (
-                    <EyeOff className="h-3 w-3 text-steel-gray" />
+                    <EyeOff className="h-3 w-3 text-slate-500" />
                   )}
                 </button>
               ))}
@@ -95,14 +88,13 @@ export function MapOverlays({ rotation, layers, onToggleLayer }: MapOverlayProps
         ) : (
           <button
             onClick={() => setExpanded(true)}
-            className="flex items-center gap-1.5 rounded-md border bg-navy-base/85 backdrop-blur px-2.5 py-1.5 text-[10px] text-steel-light hover:bg-navy-elevated transition-colors shadow"
-            style={{ borderColor: colors.border }}
+            className="flex items-center gap-1.5 rounded-md border border-[#263345] bg-[#0B0F17]/90 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-[#1F2937] transition-colors shadow-md backdrop-blur"
             aria-label="Expand layers"
             title="Toggle layers"
           >
-            <Layers className="h-3 w-3" />
+            <Layers className="h-3 w-3 text-[#F97316]" />
             <span className="font-medium">Layers</span>
-            <span className="rounded px-1 text-[9px]" style={{ background: colors.elevated, color: colors.textSecondary }}>
+            <span className="rounded bg-[#1F2937] px-1 text-[10px] text-slate-400 font-mono">
               {layers.filter((l) => l.visible).length}/{layers.length}
             </span>
           </button>

@@ -77,9 +77,43 @@
 
 :root {
   color-scheme: dark;
-  --background: var(--color-base);
-  --foreground: var(--color-white);
-  --accent: var(--color-accent);
+  --color-base: #0B0F17;
+  --color-panel: #111827;
+  --color-elevated: #1F2937;
+  --color-border: #263345;
+  --color-border-light: #374151;
+
+  --color-white: #F3F4F6;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+
+  --color-accent: #F97316;
+  --color-accent-dim: #C2410C;
+  --color-accent-light: #FB923C;
+
+  --color-mining: #FBBF24;
+  --color-mining-dim: #D97706;
+  --color-marine: #2DD4BF;
+  --color-marine-dim: #0F766E;
+
+  --color-pass: #22C55E;
+  --color-warn: #F59E0B;
+  --color-fail: #EF4444;
+  --color-info: #3B82F6;
+
+  /* Backward compatibility aliases */
+  --color-navy-base: #0B0F17;
+  --color-navy-panel: #111827;
+  --color-navy-elevated: #1F2937;
+  --color-navy-border: #263345;
+  --color-industrial-orange: #F97316;
+  --color-industrial-orange-dim: #C2410C;
+  --color-steel-gray: #6B7280;
+  --color-steel-light: #9CA3AF;
+
+  --background: #0B0F17;
+  --foreground: #F3F4F6;
+  --accent: #F97316;
 }
 
 /* Daylight high-contrast theme */
@@ -119,7 +153,9 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+  background-color: #0B0F17;
   background: var(--color-base);
+  color: #F3F4F6;
   color: var(--color-white);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -127,6 +163,11 @@ body,
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow: hidden;
+}
+
+/* Tooltip safety — ensure raw sidebar-tooltip never renders inline */
+.sidebar-tooltip {
+  display: none !important;
 }
 
 /* ── Typography ── */
@@ -668,9 +709,12 @@ kbd {
   to { opacity: 1; }
 }
 
-/* Enterprise sidebar — subtle gradient + improved hover states */
+/* Enterprise sidebar — solid dark slate background + precision border */
 .sidebar-enterprise {
-  background: linear-gradient(180deg, var(--color-panel) 0%, var(--color-base) 100%);
+  background-color: #111827;
+  background: linear-gradient(180deg, #111827 0%, #0B0F17 100%);
+  border-right: 1px solid #263345;
+  color: #F3F4F6;
 }
 .sidebar-item-enterprise {
   position: relative;
@@ -695,27 +739,31 @@ kbd {
   height: 100%;
 }
 
-/* Enterprise title bar — glassmorphism */
+/* Enterprise title bar — sleek 42px workstation header */
 .title-bar-enterprise {
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(17, 24, 39, 0.95);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  border-bottom: 1px solid #263345;
+  height: 42px;
+  min-height: 42px;
 }
 
-/* Enterprise status bar — refined */
+/* Enterprise status bar — refined 28px bottom telemetry */
 .status-bar-enterprise {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(11, 15, 23, 0.98);
   backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(71, 85, 105, 0.2);
+  border-top: 1px solid #263345;
+  height: 28px;
+  min-height: 28px;
 }
 
-/* Enterprise card — subtle shadow + border */
+/* Enterprise card — subtle shadow + precision border */
 .card-enterprise {
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
-  transition: box-shadow 200ms ease, border-color 200ms ease;
+  background: #111827;
+  border: 1px solid #263345;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 .card-enterprise:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15);

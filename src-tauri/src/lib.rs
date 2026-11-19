@@ -119,6 +119,14 @@ use commands::{
     cogo::cogo_circle_from_3_points_cmd, cogo::cogo_area_cmd, cogo::cogo_split_polygon_cmd,
     cogo::cogo_snell_refract_cmd,
     contours::generate_contours_cmd, contours::contours_to_geojson_cmd,
+    obn::obn_evaluate_qc_cmd, obn::obn_export_sps_cmd, obn::obn_export_p111_cmd,
+    obn::obn_generate_shift_dpr_cmd, obn::obn_generate_sample_project,
+    subsea_pipeline::subsea_pipeline_evaluate_qc_cmd,
+    subsea_pipeline::subsea_pipeline_detect_freespans_cmd,
+    subsea_pipeline::subsea_pipeline_export_dxf_cmd,
+    subsea_pipeline::subsea_pipeline_export_reports_cmd,
+    subsea_pipeline::subsea_pipeline_generate_shift_dpr_cmd,
+    subsea_pipeline::subsea_pipeline_generate_sample_project,
     realtime::start_rover_stream_cmd, realtime::stop_rover_stream_cmd,
     realtime::get_rover_position_cmd, realtime::get_rover_trail_cmd,
     realtime::get_rover_status_cmd, realtime::fetch_noaa_tide_cmd,
@@ -300,6 +308,19 @@ pub fn run() {
             start_ntrip_cmd,
             stop_ntrip_cmd,
             get_ntrip_status_cmd,
+            // OBN Survey Suite (4DNav & Node Dashboard)
+            obn_evaluate_qc_cmd,
+            obn_export_sps_cmd,
+            obn_export_p111_cmd,
+            obn_generate_shift_dpr_cmd,
+            obn_generate_sample_project,
+            // Subsea Pipeline Integrity (EIVA NaviModel & DelphINS)
+            subsea_pipeline_evaluate_qc_cmd,
+            subsea_pipeline_detect_freespans_cmd,
+            subsea_pipeline_export_dxf_cmd,
+            subsea_pipeline_export_reports_cmd,
+            subsea_pipeline_generate_shift_dpr_cmd,
+            subsea_pipeline_generate_sample_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MetaRDU Industrial application");

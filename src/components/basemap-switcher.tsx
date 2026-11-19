@@ -17,7 +17,6 @@ import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import XYZ from "ol/source/XYZ";
 import { Map as MapIcon, Satellite, Mountain, Grid3x3 } from "lucide-react";
-import { colors } from "@/lib/tokens";
 import { Tooltip } from "@/components/tooltip";
 
 export type BasemapType = "osm" | "satellite" | "terrain" | "blank";
@@ -133,23 +132,24 @@ export function BasemapSwitcher({ map, onBasemapChange }: Props) {
   }, [map, onBasemapChange]);
 
   return (
-    <div className="flex items-center gap-1 rounded-md border bg-navy-base/85 p-1 backdrop-blur" style={{ borderColor: colors.border }}>
+    <div className="flex items-center gap-0.5 rounded-md border border-[#263345] bg-[#0B0F17]/90 p-0.5 shadow-md backdrop-blur">
       {BASEMAP_OPTIONS.map((option) => {
         const Icon = option.icon;
         const isActive = current === option.type;
         return (
-          <Tooltip key={option.type} text={option.label} position="top" delay={300}>
+          <Tooltip key={option.type} text={option.label} position="bottom" delay={300}>
             <button
               onClick={() => handleSelect(option.type)}
-              className="rounded p-1.5 transition-colors"
-              style={{
-                background: isActive ? colors.accent : "transparent",
-                color: isActive ? colors.navyBase : colors.steelLight,
-              }}
+              className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-all ${
+                isActive
+                  ? "bg-[#1F2937] text-white shadow-sm border border-[#374151]"
+                  : "text-slate-400 hover:text-slate-200 hover:bg-[#1F2937]/40"
+              }`}
               aria-label={option.label}
               aria-pressed={isActive}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className={`h-3 w-3 ${isActive ? "text-[#F97316]" : "text-slate-400"}`} />
+              <span className="hidden sm:inline">{option.label}</span>
             </button>
           </Tooltip>
         );

@@ -287,12 +287,12 @@ pub fn area_dmd(points: &[Point2D]) -> f64 {
         let latitude = points[j].y - points[i].y;  // ΔN
         courses.push((departure, latitude));
     }
-    // DMD of first course = departure of first course / 2
-    // DMD of subsequent course = DMD_prev + departure_prev + departure_current/2
-    let mut dmd = courses[0].0 / 2.0;
+    // DMD of first course equals its departure; each subsequent DMD adds
+    // the previous and current course departures.
+    let mut dmd = courses[0].0;
     let mut double_area = dmd * courses[0].1;
     for i in 1..n {
-        dmd = dmd + courses[i - 1].0 + courses[i].0 / 2.0;
+        dmd = dmd + courses[i - 1].0 + courses[i].0;
         double_area += dmd * courses[i].1;
     }
     double_area.abs() / 2.0

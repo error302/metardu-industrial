@@ -3,12 +3,11 @@
  *
  * Phase 1: when a GeoTIFF DEM is loaded in the survey store, calls
  * sample_profile IPC to read real elevation values via the Rust core
- * (bilinear interpolation across DEM strips). Falls back to synthesized
- * elevation when no DEM is available or we're in browser mode.
+ * (bilinear interpolation across DEM strips).
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Database, Sparkles } from "lucide-react";
+import { Activity, Database } from "lucide-react";
 import { colors, rawColors, domainAccent, type DomainMode } from "@/lib/tokens";
 import { sampleProfile, type ProfileSampleResult } from "@/lib/tauri-ipc";
 import { useSurveyStore } from "@/stores/survey-store";
@@ -40,12 +39,16 @@ export function ProfilePanel({ domain, line }: Props) {
 
   // Fetch real profile when line + DEM change
   useEffect(() => {
+    let cancelled = false;
     if (!line || !demFile) {
       setRealProfile(null);
+      setLoading(false);
+      setRealError(null);
       return;
     }
     setLoading(true);
     setRealError(null);
+    setRealProfile(null);
     sampleProfile(
       demFile.path,
       line[0][0],
@@ -55,37 +58,28 @@ export function ProfilePanel({ domain, line }: Props) {
       SAMPLES,
     )
       .then((result) => {
+        if (cancelled) return;
         setRealProfile(result);
         setLoading(false);
       })
       .catch((err: unknown) => {
+        if (cancelled) return;
         setRealError(err instanceof Error ? err.message : String(err));
         setRealProfile(null);
         setLoading(false);
       });
+    return () => { cancelled = true; };
   }, [line, demFile]);
 
   const profile = useMemo<ProfilePoint[]>(() => {
-    if (!line) return [];
-    if (realProfile && realProfile.from_real_dem) {
+    if (line && realProfile && realProfile.from_real_dem) {
       // Real DEM data — distances already provided
       return realProfile.elevations.map((e, i) => ({
         distance: realProfile.distances[i] ?? 0,
         elevation: e,
       }));
     }
-    // Fallback: synthesize
-    const [start, end] = line;
-    const totalMeters = haversine(start, end);
-    const pts: ProfilePoint[] = [];
-    for (let i = 0; i <= SAMPLES; i++) {
-      const t = i / SAMPLES;
-      const lon = start[0] + (end[0] - start[0]) * t;
-      const lat = start[1] + (end[1] - start[1]) * t;
-      const elev = synthesizeElevation(lon, lat);
-      pts.push({ distance: totalMeters * t, elevation: elev });
-    }
-    return pts;
+    return [];
   }, [line, realProfile]);
 
   if (!line) {
@@ -103,6 +97,14 @@ export function ProfilePanel({ domain, line }: Props) {
             Click two points on the canvas.
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (loading || profile.length < 2 || profile.some((point) => !Number.isFinite(point.distance) || !Number.isFinite(point.elevation))) {
+    return (
+      <div role="status" className="flex h-full items-center justify-center p-4 text-center text-xs text-steel-light">
+        {loading ? "Sampling DEM..." : realError ? `Profile unavailable: ${realError}` : !demFile ? "Load a GeoTIFF DEM to view an elevation profile." : "No valid DEM profile is available for this line."}
       </div>
     );
   }
@@ -151,12 +153,7 @@ export function ProfilePanel({ domain, line }: Props) {
             <Database className="h-2.5 w-2.5" />
             Real DEM
           </span>
-        ) : (
-          <span className="flex items-center gap-1 rounded-sm bg-navy-elevated px-1.5 py-0.5 text-[9px] text-steel-gray">
-            <Sparkles className="h-2.5 w-2.5" />
-            Synthesized
-          </span>
-        )}
+        ) : null}
         {demFile && (
           <span className="truncate text-[9px] text-steel-gray" title={demFile.name}>
             {demFile.name}
@@ -237,29 +234,6 @@ export function ProfilePanel({ domain, line }: Props) {
       </div>
     </div>
   );
-}
-
-/** Haversine distance in meters (assumes lon/lat). */
-function haversine(a: [number, number], b: [number, number]): number {
-  const R = 6371000;
-  const φ1 = (a[1] * Math.PI) / 180;
-  const φ2 = (b[1] * Math.PI) / 180;
-  const Δφ = ((b[1] - a[1]) * Math.PI) / 180;
-  const Δλ = ((b[0] - a[0]) * Math.PI) / 180;
-  const h =
-    Math.sin(Δφ / 2) ** 2 +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
-/** Deterministic noise-based elevation for Phase 0 demos. */
-function synthesizeElevation(lon: number, lat: number): number {
-  // Multi-octave sine noise — looks terrain-like
-  const base = 100;
-  const o1 = Math.sin(lon * 10) * Math.cos(lat * 8) * 40;
-  const o2 = Math.sin(lon * 25 + 0.3) * Math.cos(lat * 20 + 0.5) * 15;
-  const o3 = Math.sin(lon * 80) * Math.cos(lat * 65) * 5;
-  return base + o1 + o2 + o3;
 }
 
 function formatDistance(m: number): string {

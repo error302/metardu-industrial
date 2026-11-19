@@ -183,13 +183,7 @@ export type FileProbeResult =
 /** Probe a survey file by path. Returns header + bounds metadata. */
 export async function probeFile(path: string): Promise<FileProbeResult> {
   if (!isTauri()) {
-    // Browser fallback — synthesize a small placeholder
-    return {
-      kind: "other",
-      path,
-      size_bytes: 0,
-      note: "browser-mode stub",
-    };
+    throw new Error("Survey file inspection requires the native desktop application.");
   }
   return invoke<FileProbeResult>("probe_file", { path });
 }
@@ -2729,3 +2723,717 @@ export async function generateSafetyReport(inspection: unknown): Promise<string>
   if (!isTauri()) return "Browser mode — safety report requires the native Tauri shell";
   return invoke<string>("generate_safety_report_cmd", { inspection });
 }
+
+// ──────────────────────────────────────────────────────────────────
+// OBN (Ocean Bottom Node) Survey Suite — 4DNav & Node Dashboard Automation
+// ──────────────────────────────────────────────────────────────────
+
+export type ToleranceStatus = "in_spec" | "warning" | "out_of_spec";
+
+export type NodeOperationalStatus =
+  | "planned"
+  | "deployed"
+  | "active_recording"
+  | "retrieved"
+  | "relocated"
+  | "failed"
+  | "lost";
+
+export interface ObnPlannedNode {
+  station_id: string;
+  line_name: string;
+  easting: number;
+  northing: number;
+  target_depth: number;
+  remarks?: string;
+}
+
+export interface ObnAsLaidNode {
+  node_id: string;
+  serial_number: string;
+  station_id: string;
+  line_name: string;
+  easting: number;
+  northing: number;
+  depth: number;
+  timestamp_utc: string;
+  usbl_uncertainty_m: number;
+  water_depth_m: number;
+  tilt_deg?: number;
+  battery_pct?: number;
+  status: NodeOperationalStatus;
+}
+
+export interface ObnQcNode {
+  station_id: string;
+  serial_number: string;
+  line_name: string;
+  planned_easting: number;
+  planned_northing: number;
+  planned_depth: number;
+  aslaid_easting: number;
+  aslaid_northing: number;
+  aslaid_depth: number;
+  delta_easting: number;
+  delta_northing: number;
+  radial_offset_m: number;
+  delta_depth_m: number;
+  tolerance: ToleranceStatus;
+  usbl_uncertainty_m: number;
+  timestamp_utc: string;
+  battery_pct?: number;
+  tilt_deg?: number;
+  status: NodeOperationalStatus;
+}
+
+export interface ObnQcSummary {
+  total_nodes: number;
+  in_spec_count: number;
+  warning_count: number;
+  out_of_spec_count: number;
+  compliance_percentage: number;
+  min_radial_offset_m: number;
+  max_radial_offset_m: number;
+  mean_radial_offset_m: number;
+  std_dev_radial_m: number;
+  mean_depth_m: number;
+  nodes: ObnQcNode[];
+}
+
+export interface ObnShiftDpr {
+  survey_name: string;
+  client_name: string;
+  vessel_name: string;
+  shift_date: string;
+  shift_type: string;
+  surveyor_name: string;
+  total_planned_patch: number;
+  nodes_deployed_shift: number;
+  nodes_retrieved_shift: number;
+  deployment_rate_per_hour: number;
+  average_cycle_time_mins: number;
+  operational_hours: number;
+  weather_standby_hours: number;
+  technical_downtime_hours: number;
+  general_remarks: string;
+  audit_hash: string;
+}
+
+export interface ObnHeader {
+  survey_name: string;
+  client_name: string;
+  contractor_name: string;
+  vessel_name: string;
+  crs_name: string;
+  epsg_code: number;
+  date_str: string;
+}
+
+export interface ObnSampleDataset {
+  planned_csv: string;
+  aslaid_csv: string;
+  default_header: ObnHeader;
+}
+
+export interface ObnQcRequest {
+  plannedContent: string;
+  aslaidContent: string;
+  toleranceSpecM?: number;
+  sourceFormat?: string;
+}
+
+/** Evaluate spatial tolerance and deltas for OBN deployment. */
+export async function obnEvaluateQc(request: ObnQcRequest): Promise<ObnQcSummary> {
+  if (!isTauri()) {
+    // Browser mock fallback
+    const sample = await obnGenerateSampleProject();
+    return mockEvaluateQc(sample.planned_csv, sample.aslaid_csv, request.toleranceSpecM ?? 5.0);
+  }
+  return invoke<ObnQcSummary>("obn_evaluate_qc_cmd", { request });
+}
+
+/** Export evaluated nodes as UKOOA SPS Rev 2.1 fixed-width R-records. */
+export async function obnExportSps(nodes: ObnQcNode[], header: ObnHeader): Promise<string> {
+  if (!isTauri()) {
+    return [
+      `H0000 UKOOA SPS REV 2.1 - BROWSER PREVIEW`,
+      `H0100 SURVEY:      ${header.survey_name}`,
+      `H0200 CLIENT:      ${header.client_name}`,
+      `H0500 GEODETIC CRS:${header.crs_name} (EPSG:${header.epsg_code})`,
+      `H9999 ---------------- DATA RECORDS BEGIN ----------------`,
+      ...nodes.map(n => `R${n.line_name.padEnd(16)}${n.station_id.padStart(8)}1ND   0   0   0   0  ${n.aslaid_easting.toFixed(1).padStart(9)}${n.aslaid_northing.toFixed(1).padStart(10)}${(-Math.abs(n.aslaid_depth)).toFixed(1).padStart(6)}274120000`)
+    ].join("\n");
+  }
+  return invoke<string>("obn_export_sps_cmd", { request: { nodes, header } });
+}
+
+/** Export evaluated nodes as IOGP P1/11 exchange format. */
+export async function obnExportP111(nodes: ObnQcNode[], header: ObnHeader): Promise<string> {
+  if (!isTauri()) {
+    return [
+      `H0100 SURVEY:        ${header.survey_name}`,
+      `H0200 CLIENT:        ${header.client_name}`,
+      `H0801 PROJECTION:    ${header.crs_name} (EPSG:${header.epsg_code})`,
+      `H1000 POSITION TYPE: Seabed As-Laid Node Position (USBL acoustic fix)`,
+      `H9999 DATA COLUMNS:  RecordType,LineName,StationNumber,PointIndex,StationCode,Easting,Northing,Elevation,USBL_1Sigma,RadialOffset,TimestampUTC,SerialNumber,Status`,
+      ...nodes.map(n => `R,${n.line_name},${n.station_id},1,ND,${n.aslaid_easting.toFixed(2)},${n.aslaid_northing.toFixed(2)},${(-Math.abs(n.aslaid_depth)).toFixed(2)},${n.usbl_uncertainty_m.toFixed(2)},${n.radial_offset_m.toFixed(2)},${n.timestamp_utc},${n.serial_number},${n.status.toUpperCase()}`)
+    ].join("\n");
+  }
+  return invoke<string>("obn_export_p111_cmd", { request: { nodes, header } });
+}
+
+/** Generate a 12-hour shift handover summary and DPR. */
+export async function obnGenerateShiftDpr(shift: ObnShiftDpr, qcSummary: ObnQcSummary): Promise<string> {
+  if (!isTauri()) {
+    return [
+      `# Offshore OBN Survey — Shift Handover & Daily Progress Report (Browser Mode)`,
+      ``,
+      `| Parameter | Value |`,
+      `|---|---|`,
+      `| **Survey** | ${shift.survey_name} |`,
+      `| **Vessel** | ${shift.vessel_name} |`,
+      `| **Shift** | ${shift.shift_date} — ${shift.shift_type} |`,
+      `| **Surveyor** | ${shift.surveyor_name} |`,
+      ``,
+      `## Operational Statistics`,
+      `- **Nodes Deployed:** ${shift.nodes_deployed_shift}`,
+      `- **Deployment Rate:** ${shift.deployment_rate_per_hour.toFixed(2)} nodes/hr`,
+      `- **Average Cycle Time:** ${shift.average_cycle_time_mins.toFixed(1)} mins/node`,
+      ``,
+      `## Spatial QA/QC`,
+      `- **Total Evaluated:** ${qcSummary.total_nodes}`,
+      `- **In Spec (<= 5.0m):** ${qcSummary.in_spec_count} (${qcSummary.compliance_percentage.toFixed(1)}%)`,
+      `- **Warning (5.0m - 10.0m):** ${qcSummary.warning_count}`,
+      `- **Out of Spec (> 10.0m):** ${qcSummary.out_of_spec_count}`,
+      `- **Mean Radial Offset:** ${qcSummary.mean_radial_offset_m.toFixed(2)} m`
+    ].join("\n");
+  }
+  return invoke<string>("obn_generate_shift_dpr_cmd", { request: { shift, qcSummary } });
+}
+
+/** Generate a 40-node realistic deepwater OBN deployment demo dataset. */
+export async function obnGenerateSampleProject(): Promise<ObnSampleDataset> {
+  if (!isTauri()) {
+    const plannedRows: string[] = ["Station_ID,Line_Name,Easting,Northing,Depth"];
+    const aslaidRows: string[] = ["NodeID,SerialNo,StationID,LineName,Easting,Northing,Depth,Timestamp,USBL_Sigma,WaterDepth,Status"];
+    const baseE = 542000.0;
+    const baseN = 6125000.0;
+    const baseZ = 1285.0;
+    let count = 0;
+
+    for (let l = 1; l <= 4; l++) {
+      const lineName = `OBN_L0${l}`;
+      const nCoord = baseN + (l - 1) * 200.0;
+      for (let s = 1; s <= 10; s++) {
+        count++;
+        const stnId = `STN_${l}${s < 10 ? "0" + s : s}`;
+        const eCoord = baseE + (s - 1) * 100.0;
+        const depth = baseZ + s * 1.8;
+        plannedRows.push(`${stnId},${lineName},${eCoord.toFixed(1)},${nCoord.toFixed(1)},${depth.toFixed(1)}`);
+
+        let dx = 1.2 + (count % 3);
+        let dy = -0.9 - (count % 2);
+        let sigma = 1.2;
+        if (count === 7) { dx = 7.2; dy = -3.1; sigma = 2.4; } // warning ~7.8m
+        if (count === 14) { dx = 5.4; dy = 4.1; sigma = 1.9; }  // warning ~6.8m
+        if (count === 23) { dx = 10.8; dy = -4.5; sigma = 3.2; } // out of spec ~11.7m
+
+        const aslaidE = eCoord + dx;
+        const aslaidN = nCoord + dy;
+        const aslaidZ = depth + dx * 0.05;
+        const timeStr = `2026-10-01T${String(6 + Math.floor(count / 6)).padStart(2, "0")}:${String((count * 9) % 60).padStart(2, "0")}:00Z`;
+        const sn = `SN_${7200 + count}`;
+        aslaidRows.push(`NODE_${String(count).padStart(3, "0")},${sn},${stnId},${lineName},${aslaidE.toFixed(2)},${aslaidN.toFixed(2)},${aslaidZ.toFixed(2)},${timeStr},${sigma},${aslaidZ.toFixed(1)},Deployed`);
+      }
+    }
+
+    return {
+      planned_csv: plannedRows.join("\n"),
+      aslaid_csv: aslaidRows.join("\n"),
+      default_header: {
+        survey_name: "Triton Deep OBN Seismic Scope",
+        client_name: "North Sea Petroleum Ltd",
+        contractor_name: "UTM Offshore Survey Team",
+        vessel_name: "MV Coastal Navigator",
+        crs_name: "ED50 / UTM Zone 31N",
+        epsg_code: 23031,
+        date_str: "2026-10-01",
+      },
+    };
+  }
+  return invoke<ObnSampleDataset>("obn_generate_sample_project");
+}
+
+function mockEvaluateQc(plannedCsv: string, aslaidCsv: string, toleranceSpecM: number): ObnQcSummary {
+  const pLines = plannedCsv.split("\n").filter(l => l.trim() && !l.startsWith("Station"));
+  const aLines = aslaidCsv.split("\n").filter(l => l.trim() && !l.startsWith("NodeID"));
+
+  const plannedMap = new Map<string, { e: number; n: number; z: number; line: string }>();
+  for (const line of pLines) {
+    const parts = line.split(",").map(s => s.trim());
+    if (parts.length >= 5) {
+      plannedMap.set(parts[0], {
+        line: parts[1],
+        e: parseFloat(parts[2]),
+        n: parseFloat(parts[3]),
+        z: parseFloat(parts[4]),
+      });
+    }
+  }
+
+  const nodes: ObnQcNode[] = [];
+  let inSpec = 0;
+  let warning = 0;
+  let outOfSpec = 0;
+  let sumRadial = 0;
+
+  for (const line of aLines) {
+    const p = line.split(",").map(s => s.trim());
+    if (p.length < 7) continue;
+    const serial = p[1];
+    const stn = p[2];
+    const aslaidE = parseFloat(p[4]);
+    const aslaidN = parseFloat(p[5]);
+    const aslaidZ = parseFloat(p[6]);
+    const ts = p[7] || "2026-10-01T12:00:00Z";
+    const usblUnc = parseFloat(p[8]) || 1.2;
+
+    const target = plannedMap.get(stn) || { e: aslaidE, n: aslaidN, z: aslaidZ, line: "L01" };
+    const de = aslaidE - target.e;
+    const dn = aslaidN - target.n;
+    const radial = Math.sqrt(de * de + dn * dn);
+    const dz = aslaidZ - target.z;
+
+    let tol: ToleranceStatus = "in_spec";
+    if (radial <= toleranceSpecM) {
+      inSpec++;
+      tol = "in_spec";
+    } else if (radial <= toleranceSpecM * 2.0) {
+      warning++;
+      tol = "warning";
+    } else {
+      outOfSpec++;
+      tol = "out_of_spec";
+    }
+
+    sumRadial += radial;
+    nodes.push({
+      station_id: stn,
+      serial_number: serial,
+      line_name: target.line,
+      planned_easting: target.e,
+      planned_northing: target.n,
+      planned_depth: target.z,
+      aslaid_easting: aslaidE,
+      aslaid_northing: aslaidN,
+      aslaid_depth: aslaidZ,
+      delta_easting: de,
+      delta_northing: dn,
+      radial_offset_m: radial,
+      delta_depth_m: dz,
+      tolerance: tol,
+      usbl_uncertainty_m: usblUnc,
+      timestamp_utc: ts,
+      battery_pct: 98.5,
+      tilt_deg: 0.8,
+      status: "deployed",
+    });
+  }
+
+  const total = nodes.length;
+  const meanRadial = total > 0 ? sumRadial / total : 0;
+  return {
+    total_nodes: total,
+    in_spec_count: inSpec,
+    warning_count: warning,
+    out_of_spec_count: outOfSpec,
+    compliance_percentage: total > 0 ? ((inSpec + warning) / total) * 100 : 0,
+    min_radial_offset_m: nodes.reduce((m, n) => Math.min(m, n.radial_offset_m), 9999),
+    max_radial_offset_m: nodes.reduce((m, n) => Math.max(m, n.radial_offset_m), 0),
+    mean_radial_offset_m: meanRadial,
+    std_dev_radial_m: 1.85,
+    mean_depth_m: 1295.0,
+    nodes,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Subsea Pipeline Integrity (EIVA NaviModel, 3D Pipe, DelphINS, AutoCAD)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PipelineRoutePoint {
+  kp: number;
+  easting: number;
+  northing: number;
+  target_dob_m: number;
+  pipe_od_m: number;
+}
+
+export interface DelphInsFix {
+  timestamp: string;
+  kp: number;
+  easting: number;
+  northing: number;
+  depth: number;
+  heading: number;
+  pitch: number;
+  roll: number;
+  sd_easting: number;
+  sd_northing: number;
+  sd_depth: number;
+  usbl_rejected: boolean;
+}
+
+export interface PipeSurveyPoint {
+  kp: number;
+  easting: number;
+  northing: number;
+  top_z: number;
+  seabed_z: number;
+  dcc: number;
+  dob_m: number;
+  clearance_gap_m: number;
+  is_freespan: boolean;
+}
+
+export type FreespanCriticality = "Minor" | "Moderate" | "Critical";
+
+export interface Freespan {
+  span_id: string;
+  start_kp: number;
+  end_kp: number;
+  length_m: number;
+  max_gap_m: number;
+  mean_gap_m: number;
+  start_easting: number;
+  start_northing: number;
+  end_easting: number;
+  end_northing: number;
+  criticality: FreespanCriticality;
+  remediation: string;
+}
+
+export type PipelineEventType =
+  | "Anode"
+  | "Crossing"
+  | "FieldJoint"
+  | "Mattress"
+  | "GroutBag"
+  | "Debris"
+  | "Damage"
+  | "Flange";
+
+export interface PipelineEvent {
+  event_id: string;
+  kp: number;
+  easting: number;
+  northing: number;
+  depth: number;
+  event_type: PipelineEventType;
+  description: string;
+  anode_depletion_pct: number | null;
+  cp_reading_mv: number | null;
+  severity: string;
+}
+
+export interface PipelineQcSummary {
+  total_length_km: number;
+  point_count: number;
+  buried_length_km: number;
+  exposed_length_km: number;
+  buried_percentage: number;
+  freespan_count: number;
+  total_freespan_length_m: number;
+  critical_freespans: number;
+  moderate_freespans: number;
+  minor_freespans: number;
+  max_freespan_length_m: number;
+  max_freespan_gap_m: number;
+  anodes_count: number;
+  crossings_count: number;
+  delphins_mean_horiz_sd_m: number;
+  delphins_max_horiz_sd_m: number;
+  delphins_usbl_rejection_pct: number;
+  survey_points: PipeSurveyPoint[];
+  freespans: Freespan[];
+  events: PipelineEvent[];
+}
+
+export interface PipelineShiftDpr {
+  survey_name: string;
+  client_name: string;
+  contractor_name: string;
+  vessel_name: string;
+  shift_date: string;
+  shift_type: string;
+  senior_processor: string;
+  pipeline_id: string;
+  kp_start: number;
+  kp_end: number;
+  km_processed_shift: number;
+  freespans_found_shift: number;
+  critical_spans_found: number;
+  anodes_inspected_shift: number;
+  operational_hours: number;
+  weather_standby_hours: number;
+  technical_downtime_hours: number;
+  general_remarks: string;
+  audit_hash: string;
+}
+
+export interface PipelineReportsBundle {
+  freespan_csv: string;
+  event_csv: string;
+  profile_csv: string;
+  dpr_markdown: string;
+  dxf_content: string;
+}
+
+export interface PipelineSampleDataset {
+  route_csv: string;
+  profile_csv: string;
+  events_csv: string;
+  delphins_csv: string;
+  default_dpr: PipelineShiftDpr;
+  summary: PipelineQcSummary;
+}
+
+/** Evaluate pipeline integrity, DOB, and freespans via Tauri IPC with mock fallback. */
+export async function subseaPipelineEvaluateQc(request: {
+  routeContent: string;
+  profileContent: string;
+  eventsContent: string;
+  delphinsContent: string;
+  pipeOdM?: number;
+}): Promise<PipelineQcSummary> {
+  if (isTauri()) {
+    return invoke<PipelineQcSummary>("subsea_pipeline_evaluate_qc_cmd", { request });
+  }
+
+  // Fallback simulator for browser preview
+  const demo = getMockPipelineSample();
+  return demo.summary;
+}
+
+/** Export standard AutoCAD DXF vector alignment sheet. */
+export async function subseaPipelineExportDxf(
+  points: PipeSurveyPoint[],
+  freespans: Freespan[],
+  events: PipelineEvent[],
+  pipeOdM?: number,
+): Promise<string> {
+  if (isTauri()) {
+    return invoke<string>("subsea_pipeline_export_dxf_cmd", {
+      request: {
+        points,
+        freespans,
+        events,
+        pipeOdM: pipeOdM ?? 0.4064,
+      },
+    });
+  }
+
+  return "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF";
+}
+
+/** Generate CSV deliverables and DXF alignment sheet. */
+export async function subseaPipelineExportReports(
+  points: PipeSurveyPoint[],
+  freespans: Freespan[],
+  events: PipelineEvent[],
+  dpr: PipelineShiftDpr,
+  pipeOdM?: number,
+): Promise<PipelineReportsBundle> {
+  if (isTauri()) {
+    return invoke<PipelineReportsBundle>("subsea_pipeline_export_reports_cmd", {
+      request: {
+        points,
+        freespans,
+        events,
+        dpr,
+        pipeOdM: pipeOdM ?? 0.4064,
+      },
+    });
+  }
+
+  return {
+    freespan_csv: "span_id,start_kp,end_kp,length_m,max_gap_m,mean_gap_m,criticality,remediation\nFS-001,1.200,1.214,14.00,0.85,0.54,\"Critical\",\"Urgent: Grout Bag Support\"",
+    event_csv: "event_id,kp,easting,northing,depth,type,description,anode_depletion_pct,cp_reading_mv,severity\nANO-01,0.500,580475.00,2150156.00,48.60,\"Sacrificial Anode\",\"Zinc Bracelet\",15.0,-960.0,\"Normal\"",
+    profile_csv: "kp,easting,northing,top_depth_m,seabed_depth_m,dcc_m,dob_m,clearance_gap_m,status\n0.000,580000.00,2150000.00,47.20,48.00,0.00,0.80,0.00,Buried",
+    dpr_markdown: "# Offshore Pipeline Integrity Survey — 12h Shift Handover\n\n**Survey Scope**: Campeche Sound 16-Inch Gas Export Pipeline Integrity\n",
+    dxf_content: "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF",
+  };
+}
+
+/** Format 12h Shift DPR handover with SHA-256 seal. */
+export async function subseaPipelineGenerateShiftDpr(dpr: PipelineShiftDpr): Promise<PipelineShiftDpr> {
+  if (isTauri()) {
+    return invoke<PipelineShiftDpr>("subsea_pipeline_generate_shift_dpr_cmd", { dpr });
+  }
+
+  return {
+    ...dpr,
+    audit_hash: "3a88f0bc21dc89b91c14041b63ef26a1112467b4515598dcd6e866e476c5e219",
+  };
+}
+
+/** Pre-populate realistic Campeche Sound, Mexico 5.0 km 16-inch pipeline inspection dataset. */
+export async function subseaPipelineGenerateSampleProject(): Promise<PipelineSampleDataset> {
+  if (isTauri()) {
+    return invoke<PipelineSampleDataset>("subsea_pipeline_generate_sample_project");
+  }
+
+  return getMockPipelineSample();
+}
+
+function getMockPipelineSample(): PipelineSampleDataset {
+  const points: PipeSurveyPoint[] = [];
+  const totalKm = 5.0;
+  const numPts = 101;
+  const pipeOdM = 0.4064;
+
+  for (let i = 0; i < numPts; i++) {
+    const frac = i / (numPts - 1);
+    const kp = frac * totalKm;
+    const e = 580000.0 + kp * 1000.0 * 0.95;
+    const n = 2150000.0 + kp * 1000.0 * 0.312;
+    const seabedZ = 48.0 + frac * 6.0 + Math.sin(kp * 3.0) * 0.25;
+    let topZ = seabedZ - 0.8;
+
+    if (kp >= 1.2 && kp <= 1.214) {
+      const arch = Math.sin(((kp - 1.2) / 0.014) * Math.PI);
+      topZ = seabedZ - pipeOdM - 0.85 * arch;
+    } else if (kp >= 2.45 && kp <= 2.458) {
+      const arch = Math.sin(((kp - 2.45) / 0.008) * Math.PI);
+      topZ = seabedZ - pipeOdM - 0.42 * arch;
+    }
+
+    const dobM = seabedZ - topZ;
+    const clearanceGapM = Math.max(0, seabedZ - (topZ + pipeOdM));
+    points.push({
+      kp,
+      easting: e,
+      northing: n,
+      top_z: topZ,
+      seabed_z: seabedZ,
+      dcc: Math.sin(kp * 5) * 0.15,
+      dob_m: dobM,
+      clearance_gap_m: clearanceGapM,
+      is_freespan: clearanceGapM > 0.05,
+    });
+  }
+
+  const freespans: Freespan[] = [
+    {
+      span_id: "FS-001",
+      start_kp: 1.2,
+      end_kp: 1.214,
+      length_m: 14.0,
+      max_gap_m: 0.85,
+      mean_gap_m: 0.54,
+      start_easting: 581140.0,
+      start_northing: 2150374.4,
+      end_easting: 581153.3,
+      end_northing: 2150378.8,
+      criticality: "Critical",
+      remediation: "Urgent: Grout Bag Support Required (VIV Fatigue Risk)",
+    },
+    {
+      span_id: "FS-002",
+      start_kp: 2.45,
+      end_kp: 2.458,
+      length_m: 8.0,
+      max_gap_m: 0.42,
+      mean_gap_m: 0.27,
+      start_easting: 582327.5,
+      start_northing: 2150764.4,
+      end_easting: 582335.1,
+      end_northing: 2150766.9,
+      criticality: "Moderate",
+      remediation: "Remedial Rock Dump / Grout Bag Recommended",
+    },
+  ];
+
+  const events: PipelineEvent[] = [
+    {
+      event_id: "ANO-01",
+      kp: 0.5,
+      easting: 580475.0,
+      northing: 2150156.0,
+      depth: 48.6,
+      event_type: "Anode",
+      description: "Zinc Bracelet Anode #1",
+      anode_depletion_pct: 15.0,
+      cp_reading_mv: -960.0,
+      severity: "Normal",
+    },
+    {
+      event_id: "XING-01",
+      kp: 0.85,
+      easting: 580807.5,
+      northing: 2150265.2,
+      depth: 49.0,
+      event_type: "Crossing",
+      description: "Crossing 8-inch Flowline",
+      anode_depletion_pct: null,
+      cp_reading_mv: null,
+      severity: "Advisory",
+    },
+  ];
+
+  const summary: PipelineQcSummary = {
+    total_length_km: 5.0,
+    point_count: points.length,
+    buried_length_km: 4.15,
+    exposed_length_km: 0.85,
+    buried_percentage: 83.0,
+    freespan_count: freespans.length,
+    total_freespan_length_m: 22.0,
+    critical_freespans: 1,
+    moderate_freespans: 1,
+    minor_freespans: 0,
+    max_freespan_length_m: 14.0,
+    max_freespan_gap_m: 0.85,
+    anodes_count: 1,
+    crossings_count: 1,
+    delphins_mean_horiz_sd_m: 0.038,
+    delphins_max_horiz_sd_m: 0.085,
+    delphins_usbl_rejection_pct: 1.8,
+    survey_points: points,
+    freespans,
+    events,
+  };
+
+  const default_dpr: PipelineShiftDpr = {
+    survey_name: "Campeche Sound 16-Inch Gas Export Pipeline Integrity",
+    client_name: "PEMEX Exploracion y Produccion",
+    contractor_name: "UTM Offshore Survey Team",
+    vessel_name: "MV Deep Ocean Explorer",
+    shift_date: "2026-10-13",
+    shift_type: "Day Shift (00:00 - 12:00)",
+    senior_processor: "Senior Data Processor",
+    pipeline_id: "PL-442-16IN (Akall to Dos Bocas)",
+    kp_start: 0.0,
+    kp_end: 5.0,
+    km_processed_shift: 5.0,
+    freespans_found_shift: 2,
+    critical_spans_found: 1,
+    anodes_inspected_shift: 1,
+    operational_hours: 11.0,
+    weather_standby_hours: 0.5,
+    technical_downtime_hours: 0.5,
+    general_remarks: "Completed 5.0 km processing section. Critical freespan FS-001 (14m) flagged for client review.",
+    audit_hash: "3a88f0bc21dc89b91c14041b63ef26a1112467b4515598dcd6e866e476c5e219",
+  };
+
+  return {
+    route_csv: "kp,easting,northing,target_dob_m,pipe_od_m\n0.000,580000.00,2150000.00,1.00,0.4064\n5.000,584750.00,2151560.00,1.00,0.4064",
+    profile_csv: "kp,easting,northing,top_depth_m,seabed_depth_m,dcc_m\n0.000,580000.00,2150000.00,47.20,48.00,0.00",
+    events_csv: "event_id,kp,easting,northing,depth,type,description,anode_depletion_pct,cp_reading_mv,severity\nANO-01,0.500,580475.00,2150156.00,48.60,\"Sacrificial Anode\",\"Zinc Bracelet\",15.0,-960.0,\"Normal\"",
+    delphins_csv: "timestamp,kp,easting,northing,depth,heading,pitch,roll,sd_easting,sd_northing,sd_depth,usbl_rejected\n2026-10-13T10:00:00Z,0.000,580000.00,2150000.00,48.00,71.8,-0.5,0.2,0.035,0.038,0.018,0",
+    default_dpr,
+    summary,
+  };
+}
+
+

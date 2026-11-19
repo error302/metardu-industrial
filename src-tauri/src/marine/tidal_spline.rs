@@ -395,15 +395,6 @@ mod tests {
         let mut sonar_content = String::from("timestamp,depth\n");
         for i in 0..10 {
             sonar_content.push_str(&format!(
-                "{}\n",
-                1000.0 + i as f64,
-                15.0 + (i as f64 * 0.01)
-            ));
-        }
-        // Fix: format string is wrong, let me just write it properly
-        let mut sonar_content = String::from("timestamp,depth\n");
-        for i in 0..10 {
-            sonar_content.push_str(&format!(
                 "{:.1},{:.2}\n",
                 1000.0 + i as f64,
                 15.0 + i as f64 * 0.01

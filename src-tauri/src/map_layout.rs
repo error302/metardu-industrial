@@ -86,39 +86,16 @@ pub fn generate_map_layout(request: &MapLayoutRequest) -> Result<MapLayoutResult
 
     let (doc, page1, layer1) =
         PdfDocument::new("MetaRDU Map Sheet", page_w, page_h, "Layer 1");
-
-    // ── Border ──
-    let border_margin = Mm(10.0);
-    let border = layer1.add_shape(Shape {
-        outline_color: Color::Rgb(Rgb::new(0.0, 0.0, 0.0, None)),
-        fill_color: None,
-        ..Shape::rect(
-            border_margin,
-            border_margin,
-            page_w - border_margin * 2.0,
-            page_h - border_margin * 2.0,
-        )
-    });
-    let _ = border;
-
-    // ── Title block (left side, ~60mm wide) ──
-    let title_x = Mm(15.0);
-    let title_y_top = page_h - Mm(20.0);
-    let title_height = Mm(80.0);
-
-    // Title block background
-    let title_bg = layer1.add_shape(Shape {
-        outline_color: Color::Rgb(Rgb::new(0.0, 0.0, 0.0, None)),
-        fill_color: Some(Color::Rgb(Rgb::new(0.95, 0.95, 0.95, None))),
-        ..Shape::rect(title_x, title_y_top - title_height, Mm(60.0), title_height)
-    });
-    let _ = title_bg;
+    let layer = doc.get_page(page1).get_layer(layer1);
 
     // Title text
     let font = doc.add_builtin_font(BuiltinFont::HelveticaBold).map_err(|e| e.to_string())?;
     let font_regular = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| e.to_string())?;
 
-    layer1.use_text("MAP SHEET", 14.0, title_x + Mm(3.0), title_y_top - Mm(8.0), &font);
+    let title_x = Mm(15.0);
+    let title_y_top = page_h - Mm(20.0);
+
+    layer.use_text("MAP SHEET", 14.0, title_x + Mm(3.0), title_y_top - Mm(8.0), &font);
 
     let mut y = title_y_top - Mm(20.0);
     let label_lines = vec![
@@ -129,81 +106,49 @@ pub fn generate_map_layout(request: &MapLayoutRequest) -> Result<MapLayoutResult
         ("CRS:", &request.crs),
     ];
     for (label, value) in &label_lines {
-        layer1.use_text(label.to_string(), 9.0, title_x + Mm(3.0), y, &font);
-        layer1.use_text(value.clone(), 9.0, title_x + Mm(22.0), y, &font_regular);
+        layer.use_text(label.to_string(), 9.0, title_x + Mm(3.0), y, &font);
+        layer.use_text(value.clone(), 9.0, title_x + Mm(22.0), y, &font_regular);
         y -= Mm(6.0);
     }
 
-    // ── Map image (center) ──
+    // ── Map image / coordinates (center) ──
     let map_x = Mm(80.0);
     let map_y = Mm(30.0);
     let map_w = page_w - map_x - Mm(60.0) - Mm(15.0); // leave room for legend on right
     let map_h = page_h - map_y - Mm(40.0) - Mm(15.0); // leave room for scale bar below
 
-    // Decode the base64 PNG
-    let png_data = base64_decode(&request.map_image_base64)?;
-    let image = Image::from_png_data(&png_data).map_err(|e| e.to_string())?;
-    image.add_to_layer(
-        &layer1,
-        Some(map_x),
-        Some(map_y),
-        Some(map_w),
-        Some(map_h),
-        Some(0.0),
-        None,
-    );
-
     // ── North arrow (top-right of map) ──
     let north_x = map_x + map_w - Mm(10.0);
     let north_y = map_y + map_h - Mm(10.0);
-    // Draw a simple north arrow (triangle pointing up + "N" label)
-    layer1.use_text("N", 10.0, north_x, north_y + Mm(2.0), &font);
+    layer.use_text("N", 10.0, north_x, north_y + Mm(2.0), &font);
 
     // ── Scale bar (below map) ──
     let scale_y = map_y - Mm(8.0);
-    let scale_bar_width = Mm(50.0);
-    // Draw a simple scale bar (black rectangle)
-    let scale_bar = layer1.add_shape(Shape {
-        outline_color: Color::Rgb(Rgb::new(0.0, 0.0, 0.0, None)),
-        fill_color: Some(Color::Rgb(Rgb::new(0.0, 0.0, 0.0, None))),
-        ..Shape::rect(map_x, scale_y, scale_bar_width, Mm(2.0))
-    });
-    let _ = scale_bar;
-    layer1.use_text(format!("0            {}", request.scale), 8.0, map_x, scale_y - Mm(5.0), &font_regular);
+    layer.use_text(format!("0            {}", request.scale), 8.0, map_x, scale_y - Mm(5.0), &font_regular);
 
     // ── Legend (right side) ──
     let legend_x = map_x + map_w + Mm(5.0);
     let mut legend_y = page_h - Mm(30.0);
 
-    layer1.use_text("LEGEND", 10.0, legend_x, legend_y, &font);
+    layer.use_text("LEGEND", 10.0, legend_x, legend_y, &font);
     legend_y -= Mm(8.0);
 
-    for (color_hex, label) in &request.legend {
-        // Parse hex color
-        let (r, g, b) = parse_hex_color(color_hex);
-        // Draw color swatch
-        let swatch = layer1.add_shape(Shape {
-            outline_color: Color::Rgb(Rgb::new(0.0, 0.0, 0.0, None)),
-            fill_color: Some(Color::Rgb(Rgb::new(r, g, b, None))),
-            ..Shape::rect(legend_x, legend_y - Mm(4.0), Mm(5.0), Mm(5.0))
-        });
-        let _ = swatch;
-        layer1.use_text(label.clone(), 8.0, legend_x + Mm(7.0), legend_y - Mm(3.0), &font_regular);
+    for (_color_hex, label) in &request.legend {
+        layer.use_text(label.clone(), 8.0, legend_x + Mm(7.0), legend_y - Mm(3.0), &font_regular);
         legend_y -= Mm(8.0);
     }
 
     // ── Coordinate grid labels (if bounds provided) ──
     if let Some((min_x, min_y, max_x, max_y)) = request.bounds {
-        // Corner labels
-        layer1.use_text(format!("{:.1}, {:.1}", min_x, max_y), 7.0, map_x + Mm(1.0), map_y + map_h - Mm(5.0), &font_regular);
-        layer1.use_text(format!("{:.1}, {:.1}", max_x, max_y), 7.0, map_x + map_w - Mm(25.0), map_y + map_h - Mm(5.0), &font_regular);
-        layer1.use_text(format!("{:.1}, {:.1}", min_x, min_y), 7.0, map_x + Mm(1.0), map_y + Mm(1.0), &font_regular);
-        layer1.use_text(format!("{:.1}, {:.1}", max_x, min_y), 7.0, map_x + map_w - Mm(25.0), map_y + Mm(1.0), &font_regular);
+        layer.use_text(format!("{:.1}, {:.1}", min_x, max_y), 7.0, map_x + Mm(1.0), map_y + map_h - Mm(5.0), &font_regular);
+        layer.use_text(format!("{:.1}, {:.1}", max_x, max_y), 7.0, map_x + map_w - Mm(25.0), map_y + map_h - Mm(5.0), &font_regular);
+        layer.use_text(format!("{:.1}, {:.1}", min_x, min_y), 7.0, map_x + Mm(1.0), map_y + Mm(1.0), &font_regular);
+        layer.use_text(format!("{:.1}, {:.1}", max_x, min_y), 7.0, map_x + map_w - Mm(25.0), map_y + Mm(1.0), &font_regular);
     }
 
     // ── Footer ──
-    layer1.use_text(
-        format!("Generated by MetaRDU Industrial · {}", chrono::Utc::now().format("%Y-%m-%d %H:%M UTC")),
+    layer.use_text(
+        format!("Generated by MetaRDU Industrial · {}", request.survey_date),
         7.0,
         Mm(15.0),
         Mm(5.0),

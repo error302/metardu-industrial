@@ -270,8 +270,8 @@ mod tests {
         // 4 bytes project ID GUID
         f.write_all(&[0u8; 16])?;
         // 1 byte version major, 1 byte minor
-        f.write_all(&1u8)?;
-        f.write_all(&2u8)?;
+        f.write_all(&[1u8])?;
+        f.write_all(&[2u8])?;
         // 32 bytes system identifier
         f.write_all(&[0u8; 32])?;
         // 32 bytes generating software
@@ -288,7 +288,7 @@ mod tests {
         // 4 bytes number of VLRs
         f.write_all(&0u32.to_le_bytes())?;
         // 1 byte point data record format
-        f.write_all(&0u8)?;
+        f.write_all(&[0u8])?;
         // 2 bytes point data record length
         f.write_all(&point_size.to_le_bytes())?;
         // 4 bytes legacy point count
@@ -326,7 +326,7 @@ mod tests {
             f.write_all(&yi.to_le_bytes())?;
             f.write_all(&zi.to_le_bytes())?;
             f.write_all(&0u16.to_le_bytes())?; // intensity
-            f.write_all(&0u8)?; // flags
+            f.write_all(&[0u8])?; // flags
             f.write_all(&0u8.to_le_bytes())?; // classification
             f.write_all(&0i8.to_le_bytes())?; // scan angle
             f.write_all(&0u8.to_le_bytes())?; // user data

@@ -29,7 +29,7 @@ export type DialogKey =
   | "dredgeAudit" | "crossSection" | "s44" | "s44Cert" | "s57"
   | "cube" | "cubeDisambig" | "svp" | "vesselConfig" | "sss"
   | "densityGates" | "tidalSpline" | "tidalDatum" | "backscatter"
-  | "qcDashboard" | "mbesSurvey"
+  | "qcDashboard" | "mbesSurvey" | "obnSurvey" | "pipelineInspection"
   // Cross-cutting
   | "ml" | "pipeline" | "deliverable" | "sliceEditor" | "benchmark"
   | "ntrip" | "roverStream" | "tideGauge";
@@ -115,6 +115,28 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     dialogsToOpen: ["highwall", "monitoring"],
     namePrefix: "Highwall",
   },
+  {
+    id: "obn-seismic",
+    name: "OBN Seismic Node Survey",
+    description: "Ocean Bottom Node deployment & retrieval automation — 4DNav / Node Dashboard ingest, spatial tolerance auditing, UKOOA SPS & IOGP P1/11 compiler.",
+    icon: "◉",
+    domain: "marine",
+    defaultEpsg: "EPSG:32631",
+    defaultDensity: "comfortable",
+    dialogsToOpen: ["obnSurvey"],
+    namePrefix: "OBN",
+  },
+  {
+    id: "subsea-pipeline",
+    name: "Subsea Pipeline Integrity (EIVA)",
+    description: "Pipeline inspection & freespan automation — EIVA NaviModel & 3D Pipe ingest, DelphINS trajectory QC, DNV-RP-F105 freespan screening, and AutoCAD DXF alignment sheets.",
+    icon: "═",
+    domain: "marine",
+    defaultEpsg: "EPSG:32615",
+    defaultDensity: "comfortable",
+    dialogsToOpen: ["pipelineInspection"],
+    namePrefix: "Pipeline",
+  },
 ];
 
 /**
@@ -155,6 +177,8 @@ export function dialogLabels(keys: DialogKey[]): string[] {
     backscatter: "Backscatter Mosaic",
     qcDashboard: "QC Dashboard",
     mbesSurvey: "MBES Survey Reader",
+    obnSurvey: "OBN Survey Suite",
+    pipelineInspection: "Pipeline Inspection (EIVA)",
     ml: "ML Classification",
     pipeline: "Pipeline Editor",
     deliverable: "Deliverable Package",

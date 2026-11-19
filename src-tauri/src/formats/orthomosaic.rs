@@ -199,6 +199,7 @@ mod tests {
             model_tiepoint: tp,
             epsg: None,
             geo_ascii: None,
+            nodata: None,
             bounds: None,
             sample_format: 1,
             rows_per_strip: 1,

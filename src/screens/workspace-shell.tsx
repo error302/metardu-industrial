@@ -18,16 +18,12 @@ import { isNative } from "@/lib/tauri-ipc";
 import {
   Folder,
   FileBox,
-  Layers,
   Settings,
-  HelpCircle,
   Minus,
   Square,
   X,
   Activity,
-  MapPin,
   Crosshair,
-  Clock,
   ChevronRight,
   Plus,
   TrendingUp,
@@ -65,12 +61,12 @@ import {
   Map as MapIcon,
   Eye,
   User,
+  Search,
 } from "lucide-react";
 import { MapCanvas } from "@/components/map-canvas";
 import { FileDropOverlay } from "@/components/file-drop-overlay";
 import { CrsSwitchBanner } from "@/components/crs-switch-banner";
 import { BrandLogoMark } from "@/components/brand-logo";
-import { ProfilePanel } from "@/components/profile-panel";
 import { CubeSurfaceOverlay } from "@/components/cube-surface-overlay";
 import {
   LayoutProfiles,
@@ -139,6 +135,8 @@ const TidalDatumDialog = lazy(() => import("@/components/tidal-datum-dialog").th
 const BackscatterMosaicDialog = lazy(() => import("@/components/backscatter-mosaic-dialog").then(m => ({ default: m.BackscatterMosaicDialog })));
 const QcDashboardDialog = lazy(() => import("@/components/qc-dashboard-dialog").then(m => ({ default: m.QcDashboardDialog })));
 const MbesSurveyDialog = lazy(() => import("@/components/mbes-survey-dialog").then(m => ({ default: m.MbesSurveyDialog })));
+const ObnSurveyDialog = lazy(() => import("@/components/obn-survey-dialog").then(m => ({ default: m.ObnSurveyDialog })));
+const PipelineInspectionDialog = lazy(() => import("@/components/pipeline-inspection-dialog").then(m => ({ default: m.PipelineInspectionDialog })));
 // Sprint 10 — Stockpile change detection
 const StockpileChangeDialog = lazy(() => import("@/components/stockpile-change-dialog").then(m => ({ default: m.StockpileChangeDialog })));
 // Sprint 11 — Real-time field ops + QoL
@@ -157,7 +155,7 @@ const TopologyValidatorDialog = lazy(() => import("@/components/topology-validat
 const MapLayoutDialog = lazy(() => import("@/components/map-layout-dialog").then(m => ({ default: m.MapLayoutDialog })));
 // Sprint 20 — account management
 const AccountDialog = lazy(() => import("@/components/account-dialog").then(m => ({ default: m.AccountDialog })));
-import { useProfileTool, type ProfileLine } from "@/lib/use-profile-tool";
+import { useProfileTool } from "@/lib/use-profile-tool";
 import type { CsfResult, CubeSurfaceRpc, MetarduProject } from "@/lib/tauri-ipc";
 import { startStream, stopStream } from "@/lib/tauri-ipc";
 import { useUndoStore } from "@/stores/undo-store";
@@ -169,10 +167,12 @@ import { useTheme } from "@/lib/theme-auto";
 import { BasemapSwitcher } from "@/components/basemap-switcher";
 import { OrthomosaicOverlay } from "@/components/orthomosaic-overlay";
 import { useColorblindPalette } from "@/lib/colorblind-palette";
+import { WorkflowRail, type WorkflowActions, type WorkflowStage } from "@/components/workflow-rail";
+import { SurveyBriefPanel } from "@/components/survey-brief-panel";
+import { WorkspaceStatusBar } from "@/components/workspace-status-bar";
 import {
   colors,
   domainAccent,
-  APP_VERSION,
   type DomainMode,
 } from "@/lib/tokens";
 import { useAppStore } from "@/stores/app-store";
@@ -232,6 +232,8 @@ export function WorkspaceShell() {
   const [backscatterOpen, setBackscatterOpen] = useState(false);
   const [qcDashboardOpen, setQcDashboardOpen] = useState(false);
   const [mbesSurveyOpen, setMbesSurveyOpen] = useState(false);
+  const [obnSurveyOpen, setObnSurveyOpen] = useState(false);
+  const [pipelineInspectionOpen, setPipelineInspectionOpen] = useState(false);
   // Sprint 10 — Stockpile change detection
   const [stockpileChangeOpen, setStockpileChangeOpen] = useState(false);
   // Sprint 11 — Real-time field ops
@@ -261,6 +263,7 @@ export function WorkspaceShell() {
   const colorblind = useColorblindPalette();
   // Sprint 20 — account management
   const [accountOpen, setAccountOpen] = useState(false);
+  const [workflowStage, setWorkflowStage] = useState<WorkflowStage>("ingest");
 
   // Sprint 18 — orthomosaic file picker (opens native dialog, triggers overlay)
   const handlePickOrthomosaic = useCallback(async () => {
@@ -385,6 +388,8 @@ export function WorkspaceShell() {
         case "backscatter": setBackscatterOpen(true); break;
         case "qcDashboard": setQcDashboardOpen(true); break;
         case "mbesSurvey": setMbesSurveyOpen(true); break;
+        case "obnSurvey": setObnSurveyOpen(true); break;
+        case "pipelineInspection": setPipelineInspectionOpen(true); break;
         case "ml": setMlOpen(true); break;
         case "pipeline": setPipelineOpen(true); break;
         case "deliverable": setDeliverableOpen(true); break;
@@ -474,6 +479,8 @@ export function WorkspaceShell() {
       backscatterOpen ||
       qcDashboardOpen ||
       mbesSurveyOpen ||
+      obnSurveyOpen ||
+      pipelineInspectionOpen ||
       stockpileChangeOpen ||
       roverStreamOpen ||
       tideGaugeOpen ||
@@ -528,6 +535,8 @@ export function WorkspaceShell() {
     backscatterOpen,
     qcDashboardOpen,
     mbesSurveyOpen,
+    obnSurveyOpen,
+    pipelineInspectionOpen,
     stockpileChangeOpen,
     roverStreamOpen,
     tideGaugeOpen,
@@ -584,6 +593,8 @@ export function WorkspaceShell() {
     onOpenBackscatter: () => setBackscatterOpen(true),
     onOpenQcDashboard: () => setQcDashboardOpen(true),
     onOpenMbesSurvey: () => setMbesSurveyOpen(true),
+    onOpenObnSurvey: () => setObnSurveyOpen(true),
+    onOpenPipelineInspection: () => setPipelineInspectionOpen(true),
     onOpenStockpileChange: () => setStockpileChangeOpen(true),
     onOpenRoverStream: () => setRoverStreamOpen(true),
     onOpenTideGauge: () => setTideGaugeOpen(true),
@@ -682,6 +693,15 @@ export function WorkspaceShell() {
     onToggleColorblind: () => colorblind.toggle(),
     onPickOrthomosaic: handlePickOrthomosaic,
     onOpenAccount: () => setAccountOpen(true),
+    onOpenObnSurvey: () => setObnSurveyOpen(true),
+    onOpenPipelineInspection: () => setPipelineInspectionOpen(true),
+  };
+  const workflowActions: WorkflowActions = {
+    ingest: () => setProjectOpen(true),
+    validate: () => activeDomain === "mining" ? setCsfOpen(true) : setS44Open(true),
+    process: () => activeDomain === "mining" ? setVolumeCalcOpen(true) : setCubeOpen(true),
+    review: () => activeDomain === "mining" ? setEomAuditorOpen(true) : setS44Open(true),
+    deliver: () => setDeliverableOpen(true),
   };
 
   return (
@@ -697,6 +717,13 @@ export function WorkspaceShell() {
           else setSidebarOpen((v) => !v);
         }}
         onToggleRight={() => setRightPanelOpen((v) => !v)}
+        onOpenCommands={() => setCommandPaletteOpen(true)}
+      />
+      <WorkflowRail
+        domain={activeDomain}
+        stage={workflowStage}
+        onStageChange={setWorkflowStage}
+        actions={workflowActions}
       />
       {/* Sprint 13 — customizable toolbar with pinned actions */}
       <CustomizableToolbar
@@ -751,8 +778,38 @@ export function WorkspaceShell() {
             orthoPath={orthoPath}
             visible={mapLayers.find((l) => l.id === "orthomosaic")?.visible ?? true}
           />
-          {/* Sprint 17 — basemap switcher */}
-          <div className="absolute right-3 top-16 z-10">
+          {/* Sprint 17 — Unified Top-Right Map HUD */}
+          <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 p-1 rounded-md bg-[#111827]/90 backdrop-blur-md border border-[#263345] shadow-lg">
+            <button
+              type="button"
+              onClick={() => setProfileActive((v) => !v)}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                profileActive
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+              }`}
+              title="Draw Profile Line (Click two points on canvas)"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Profile</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsStreaming((v) => !v);
+                if (!isStreaming) setStreamPings([]);
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                isStreaming
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+              }`}
+              title="Toggle Live Bathymetry / Telemetry Stream (UDP)"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>{isStreaming ? "Streaming" : "Live Stream"}</span>
+            </button>
+            <div className="h-4 w-px bg-[#263345]" />
             <BasemapSwitcher map={mapInstance} />
           </div>
           <CubeSurfaceOverlay map={mapInstance} surface={cubeSurface} />
@@ -764,12 +821,7 @@ export function WorkspaceShell() {
           />
           <FileDropOverlay domain={activeDomain} />
           <CrsSwitchBanner />
-          {/* Top-center notification stack — Sprint 11 UI fix.
-              Previously the CRS banner and the profile-active hint both
-              anchored to `left-1/2 top-12 z-30` and overwrote each other
-              when both were visible. Now the profile hint is rendered
-              *below* the CRS banner via a separate top-20 anchor so they
-              stack vertically instead of fighting for the same pixels. */}
+          {/* Top-center notification stack — Sprint 11 UI fix */}
           {profileActive && (
             <div
               className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-md border px-3 py-1.5 text-[11px] backdrop-blur max-w-[90%]"
@@ -784,44 +836,30 @@ export function WorkspaceShell() {
                 : "Click two points on the map to draw a profile line"}
             </div>
           )}
-          <FloatingActions
-            onToggleSidebar={() => {
-              if (viewport.isVeryNarrow) setDrawerSidebarOpen((v) => !v);
-              else setSidebarOpen((v) => !v);
-            }}
-            onToggleRight={() => setRightPanelOpen((v) => !v)}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
-            profileActive={profileActive}
-            onToggleProfile={() => setProfileActive((v) => !v)}
-            isStreaming={isStreaming}
-            onToggleStream={() => {
-              setIsStreaming((v) => !v);
-              if (!isStreaming) setStreamPings([]);
-            }}
-          />
           <LiveStreamPanel
             isStreaming={isStreaming}
             onPings={(pings) => setStreamPings((prev) => [...prev.slice(-5000), ...pings])}
           />
         </main>
         {rightPanelOpen && (
-          <RightPanel
+          <SurveyBriefPanel
             domain={activeDomain}
             epsg={settings.defaultEpsg}
             profileLine={profileLine}
             onClearProfile={clearProfile}
             profileActive={profileActive}
-            onOpenCsf={() => setCsfOpen(true)}
-            onOpenVolumeCalc={() => setVolumeCalcOpen(true)}
-            onOpenEomAuditor={() => setEomAuditorOpen(true)}
-            onOpenS44={() => setS44Open(true)}
-            onOpenCube={() => setCubeOpen(true)}
-            onOpenDeliverable={() => setDeliverableOpen(true)}
+            actions={{
+              classify: () => setCsfOpen(true),
+              volume: () => setVolumeCalcOpen(true),
+              audit: () => setEomAuditorOpen(true),
+              cube: () => setCubeOpen(true),
+              s44: () => setS44Open(true),
+              deliver: () => setDeliverableOpen(true),
+            }}
           />
         )}
       </div>
-      <StatusBar domain={activeDomain} epsg={settings.defaultEpsg} map={mapInstance} onOpenShortcuts={() => shortcutsHelp.setOpen(true)} />
+      <WorkspaceStatusBar domain={activeDomain} epsg={settings.defaultEpsg} map={mapInstance} onOpenShortcuts={() => shortcutsHelp.setOpen(true)} />
       {/* ── Lazy-loaded dialogs ──
           Wrapped in a single <Suspense> with fallback={null}. Each
           dialog only renders content when `open` is true, so the
@@ -895,6 +933,8 @@ export function WorkspaceShell() {
         onOpenQc={() => setQcDashboardOpen(true)}
         onOpenBackscatter={() => setBackscatterOpen(true)}
       />
+      <ObnSurveyDialog open={obnSurveyOpen} onClose={() => setObnSurveyOpen(false)} />
+      <PipelineInspectionDialog open={pipelineInspectionOpen} onClose={() => setPipelineInspectionOpen(false)} />
       {/* ── Sprint 10: Stockpile change detection ── */}
       <StockpileChangeDialog open={stockpileChangeOpen} onClose={() => setStockpileChangeOpen(false)} />
       {/* ── Sprint 11: Real-time field ops ── */}
@@ -958,6 +998,7 @@ function TitleBar({
   onToggleSidebar,
   onToggleRight,
   projectName,
+  onOpenCommands,
 }: {
   domain: DomainMode;
   layout: LayoutProfile;
@@ -965,77 +1006,94 @@ function TitleBar({
   onToggleSidebar: () => void;
   onToggleRight: () => void;
   projectName: string | null;
+  onOpenCommands: () => void;
 }) {
   const accent = domainAccent[domain].primary;
-  // In browser mode the fake window controls (minimize/maximize/close) do
-  // nothing — they're cosmetic leftovers from the Tauri shell. Hide them so
-  // users don't click expecting the app to minimize.
   const showWindowControls = isNative();
   return (
-    <header className="title-bar title-bar-enterprise flex items-center justify-between gap-2 border-b border-navy-border px-2 sm:px-3">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+    <header className="title-bar title-bar-enterprise flex items-center justify-between gap-2 border-b border-[#263345] bg-[#111827]/95 px-3 backdrop-blur-md">
+      <div className="flex items-center gap-2.5 min-w-0">
         <button
           onClick={onToggleSidebar}
-          title="Toggle sidebar"
+          title="Toggle sidebar (Ctrl+B)"
           aria-label="Toggle sidebar"
-          className="rounded p-1 text-steel-light hover:bg-navy-elevated hover:text-white flex-shrink-0"
+          className="rounded p-1 text-slate-400 hover:bg-[#1F2937] hover:text-white transition-colors flex-shrink-0"
         >
           <PanelLeft className="h-4 w-4" />
         </button>
-        <BrandLogoMark size={28} className="flex-shrink-0" />
-        <span className="text-[13px] font-semibold tracking-wide text-white hidden sm:inline truncate">
-          Meta<span style={{ color: colors.industrialOrange }}>RDU</span> Industrial
-        </span>
-        <span className="text-steel-gray hidden md:inline">/</span>
-        <span className="text-[13px] text-steel-light hidden md:inline truncate">
-          {projectName ?? "No project loaded"}
+        <BrandLogoMark size={24} className="flex-shrink-0" />
+        <div className="flex items-baseline gap-1 hidden sm:flex">
+          <span className="text-[13px] font-semibold tracking-tight text-white">
+            Meta<span className="text-[#F97316]">RDU</span>
+          </span>
+          <span className="text-[11px] font-medium text-slate-400">Industrial</span>
+        </div>
+        <span className="text-slate-600 hidden md:inline">/</span>
+        <span className="text-[12px] font-medium text-slate-300 hidden md:inline truncate max-w-[200px]">
+          {projectName ?? "Untitled Survey"}
         </span>
         <span
-          className="rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider flex-shrink-0"
+          className="rounded px-1.5 py-0.5 text-[9px] font-mono font-semibold uppercase tracking-wider flex-shrink-0 border"
           style={{
-            background: `${accent}20`,
+            background: `${accent}15`,
             color: accent,
-            border: `1px solid ${accent}40`,
+            borderColor: `${accent}35`,
           }}
         >
           {domainAccent[domain].label}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
-        <div className="hidden md:block">
+      {/* Central Quick Search / Action launcher */}
+      <div className="flex-1 max-w-sm mx-2 hidden sm:block">
+        <button
+          onClick={onOpenCommands}
+          className="flex w-full items-center justify-between rounded-md border border-[#263345] bg-[#0B0F17]/80 px-2.5 py-1 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors shadow-inner"
+        >
+          <div className="flex items-center gap-2 truncate">
+            <Search className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+            <span className="truncate">Search tools, commands & files...</span>
+          </div>
+          <kbd className="rounded border border-[#374151] bg-[#1F2937] px-1.5 py-0.5 font-mono text-[9px] text-slate-400 flex-shrink-0 ml-2">
+            Ctrl+K
+          </kbd>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="hidden lg:block">
           <LayoutProfiles active={layout} onChange={onLayoutChange} />
         </div>
         <button
           onClick={onToggleRight}
-          title="Toggle right panel"
-          aria-label="Toggle right panel"
-          className="rounded p-1 text-steel-light hover:bg-navy-elevated hover:text-white"
+          title="Toggle operations panel"
+          aria-label="Toggle operations panel"
+          className="rounded p-1 text-slate-400 hover:bg-[#1F2937] hover:text-white transition-colors"
         >
           <PanelRight className="h-4 w-4" />
         </button>
         {showWindowControls && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 ml-1 border-l border-[#263345] pl-1.5">
             <button
-              className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
+              className="rounded p-1 text-slate-400 hover:bg-[#1F2937] hover:text-white transition-colors"
               title="Minimize"
               aria-label="Minimize window"
             >
-              <Minus className="h-3.5 w-3.5" />
+              <Minus className="h-3 w-3" />
             </button>
             <button
-              className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
+              className="rounded p-1 text-slate-400 hover:bg-[#1F2937] hover:text-white transition-colors"
               title="Maximize"
               aria-label="Maximize window"
             >
-              <Square className="h-3 w-3" />
+              <Square className="h-2.5 w-2.5" />
             </button>
             <button
-              className="rounded p-1 text-steel-gray hover:bg-fail/20 hover:text-fail"
+              className="rounded p-1 text-slate-400 hover:bg-rose-600 hover:text-white transition-colors"
               title="Close"
               aria-label="Close window"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3 w-3" />
             </button>
           </div>
         )}
@@ -1104,6 +1162,8 @@ function LeftSidebar({
   onToggleColorblind,
   onPickOrthomosaic,
   onOpenAccount,
+  onOpenObnSurvey,
+  onOpenPipelineInspection,
 }: {
   domain: DomainMode;
   /** When true, sidebar collapses to icon-only rail (md-range widths). */
@@ -1164,365 +1224,259 @@ function LeftSidebar({
   onToggleColorblind: () => void;
   onPickOrthomosaic: () => void;
   onOpenAccount: () => void;
+  onOpenObnSurvey: () => void;
+  onOpenPipelineInspection: () => void;
 }) {
-  const accent = domainAccent[domain].primary;
+  const [filterQuery, setFilterQuery] = useState("");
+
+  const allTools = useMemo(() => [
+    // Project
+    { id: "proj-mgr", label: "Project Manager", category: "Project", icon: <FileBox className="h-3.5 w-3.5" />, onClick: onOpenProject },
+    { id: "triage", label: "Mission Triage", category: "Project", icon: <FolderOpen className="h-3.5 w-3.5" />, onClick: onOpenTriage },
+    // Marine & Subsea
+    { id: "pipe-insp", label: "Pipeline Inspection (EIVA / AutoCAD)", category: "Marine & Subsea", icon: <GitBranch className="h-3.5 w-3.5" />, onClick: onOpenPipelineInspection, domain: "marine", badge: "DNV" },
+    { id: "obn-survey", label: "OBN Seismic Survey (4DNav)", category: "Marine & Subsea", icon: <Radio className="h-3.5 w-3.5" />, onClick: onOpenObnSurvey, domain: "marine", badge: "P1/11" },
+    { id: "cube", label: "CUBE Bathymetric Surface", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenCube, domain: "marine" },
+    { id: "cube-disambig", label: "CUBE Disambiguation", category: "Marine & Subsea", icon: <Layers3 className="h-3.5 w-3.5" />, onClick: onOpenCubeDisambig, domain: "marine" },
+    { id: "s44", label: "S-44 TPU Compliance", category: "Marine & Subsea", icon: <Shield className="h-3.5 w-3.5" />, onClick: onOpenS44, domain: "marine" },
+    { id: "s57", label: "S-57 Nautical Chart Export", category: "Marine & Subsea", icon: <Anchor className="h-3.5 w-3.5" />, onClick: onOpenS57, domain: "marine" },
+    { id: "svp", label: "SVP Sound Velocity Editor", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenSvp, domain: "marine" },
+    { id: "vessel", label: "Vessel Configuration", category: "Marine & Subsea", icon: <Anchor className="h-3.5 w-3.5" />, onClick: onOpenVesselConfig, domain: "marine" },
+    { id: "sss", label: "Side-Scan Sonar Waterfall", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenSss, domain: "marine" },
+    { id: "mbes", label: "MBES Survey Reader (.all)", category: "Marine & Subsea", icon: <FileSearch className="h-3.5 w-3.5" />, onClick: onOpenMbesSurvey, domain: "marine" },
+    { id: "qc-dash", label: "Real-Time QC Dashboard", category: "Marine & Subsea", icon: <Activity className="h-3.5 w-3.5" />, onClick: onOpenQcDashboard, domain: "marine" },
+    { id: "backscatter", label: "Backscatter Mosaic", category: "Marine & Subsea", icon: <Grid3x3 className="h-3.5 w-3.5" />, onClick: onOpenBackscatter, domain: "marine" },
+    { id: "tidal-datum", label: "Tidal Datum Converter", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenTidalDatum, domain: "marine" },
+    { id: "tidal-spline", label: "Tidal Spline Corrector", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenTidalSpline, domain: "marine" },
+    { id: "tide-gauge", label: "Tide Gauge Monitor (NOAA / TCP)", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenTideGauge, domain: "marine" },
+    { id: "dredge", label: "Dredge Progress Audit", category: "Marine & Subsea", icon: <Waves className="h-3.5 w-3.5" />, onClick: onOpenDredgeAudit, domain: "marine" },
+    // Mining Operations
+    { id: "odm", label: "ODM Photogrammetry", category: "Mining Operations", icon: <Terminal className="h-3.5 w-3.5" />, onClick: onOpenOdm, domain: "mining" },
+    { id: "csf", label: "Classify Ground (CSF)", category: "Mining Operations", icon: <Layers3 className="h-3.5 w-3.5" />, onClick: onOpenCsf, domain: "mining" },
+    { id: "vol-calc", label: "Volume Calculator", category: "Mining Operations", icon: <Calculator className="h-3.5 w-3.5" />, onClick: onOpenVolumeCalc, domain: "mining" },
+    { id: "eom", label: "EOM Volumetric Auditor", category: "Mining Operations", icon: <ShieldCheck className="h-3.5 w-3.5" />, onClick: onOpenEomAuditor, domain: "mining", badge: "Audit" },
+    { id: "stockpile", label: "Stockpile Audit", category: "Mining Operations", icon: <Boxes className="h-3.5 w-3.5" />, onClick: onOpenStockpileAudit, domain: "mining" },
+    { id: "stockpile-chg", label: "Stockpile Change Detection", category: "Mining Operations", icon: <History className="h-3.5 w-3.5" />, onClick: onOpenStockpileChange, domain: "mining" },
+    { id: "blast", label: "Blast Impact Report", category: "Mining Operations", icon: <Bomb className="h-3.5 w-3.5" />, onClick: onOpenBlastReport, domain: "mining" },
+    { id: "highwall", label: "Highwall Stability Monitoring", category: "Mining Operations", icon: <ShieldAlert className="h-3.5 w-3.5" />, onClick: onOpenHighwall, domain: "mining" },
+    { id: "4d-mon", label: "4D Displacement Monitoring", category: "Mining Operations", icon: <History className="h-3.5 w-3.5" />, onClick: onOpenMonitoring, domain: "mining" },
+    { id: "machine-ctrl", label: "Machine Control Compiler", category: "Mining Operations", icon: <Cpu className="h-3.5 w-3.5" />, onClick: onOpenMachineControl, domain: "mining" },
+    { id: "ml-class", label: "ML Classification", category: "Mining Operations", icon: <Brain className="h-3.5 w-3.5" />, onClick: onOpenMl, domain: "mining" },
+    { id: "setout", label: "Setting Out & Markout", category: "Mining Operations", icon: <Crosshair className="h-3.5 w-3.5" />, onClick: onOpenSetout, domain: "mining" },
+    { id: "mine-grid", label: "Mine Grid Transform", category: "Mining Operations", icon: <Grid3x3 className="h-3.5 w-3.5" />, onClick: onOpenMineGrid, domain: "mining" },
+    { id: "tunnel", label: "Tunnel Profile Analyzer", category: "Mining Operations", icon: <SquareDashed className="h-3.5 w-3.5" />, onClick: onOpenTunnelProfile, domain: "mining" },
+    { id: "safety-rpt", label: "Safety Inspection Report", category: "Mining Operations", icon: <ShieldAlert className="h-3.5 w-3.5" />, onClick: onOpenSafetyReport, domain: "mining" },
+    { id: "density-gates", label: "Density Gates Filtering", category: "Mining Operations", icon: <Activity className="h-3.5 w-3.5" />, onClick: onOpenDensityGates, domain: "mining" },
+    // GIS & Geodesy
+    { id: "map-layout", label: "Generate Alignment Map Sheet", category: "GIS & Geodesy", icon: <MapIcon className="h-3.5 w-3.5" />, onClick: onOpenMapLayout },
+    { id: "orthomosaic", label: "Load Orthomosaic (GeoTIFF)", category: "GIS & Geodesy", icon: <Satellite className="h-3.5 w-3.5" />, onClick: onPickOrthomosaic },
+    { id: "shapefile", label: "Shapefile Import", category: "GIS & Geodesy", icon: <FileSearch className="h-3.5 w-3.5" />, onClick: onOpenShapefile },
+    { id: "idw", label: "IDW Surface Interpolation", category: "GIS & Geodesy", icon: <TrendingUp className="h-3.5 w-3.5" />, onClick: onOpenIdw },
+    { id: "topology", label: "Topology Validator", category: "GIS & Geodesy", icon: <ShieldCheck className="h-3.5 w-3.5" />, onClick: onOpenTopology },
+    { id: "cross-section", label: "Cross-Section Profiler", category: "GIS & Geodesy", icon: <Ruler className="h-3.5 w-3.5" />, onClick: onOpenCrossSection },
+    { id: "slice-3d", label: "3D Slice Editor", category: "GIS & Geodesy", icon: <Scissors className="h-3.5 w-3.5" />, onClick: onOpenSliceEditor },
+    { id: "deliverable", label: "Deliverable Package", category: "GIS & Geodesy", icon: <Package className="h-3.5 w-3.5" />, onClick: onOpenDeliverable },
+    // Automation & System
+    { id: "pipeline-ed", label: "Processing Pipeline Editor", category: "Automation & System", icon: <GitBranch className="h-3.5 w-3.5" />, onClick: onOpenPipeline },
+    { id: "ntrip", label: "NTRIP Differential Client", category: "Automation & System", icon: <Radio className="h-3.5 w-3.5" />, onClick: onOpenNtrip },
+    { id: "rover-stream", label: "RTK Rover Stream", category: "Automation & System", icon: <Satellite className="h-3.5 w-3.5" />, onClick: onOpenRoverStream },
+    { id: "license", label: "License Manager", category: "Automation & System", icon: <Key className="h-3.5 w-3.5" />, onClick: onOpenLicense },
+    { id: "benchmark", label: "Hardware Benchmark", category: "Automation & System", icon: <Gauge className="h-3.5 w-3.5" />, onClick: onOpenBenchmark },
+    { id: "telemetry", label: "Diagnostics & Telemetry", category: "Automation & System", icon: <Activity className="h-3.5 w-3.5" />, onClick: onOpenTelemetry },
+    { id: "marketplace", label: "Plugin Marketplace", category: "Automation & System", icon: <Package className="h-3.5 w-3.5" />, onClick: onOpenMarketplace },
+    { id: "update", label: "Check for Updates", category: "Automation & System", icon: <RefreshCw className="h-3.5 w-3.5" />, onClick: onOpenUpdate },
+    { id: "account", label: "Surveyor Profile", category: "Automation & System", icon: <User className="h-3.5 w-3.5" />, onClick: onOpenAccount },
+  ], [
+    onOpenProject, onOpenTriage, onOpenPipelineInspection, onOpenObnSurvey, onOpenCube, onOpenCubeDisambig,
+    onOpenS44, onOpenS57, onOpenSvp, onOpenVesselConfig, onOpenSss, onOpenMbesSurvey, onOpenQcDashboard,
+    onOpenBackscatter, onOpenTidalDatum, onOpenTidalSpline, onOpenTideGauge, onOpenDredgeAudit, onOpenOdm,
+    onOpenCsf, onOpenVolumeCalc, onOpenEomAuditor, onOpenStockpileAudit, onOpenStockpileChange, onOpenBlastReport,
+    onOpenHighwall, onOpenMonitoring, onOpenMachineControl, onOpenMl, onOpenSetout, onOpenMineGrid,
+    onOpenTunnelProfile, onOpenSafetyReport, onOpenDensityGates, onOpenMapLayout, onPickOrthomosaic,
+    onOpenShapefile, onOpenIdw, onOpenTopology, onOpenCrossSection, onOpenSliceEditor, onOpenDeliverable,
+    onOpenPipeline, onOpenNtrip, onOpenRoverStream, onOpenLicense, onOpenBenchmark, onOpenTelemetry,
+    onOpenMarketplace, onOpenUpdate, onOpenAccount,
+  ]);
+
+  const filteredTools = useMemo(() => {
+    if (!filterQuery.trim()) return null;
+    const q = filterQuery.toLowerCase();
+    return allTools.filter((t) => t.label.toLowerCase().includes(q) || t.category.toLowerCase().includes(q));
+  }, [allTools, filterQuery]);
 
   return (
     <aside
-      className={`sidebar-transition sidebar-enterprise flex h-full flex-col border-r border-navy-border ${
-        railMode ? "sidebar-rail w-14" : "w-[260px]"
+      className={`sidebar-transition flex h-full flex-col bg-[#111827] border-r border-[#263345] text-slate-200 select-none ${
+        railMode ? "sidebar-rail w-14" : "w-[270px]"
       }`}
     >
-      <div className="border-b border-navy-border p-3 flex items-center gap-2">
-        {railMode ? (
-          <button
-            title="New Survey"
-            aria-label="New Survey"
-            onClick={onOpenProject}
-            className="flex h-8 w-8 items-center justify-center rounded-md transition-colors flex-shrink-0"
-            style={{ background: accent, color: colors.navyBase }}
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        ) : (
-          <button
-            onClick={onOpenProject}
-            className="new-survey-btn flex flex-1 items-center justify-center gap-2 rounded-md py-2.5 transition-colors"
-            style={{ background: accent, color: colors.navyBase }}
-          >
-            <Plus className="h-4 w-4" />
-            New Survey
-          </button>
-        )}
-        {onDismiss && (
-          <button
-            onClick={onDismiss}
-            title="Close menu"
-            aria-label="Close menu"
-            className="rounded p-1 text-steel-gray hover:bg-navy-elevated hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
+      <div className="border-b border-[#263345] p-2.5 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          {railMode ? (
+            <button
+              title="New Survey Project"
+              aria-label="New Survey Project"
+              onClick={onOpenProject}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-[#F97316] text-[#0B0F17] hover:bg-[#FB923C] transition-all shadow-sm flex-shrink-0"
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
+            </button>
+          ) : (
+            <button
+              onClick={onOpenProject}
+              className="flex flex-1 items-center justify-center gap-2 rounded-md bg-[var(--color-accent)] py-2 px-3 text-xs font-semibold text-[var(--color-base)] shadow-sm transition-colors hover:bg-[var(--color-accent-light)]"
+            >
+              <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+              New Survey Project
+            </button>
+          )}
+          {onDismiss && (
+            <button
+              onClick={onDismiss}
+              title="Close sidebar"
+              aria-label="Close sidebar"
+              className="rounded p-1 text-slate-400 hover:bg-[#1F2937] hover:text-white transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Quick Tool Search Filter */}
+        {!railMode && (
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+            <input
+              type="text"
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              placeholder="Filter survey tools..."
+              className="w-full rounded-md border border-[#263345] bg-[#0B0F17]/90 pl-8 pr-7 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:border-[#F97316]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent-light)] transition-colors"
+            />
+            {filterQuery && (
+              <button
+                onClick={() => setFilterQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs px-1"
+                aria-label="Clear filter"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
-        {/* ── Project ── */}
-        <SidebarSection title="Project" icon={<Folder className="h-3 w-3" />}>
-          <SidebarItem
-            icon={<FileBox className="h-3 w-3" />}
-            label="Project Manager"
-            onClick={onOpenProject}
-          />
-          <SidebarItem
-            icon={<FolderOpen className="h-3 w-3" />}
-            label="Mission Triage"
-            onClick={onOpenTriage}
-          />
-        </SidebarSection>
+        {filteredTools ? (
+          <div className="space-y-1">
+            <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              Matches ({filteredTools.length})
+            </div>
+            {filteredTools.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-slate-500">
+                No tools match &ldquo;{filterQuery}&rdquo;
+              </div>
+            ) : (
+              filteredTools.map((tool) => (
+                <SidebarItem
+                  key={tool.id}
+                  icon={tool.icon}
+                  label={tool.label}
+                  badge={tool.badge}
+                  onClick={() => {
+                    tool.onClick();
+                    setFilterQuery("");
+                  }}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          <>
+            {/* ── Project ── */}
+            <SidebarSection title="Project" icon={<Folder className="h-3 w-3" />}>
+              <SidebarItem icon={<FileBox className="h-3 w-3" />} label="Project Manager" onClick={onOpenProject} />
+              <SidebarItem icon={<FolderOpen className="h-3 w-3" />} label="Mission Triage" onClick={onOpenTriage} />
+            </SidebarSection>
 
-        {/* ── Mining ── */}
-        {domain !== "marine" && (
-          <SidebarSection title="Mining" icon={<Activity className="h-3 w-3" />}>
-            <SidebarItem
-              icon={<Terminal className="h-3 w-3" />}
-              label="ODM Photogrammetry"
-              onClick={onOpenOdm}
-            />
-            <SidebarItem
-              icon={<Layers3 className="h-3 w-3" />}
-              label="Classify Ground (CSF)"
-              onClick={onOpenCsf}
-            />
-            <SidebarItem
-              icon={<Calculator className="h-3 w-3" />}
-              label="Volume Calculator"
-              onClick={onOpenVolumeCalc}
-            />
-            <SidebarItem
-              icon={<ShieldCheck className="h-3 w-3" />}
-              label="EOM Volumetric Auditor"
-              onClick={onOpenEomAuditor}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
-              icon={<Boxes className="h-3 w-3" />}
-              label="Stockpile Audit"
-              onClick={onOpenStockpileAudit}
-            />
-            <SidebarItem
-              icon={<Bomb className="h-3 w-3" />}
-              label="Blast Report"
-              onClick={onOpenBlastReport}
-            />
-            <SidebarItem
-              icon={<ShieldAlert className="h-3 w-3" />}
-              label="Highwall Monitoring"
-              onClick={onOpenHighwall}
-            />
-            <SidebarItem
-              icon={<History className="h-3 w-3" />}
-              label="4D Monitoring"
-              onClick={onOpenMonitoring}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
-              icon={<Cpu className="h-3 w-3" />}
-              label="Machine Control Compiler"
-              onClick={onOpenMachineControl}
-            />
-            <SidebarItem
-              icon={<Brain className="h-3 w-3" />}
-              label="ML Classification"
-              onClick={onOpenMl}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
-              icon={<Crosshair className="h-3 w-3" />}
-              label="Setting Out & Markout"
-              onClick={onOpenSetout}
-            />
-            <SidebarItem
-              icon={<Grid3x3 className="h-3 w-3" />}
-              label="Mine Grid Transform"
-              onClick={onOpenMineGrid}
-            />
-            <SidebarItem
-              icon={<SquareDashed className="h-3 w-3" />}
-              label="Tunnel Profile Analyzer"
-              onClick={onOpenTunnelProfile}
-            />
-            <SidebarItem
-              icon={<ShieldAlert className="h-3 w-3" />}
-              label="Safety Inspection Report"
-              onClick={onOpenSafetyReport}
-            />
-            <SidebarItem
-              icon={<History className="h-3 w-3" />}
-              label="Stockpile Change Detection"
-              onClick={onOpenStockpileChange}
-            />
-          </SidebarSection>
+            {/* ── Marine & Subsea ── */}
+            {domain !== "mining" && (
+              <SidebarSection title="Marine & Subsea" icon={<Waves className="h-3 w-3 text-teal-400" />}>
+                <SidebarItem icon={<GitBranch className="h-3 w-3" />} label="Pipeline Inspection (EIVA / DXF)" badge="DNV" onClick={onOpenPipelineInspection} />
+                <SidebarItem icon={<Radio className="h-3 w-3" />} label="OBN Seismic Survey (4DNav)" badge="P1/11" onClick={onOpenObnSurvey} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="CUBE Surface" onClick={onOpenCube} />
+                <SidebarItem icon={<Layers3 className="h-3 w-3" />} label="CUBE Disambiguation" onClick={onOpenCubeDisambig} />
+                <SidebarItem icon={<Shield className="h-3 w-3" />} label="S-44 Compliance" onClick={onOpenS44} />
+                <SidebarItem icon={<Anchor className="h-3 w-3" />} label="S-57 Export" onClick={onOpenS57} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="SVP Sound Velocity" onClick={onOpenSvp} />
+                <SidebarItem icon={<Anchor className="h-3 w-3" />} label="Vessel Configuration" onClick={onOpenVesselConfig} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="Side-Scan Sonar (SSS)" onClick={onOpenSss} />
+                <SidebarItem icon={<FileSearch className="h-3 w-3" />} label="MBES Survey Reader (.all)" onClick={onOpenMbesSurvey} />
+                <SidebarItem icon={<Activity className="h-3 w-3" />} label="Real-Time QC Dashboard" onClick={onOpenQcDashboard} />
+                <SidebarItem icon={<Grid3x3 className="h-3 w-3" />} label="Backscatter Mosaic" onClick={onOpenBackscatter} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="Tidal Datum Converter" onClick={onOpenTidalDatum} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="Tidal Spline Corrector" onClick={onOpenTidalSpline} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="Tide Gauge (NOAA / TCP)" onClick={onOpenTideGauge} />
+                <SidebarItem icon={<Waves className="h-3 w-3" />} label="Dredge Progress Audit" onClick={onOpenDredgeAudit} />
+              </SidebarSection>
+            )}
+
+            {/* ── Mining Operations ── */}
+            {domain !== "marine" && (
+              <SidebarSection title="Mining Operations" icon={<Activity className="h-3 w-3 text-amber-400" />}>
+                <SidebarItem icon={<Terminal className="h-3 w-3" />} label="ODM Photogrammetry" onClick={onOpenOdm} />
+                <SidebarItem icon={<Layers3 className="h-3 w-3" />} label="Classify Ground (CSF)" onClick={onOpenCsf} />
+                <SidebarItem icon={<Calculator className="h-3 w-3" />} label="Volume Calculator" onClick={onOpenVolumeCalc} />
+                <SidebarItem icon={<ShieldCheck className="h-3 w-3" />} label="EOM Volumetric Auditor" badge="Audit" onClick={onOpenEomAuditor} />
+                <SidebarItem icon={<Boxes className="h-3 w-3" />} label="Stockpile Audit" onClick={onOpenStockpileAudit} />
+                <SidebarItem icon={<History className="h-3 w-3" />} label="Stockpile Change Detection" onClick={onOpenStockpileChange} />
+                <SidebarItem icon={<Bomb className="h-3 w-3" />} label="Blast Impact Report" onClick={onOpenBlastReport} />
+                <SidebarItem icon={<ShieldAlert className="h-3 w-3" />} label="Highwall Monitoring" onClick={onOpenHighwall} />
+                <SidebarItem icon={<History className="h-3 w-3" />} label="4D Displacement Tracking" onClick={onOpenMonitoring} />
+                <SidebarItem icon={<Cpu className="h-3 w-3" />} label="Machine Control Compiler" onClick={onOpenMachineControl} />
+                <SidebarItem icon={<Brain className="h-3 w-3" />} label="ML Point Classification" onClick={onOpenMl} />
+                <SidebarItem icon={<Crosshair className="h-3 w-3" />} label="Setting Out & Markout" onClick={onOpenSetout} />
+                <SidebarItem icon={<Grid3x3 className="h-3 w-3" />} label="Mine Grid Transform" onClick={onOpenMineGrid} />
+                <SidebarItem icon={<SquareDashed className="h-3 w-3" />} label="Tunnel Profile Analyzer" onClick={onOpenTunnelProfile} />
+                <SidebarItem icon={<ShieldAlert className="h-3 w-3" />} label="Safety Inspection Report" onClick={onOpenSafetyReport} />
+                <SidebarItem icon={<Activity className="h-3 w-3" />} label="Density Gates Filtering" onClick={onOpenDensityGates} />
+              </SidebarSection>
+            )}
+
+            {/* ── GIS & Geodesy ── */}
+            <SidebarSection title="GIS & Geodesy" icon={<Grid3x3 className="h-3 w-3" />} defaultOpen={false}>
+              <SidebarItem icon={<MapIcon className="h-3 w-3" />} label="Generate Alignment Map Sheet" onClick={onOpenMapLayout} />
+              <SidebarItem icon={<Satellite className="h-3 w-3" />} label="Load Orthomosaic (GeoTIFF)" onClick={onPickOrthomosaic} />
+              <SidebarItem icon={<FileSearch className="h-3 w-3" />} label="Shapefile Import" onClick={onOpenShapefile} />
+              <SidebarItem icon={<TrendingUp className="h-3 w-3" />} label="IDW Surface Interpolation" onClick={onOpenIdw} />
+              <SidebarItem icon={<ShieldCheck className="h-3 w-3" />} label="Topology Validator" onClick={onOpenTopology} />
+              <SidebarItem icon={<Ruler className="h-3 w-3" />} label="Cross-Section Profiler" onClick={onOpenCrossSection} />
+              <SidebarItem icon={<Scissors className="h-3 w-3" />} label="3D Slice Editor" onClick={onOpenSliceEditor} />
+              <SidebarItem icon={<Package className="h-3 w-3" />} label="Client Deliverable Package" onClick={onOpenDeliverable} />
+            </SidebarSection>
+
+            {/* ── Automation & System ── */}
+            <SidebarSection title="Automation & System" icon={<Shield className="h-3 w-3" />} defaultOpen={false}>
+              <SidebarItem icon={<GitBranch className="h-3 w-3" />} label="Pipeline Editor" onClick={onOpenPipeline} />
+              <SidebarItem icon={<Radio className="h-3 w-3" />} label="NTRIP Differential Client" onClick={onOpenNtrip} />
+              <SidebarItem icon={<Satellite className="h-3 w-3" />} label="RTK Rover Stream" onClick={onOpenRoverStream} />
+              <SidebarItem icon={<Key className="h-3 w-3" />} label="License Manager" onClick={onOpenLicense} />
+              <SidebarItem icon={<Gauge className="h-3 w-3" />} label="Hardware Benchmark" onClick={onOpenBenchmark} />
+              <SidebarItem icon={<Activity className="h-3 w-3" />} label="Diagnostics & Telemetry" onClick={onOpenTelemetry} />
+              <SidebarItem icon={<Package className="h-3 w-3" />} label="Plugin Marketplace" onClick={onOpenMarketplace} />
+              <SidebarItem icon={<RefreshCw className="h-3 w-3" />} label="Check for Updates" onClick={onOpenUpdate} />
+              <SidebarItem icon={<User className="h-3 w-3" />} label="Surveyor Profile" onClick={onOpenAccount} />
+            </SidebarSection>
+          </>
         )}
-
-        {/* ── Marine ── */}
-        {domain !== "mining" && (
-          <SidebarSection title="Marine" icon={<Waves className="h-3 w-3" />}>
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="CUBE Surface"
-              onClick={onOpenCube}
-            />
-            <SidebarItem
-              icon={<Layers3 className="h-3 w-3" />}
-              label="CUBE Disambiguation"
-              onClick={onOpenCubeDisambig}
-            />
-            <SidebarItem
-              icon={<Shield className="h-3 w-3" />}
-              label="S-44 Compliance"
-              onClick={onOpenS44}
-            />
-            <SidebarItem
-              icon={<Anchor className="h-3 w-3" />}
-              label="S-57 Export"
-              onClick={onOpenS57}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="SVP Editor"
-              onClick={onOpenSvp}
-            />
-            <SidebarItem
-              icon={<Anchor className="h-3 w-3" />}
-              label="Vessel Configuration"
-              onClick={onOpenVesselConfig}
-            />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="SSS Waterfall"
-              onClick={onOpenSss}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="Dredge Audit"
-              onClick={onOpenDredgeAudit}
-            />
-            <SidebarItem
-              icon={<Ruler className="h-3 w-3" />}
-              label="Cross-Section Profiler"
-              onClick={onOpenCrossSection}
-            />
-            <SidebarItem
-              icon={<Activity className="h-3 w-3" />}
-              label="Density Gates"
-              onClick={onOpenDensityGates}
-            />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="Tidal Spline Corrector"
-              onClick={onOpenTidalSpline}
-            />
-            <SidebarItem
-              icon={<Brain className="h-3 w-3" />}
-              label="ML Classification"
-              onClick={onOpenMl}
-            />
-            <div className="my-1.5 border-t border-navy-border" />
-            <SidebarItem
-              icon={<FileSearch className="h-3 w-3" />}
-              label="MBES Survey Reader (.all)"
-              onClick={onOpenMbesSurvey}
-            />
-            <SidebarItem
-              icon={<Activity className="h-3 w-3" />}
-              label="Real-Time QC Dashboard"
-              onClick={onOpenQcDashboard}
-            />
-            <SidebarItem
-              icon={<Grid3x3 className="h-3 w-3" />}
-              label="Backscatter Mosaic"
-              onClick={onOpenBackscatter}
-            />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="Tidal Datum Converter"
-              onClick={onOpenTidalDatum}
-            />
-            <SidebarItem
-              icon={<Waves className="h-3 w-3" />}
-              label="Tide Gauge (NOAA / TCP)"
-              onClick={onOpenTideGauge}
-            />
-          </SidebarSection>
-        )}
-
-        {/* ── GIS Tools ── (Sprint 16) */}
-        <SidebarSection title="GIS Tools" icon={<Grid3x3 className="h-3 w-3" />}>
-          <SidebarItem
-            icon={<FileSearch className="h-3 w-3" />}
-            label="Shapefile Import"
-            onClick={onOpenShapefile}
-          />
-          <SidebarItem
-            icon={<TrendingUp className="h-3 w-3" />}
-            label="IDW Interpolation"
-            onClick={onOpenIdw}
-          />
-          <SidebarItem
-            icon={<ShieldCheck className="h-3 w-3" />}
-            label="Topology Validator"
-            onClick={onOpenTopology}
-          />
-          <SidebarItem
-            icon={<MapIcon className="h-3 w-3" />}
-            label="Generate Map Sheet"
-            onClick={onOpenMapLayout}
-          />
-          <SidebarItem
-            icon={<Satellite className="h-3 w-3" />}
-            label="Load Orthomosaic"
-            onClick={onPickOrthomosaic}
-          />
-        </SidebarSection>
-
-        {/* ── Deliverables ── */}
-        <SidebarSection title="Deliverables" icon={<Package className="h-3 w-3" />}>
-          <SidebarItem
-            icon={<Package className="h-3 w-3" />}
-            label="Deliverable Package"
-            onClick={onOpenDeliverable}
-          />
-          <SidebarItem
-            icon={<Scissors className="h-3 w-3" />}
-            label="3D Slice Editor"
-            onClick={onOpenSliceEditor}
-          />
-        </SidebarSection>
-
-        {/* ── Automation ── */}
-        <SidebarSection title="Automation" icon={<GitBranch className="h-3 w-3" />}>
-          <SidebarItem
-            icon={<GitBranch className="h-3 w-3" />}
-            label="Pipeline Editor"
-            onClick={onOpenPipeline}
-          />
-        </SidebarSection>
-
-        {/* ── Enterprise ── */}
-        <SidebarSection title="Enterprise" icon={<Shield className="h-3 w-3" />}>
-          <SidebarItem
-            icon={<User className="h-3 w-3" />}
-            label="My Account"
-            onClick={onOpenAccount}
-          />
-          <SidebarItem
-            icon={<Radio className="h-3 w-3" />}
-            label="NTRIP Client"
-            onClick={onOpenNtrip}
-          />
-          <SidebarItem
-            icon={<Satellite className="h-3 w-3" />}
-            label="RTK Rover Stream"
-            onClick={onOpenRoverStream}
-          />
-          <SidebarItem
-            icon={<Key className="h-3 w-3" />}
-            label="License Manager"
-            onClick={onOpenLicense}
-          />
-          <SidebarItem
-            icon={<Gauge className="h-3 w-3" />}
-            label="Performance Benchmark"
-            onClick={onOpenBenchmark}
-          />
-          <SidebarItem
-            icon={<Activity className="h-3 w-3" />}
-            label="Telemetry & Crash"
-            onClick={onOpenTelemetry}
-          />
-          <SidebarItem
-            icon={<Package className="h-3 w-3" />}
-            label="Plugin Marketplace"
-            onClick={onOpenMarketplace}
-          />
-          <SidebarItem
-            icon={<RefreshCw className="h-3 w-3" />}
-            label="Check for Updates"
-            onClick={onOpenUpdate}
-          />
-        </SidebarSection>
       </div>
 
-      <div className="border-t border-navy-border p-2">
-        <SidebarItem
-          icon={<Settings className="h-3 w-3" />}
-          label="Settings"
-          onClick={onOpenSettings}
-        />
-        <SidebarItem icon={<HelpCircle className="h-3 w-3" />} label="Help & Docs" onClick={onOpenSettings} />
-        <SidebarItem
-          icon={<Keyboard className="h-3 w-3" />}
-          label="Shortcuts (?)"
-          onClick={onOpenShortcuts}
-        />
-        <SidebarItem
-          icon={<Bookmark className="h-3 w-3" />}
-          label="Saved Views"
-          onClick={onOpenSavedViews}
-        />
-        <SidebarItem
-          icon={<SunMoon className="h-3 w-3" />}
-          label="Toggle Theme"
-          onClick={onToggleTheme}
-        />
-        <SidebarItem
-          icon={<Eye className="h-3 w-3" />}
-          label="Colorblind Palette"
-          onClick={onToggleColorblind}
-        />
+      <div className="border-t border-[#263345] p-2 bg-[#0B0F17]/60 space-y-0.5">
+        <SidebarItem icon={<Settings className="h-3.5 w-3.5" />} label="Preferences & Settings" onClick={onOpenSettings} />
+        <SidebarItem icon={<Keyboard className="h-3.5 w-3.5" />} label="Keyboard Shortcuts (?)" onClick={onOpenShortcuts} />
+        <SidebarItem icon={<Bookmark className="h-3.5 w-3.5" />} label="Saved Views" onClick={onOpenSavedViews} />
+        <SidebarItem icon={<SunMoon className="h-3.5 w-3.5" />} label="Toggle Daylight Theme" onClick={onToggleTheme} />
+        <SidebarItem icon={<Eye className="h-3.5 w-3.5" />} label="Colorblind Accessibility" onClick={onToggleColorblind} />
       </div>
     </aside>
   );
@@ -1531,19 +1485,58 @@ function LeftSidebar({
 function SidebarSection({
   title,
   icon,
+  badge,
+  defaultOpen = true,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
+  badge?: string | number;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const storageKey = "metardu.sidebar.sections";
+  const [open, setOpen] = useState(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Record<string, boolean>;
+      return stored[title] ?? defaultOpen;
+    } catch {
+      return defaultOpen;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as Record<string, boolean>;
+      window.localStorage.setItem(storageKey, JSON.stringify({ ...stored, [title]: open }));
+    } catch {
+      // Sidebar grouping is an enhancement; a blocked storage backend should not affect navigation.
+    }
+  }, [open, title]);
+
   return (
-    <div className="mb-3">
-      <div className="sidebar-section-label flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
-        {icon}
-        {title}
-      </div>
-      <div className="space-y-0.5">{children}</div>
+    <div className="mb-2">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-colors"
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-400">{icon}</span>
+          <span>{title}</span>
+          {badge !== undefined && (
+            <span className="rounded-full bg-[#1F2937] px-1.5 py-0.2 text-[9px] font-mono text-slate-400">
+              {badge}
+            </span>
+          )}
+        </div>
+        <ChevronRight
+          className={`h-3 w-3 text-slate-500 transition-transform duration-150 ${
+            open ? "rotate-90" : ""
+          }`}
+        />
+      </button>
+      {open && <div className="mt-0.5 space-y-0.5 pl-1">{children}</div>}
     </div>
   );
 }
@@ -1553,554 +1546,46 @@ function SidebarItem({
   label,
   active = false,
   indent = false,
+  badge,
   onClick,
 }: {
   icon?: React.ReactNode;
   label: string;
   active?: boolean;
   indent?: boolean;
+  badge?: string;
   onClick?: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       title={label}
-      className={`sidebar-item accent-bar-left focusable-row ${
-        active ? "is-active" : ""
-      } flex w-full items-center gap-2 rounded-md py-2 transition-colors ${
+      className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-[12px] font-medium transition-all ${
         active
-          ? "bg-navy-elevated text-white"
-          : "text-steel-light hover:bg-navy-elevated/50 hover:text-white"
-      } ${indent ? "pl-6" : "pl-2"} pr-2`}
+          ? "bg-[#1F2937] text-white font-semibold shadow-sm"
+          : "text-slate-300 hover:bg-[#1F2937]/70 hover:text-white"
+      } ${indent ? "pl-5" : ""}`}
     >
       {icon && (
-        <span className="sidebar-item-icon text-steel-gray flex-shrink-0">
+        <span
+          className={`flex-shrink-0 transition-colors ${
+            active ? "text-[#F97316]" : "text-slate-400 group-hover:text-slate-200"
+          }`}
+        >
           {icon}
         </span>
       )}
       <span className="flex-1 text-left truncate">{label}</span>
-      {active && (
-        <ChevronRight
-          className="h-3 w-3 flex-shrink-0"
-          style={{ color: colors.industrialOrange }}
-        />
+      {badge && (
+        <span className="rounded bg-[#1F2937] px-1.5 py-0.2 text-[9px] font-mono text-slate-400 border border-[#263345]">
+          {badge}
+        </span>
       )}
-      {/* Tooltip — shown only in rail mode via CSS (see .sidebar-tooltip) */}
-      <span className="sidebar-tooltip">{label}</span>
+      {active && (
+        <span className="h-1.5 w-1.5 rounded-full bg-[#F97316] flex-shrink-0" />
+      )}
     </button>
   );
 }
 
 /* ──────────────────────────────────────────────────────────── */
-
-function RightPanel({
-  domain,
-  epsg,
-  profileLine,
-  onClearProfile,
-  profileActive,
-  onOpenCsf,
-  onOpenVolumeCalc,
-  onOpenEomAuditor,
-  onOpenS44,
-  onOpenCube,
-  onOpenDeliverable,
-}: {
-  domain: DomainMode;
-  epsg: string;
-  profileLine: ProfileLine | null;
-  onClearProfile: () => void;
-  profileActive: boolean;
-  onOpenCsf: () => void;
-  onOpenVolumeCalc: () => void;
-  onOpenEomAuditor: () => void;
-  onOpenS44: () => void;
-  onOpenCube: () => void;
-  onOpenDeliverable: () => void;
-}) {
-  const accent = domainAccent[domain].primary;
-  const files = useSurveyStore((s) => s.files);
-  const activeFileId = useSurveyStore((s) => s.activeFileId);
-  const setActiveFile = useSurveyStore((s) => s.setActiveFile);
-  const removeFile = useSurveyStore((s) => s.removeFile);
-
-  const fileCount = files.length;
-  const loadedCount = files.filter((f) => f.status === "loaded").length;
-  const errorCount = files.filter((f) => f.status === "error").length;
-  const probingCount = files.filter((f) => f.status === "probing").length;
-  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-  const totalPoints = files.reduce((sum, f) => sum + (f.pointCount ?? 0), 0);
-  const lastAddedAt = files.reduce((latest, f) => Math.max(latest, f.addedAt), 0);
-  const hasBounds = files.some((f) => f.bounds);
-  const statusLabel =
-    fileCount === 0
-      ? "Ready for ingest"
-      : errorCount > 0
-        ? "Needs review"
-        : probingCount > 0
-          ? "Probing headers"
-          : "Ready for processing";
-  const nextActions =
-    domain === "mining"
-      ? [
-          { title: "Classify ground", body: "Run CSF before volume calculations.", onClick: onOpenCsf },
-          { title: "Compute volume", body: "Compare current DEM against a bench or previous survey.", onClick: onOpenVolumeCalc },
-          { title: "EOM Auditor", body: "Automated LAS → signed PDF volume report.", onClick: onOpenEomAuditor },
-        ]
-      : domain === "marine"
-        ? [
-            { title: "Generate CUBE", body: "Build a defensible bathymetric surface.", onClick: onOpenCube },
-            { title: "S-44 Compliance", body: "Run S-44 checks and verify TPU.", onClick: onOpenS44 },
-            { title: "Package delivery", body: "Package S-57 outputs and audit manifest.", onClick: onOpenDeliverable },
-          ]
-        : [
-            { title: "Ingest survey data", body: "Stage LAS/LAZ, GeoTIFF, MBES, drone, or control files.", onClick: () => {} },
-            { title: "Run domain QC", body: "Use CSF/volumes for mining or density gates/CUBE for marine.", onClick: onOpenEomAuditor },
-            { title: "Publish deliverables", body: "Package PDF reports, S-57 exports, and audit manifests.", onClick: onOpenDeliverable },
-          ];
-  const emptyTip =
-    domain === "marine"
-      ? "Drop a Kongsberg .all or Reson .s7k file anywhere to start the ingest pipeline."
-      : domain === "mining"
-        ? "Drop a LAS/LAZ point cloud or drone photogrammetry export to begin."
-        : "Drop LAS/LAZ, GeoTIFF, MBES, side-scan, drone manifest, or control files to begin.";
-
-  return (
-    <aside className="sidebar-transition flex w-72 xl:w-80 flex-col border-l border-navy-border bg-navy-panel">
-      <div className="border-b border-navy-border px-3 sm:px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-steel-light">
-            Operations
-          </h3>
-          <span
-            className="text-[10px] uppercase tracking-wider truncate"
-            style={{ color: accent }}
-          >
-            {domainAccent[domain].label}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* Status block */}
-        <div className="rounded-lg border border-navy-border bg-navy-base p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-steel-gray">{statusLabel}</span>
-            <span
-              className="rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-              style={
-                fileCount > 0
-                  ? { background: `${colors.pass}20`, color: colors.pass }
-                  : {
-                      background: `${colors.investigate}20`,
-                      color: colors.investigate,
-                    }
-              }
-            >
-              {fileCount > 0 ? `${loadedCount}/${fileCount} loaded` : "No data"}
-            </span>
-          </div>
-          <div className="mt-3 text-2xl font-bold text-white">
-            {fileCount > 0 ? fileCount : "—"}
-          </div>
-          <div className="text-xs text-steel-gray">
-            staged files
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <MetricTile label="Points" value={totalPoints ? compactNumber(totalPoints) : "—"} />
-          <MetricTile label="Data" value={totalSize ? formatBytes(totalSize) : "—"} />
-          <MetricTile label="Errors" value={String(errorCount)} tone={errorCount > 0 ? "fail" : "pass"} />
-        </div>
-
-        {/* Dropped files list */}
-        {fileCount > 0 && (
-          <div className="mt-4">
-            <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
-              Staged Files
-            </h4>
-            <div className="space-y-1.5">
-              {files.map((f) => (
-                <div
-                  key={f.id}
-                  onClick={() => setActiveFile(f.id)}
-                  className={`cursor-pointer rounded-md border px-2.5 py-2 transition-colors ${
-                    activeFileId === f.id
-                      ? "bg-navy-elevated"
-                      : "border-navy-border bg-navy-base hover:bg-navy-elevated/50"
-                  }`}
-                  style={
-                    activeFileId === f.id
-                      ? { borderColor: `${accent}80` }
-                      : undefined
-                  }
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs font-medium text-white">
-                      {f.name}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFile(f.id);
-                      }}
-                      className="text-steel-gray hover:text-fail"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                  <div className="mt-0.5 flex items-center justify-between text-[10px] text-steel-gray">
-                    <span className="font-mono uppercase">{f.kind}</span>
-                    <span>{formatBytes(f.size)}</span>
-                  </div>
-                  {f.status === "error" && f.errorMessage && (
-                    <div
-                      className="mt-1 text-[10px]"
-                      style={{ color: colors.fail }}
-                    >
-                      {f.errorMessage}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quick stats */}
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <StatTile label="CRS" value={epsg} mono />
-          <StatTile label="Domain" value={domainAccent[domain].label} />
-          <StatTile
-            label={domain === "marine" ? "S-44 Order" : "Coverage"}
-            value={hasBounds ? "Bounds OK" : "Pending"}
-          />
-          <StatTile
-            label="Last ingest"
-            value={lastAddedAt ? new Date(lastAddedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
-          />
-        </div>
-
-        <div className="mt-4">
-          <h4 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-steel-gray">
-            Recommended next actions
-          </h4>
-          <div className="space-y-2">
-            {nextActions.map((action) => (
-              <button
-                key={action.title}
-                onClick={action.onClick}
-                className="w-full rounded-md border border-navy-border bg-navy-base p-2.5 text-left transition-colors hover:border-industrial-orange/40 hover:bg-navy-elevated/50"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-semibold text-white">{action.title}</div>
-                  <ChevronRight className="h-3 w-3 text-steel-gray" />
-                </div>
-                <div className="mt-0.5 text-[10px] leading-relaxed text-steel-gray">{action.body}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Hint card */}
-        <div
-          className="mt-6 rounded-md border p-3 text-xs"
-          style={{ borderColor: `${accent}40`, background: `${accent}10` }}
-        >
-          <div className="mb-1 font-semibold" style={{ color: accent }}>
-            Tip
-          </div>
-          <p className="leading-relaxed text-steel-light">
-            {fileCount === 0
-              ? emptyTip
-              : "Click a file to focus it on the map. Right-click for processing options."}
-          </p>
-        </div>
-      </div>
-
-      {/* Profile panel — slides in when profile tool is active */}
-      {profileActive && (
-        <div className="border-t border-navy-border">
-          <div className="flex items-center justify-between border-b border-navy-border px-3 py-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-steel-light">
-              Profile
-            </span>
-            {profileLine && (
-              <button
-                onClick={onClearProfile}
-                className="text-[10px] text-steel-gray hover:text-white"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <div className="h-44">
-            <ProfilePanel domain={domain} line={profileLine ? [profileLine.start, profileLine.end] : null} />
-          </div>
-        </div>
-      )}
-    </aside>
-  );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
-}
-
-function compactNumber(value: number): string {
-  return Intl.NumberFormat(undefined, {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function MetricTile({
-  label,
-  value,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  tone?: "neutral" | "pass" | "fail";
-}) {
-  const color =
-    tone === "pass" ? colors.pass : tone === "fail" ? colors.fail : colors.steelLight;
-  return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-2">
-      <div className="text-[9px] uppercase tracking-wider text-steel-gray">{label}</div>
-      <div className="mt-0.5 truncate font-mono text-xs font-semibold" style={{ color }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function StatTile({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="rounded-md border border-navy-border bg-navy-base p-2.5">
-      <div className="text-[9px] uppercase tracking-wider text-steel-gray">
-        {label}
-      </div>
-      <div
-        className={`mt-0.5 truncate text-sm font-medium text-white ${
-          mono ? "font-mono" : ""
-        }`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────── */
-
-function FloatingActions({
-  onToggleSidebar,
-  onToggleRight,
-  onOpenSettings,
-  onOpenVolumeCalc,
-  profileActive,
-  onToggleProfile,
-  isStreaming,
-  onToggleStream,
-}: {
-  onToggleSidebar: () => void;
-  onToggleRight: () => void;
-  onOpenSettings: () => void;
-  onOpenVolumeCalc: () => void;
-  profileActive: boolean;
-  onToggleProfile: () => void;
-  isStreaming: boolean;
-  onToggleStream: () => void;
-}) {
-  // Reusable button class — keeps the action buttons visually consistent.
-  const baseBtn =
-    "rounded border border-navy-border bg-navy-base/85 p-2 text-steel-light backdrop-blur transition-colors hover:bg-navy-elevated hover:text-white";
-  // FloatingActions column — top-right. On very narrow widths the column
-  // collapses vertically; max-height prevents it from running into the
-  // status bar. z-20 sits below FileDropOverlay (z-30) so buttons don't
-  // capture clicks during file drag.
-  return (
-    <div className="absolute right-2 sm:right-3 top-2 sm:top-3 flex flex-col gap-1 z-20 max-h-[calc(100vh-100px)] overflow-hidden">
-      <button
-        onClick={onToggleRight}
-        title="Toggle right panel"
-        aria-label="Toggle right panel"
-        className={baseBtn}
-      >
-        <Square className="h-3.5 w-3.5" />
-      </button>
-      <button
-        onClick={onToggleSidebar}
-        title="Toggle sidebar"
-        aria-label="Toggle sidebar"
-        className={baseBtn}
-      >
-        <Layers className="h-3.5 w-3.5" />
-      </button>
-      <button
-        onClick={onToggleProfile}
-        title="Profile tool"
-        aria-label="Toggle profile tool"
-        className="rounded border p-2 backdrop-blur transition-colors"
-        style={{
-          background: profileActive ? colors.industrialOrange : "rgba(10, 25, 47, 0.85)",
-          borderColor: profileActive ? colors.industrialOrange : colors.navyBorder,
-          color: profileActive ? colors.navyBase : colors.steelLight,
-        }}
-      >
-        <TrendingUp className="h-3.5 w-3.5" />
-      </button>
-      <button
-        onClick={onToggleStream}
-        title="Live stream (UDP)"
-        aria-label="Toggle live stream"
-        className="rounded border p-2 backdrop-blur transition-colors"
-        style={{
-          background: isStreaming ? colors.marineTurquoise : "rgba(10, 25, 47, 0.85)",
-          borderColor: isStreaming ? colors.marineTurquoise : colors.navyBorder,
-          color: isStreaming ? colors.navyBase : colors.steelLight,
-        }}
-      >
-        <Radio className={`h-3.5 w-3.5 ${isStreaming ? "animate-pulse" : ""}`} />
-      </button>
-      <button
-        onClick={onOpenVolumeCalc}
-        title="Volume calculator"
-        aria-label="Open volume calculator"
-        className={`hidden sm:block ${baseBtn}`}
-      >
-        <Calculator className="h-3.5 w-3.5" />
-      </button>
-      <button
-        onClick={onOpenSettings}
-        title="Settings"
-        aria-label="Open settings"
-        className={baseBtn}
-      >
-        <Settings className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────── */
-
-function StatusBar({ domain, epsg, map, onOpenShortcuts }: { domain: DomainMode; epsg: string; map: Map | null; onOpenShortcuts: () => void }) {
-  const accent = domainAccent[domain].primary;
-  const [utcTime, setUtcTime] = useState(() => new Date().toISOString().slice(11, 19));
-  const [coords, setCoords] = useState<string>("—");
-  const [scale, setScale] = useState<string>("—");
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setUtcTime(new Date().toISOString().slice(11, 19));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  // Live cursor coordinates — the #1 feature that makes a GIS app feel professional
-  useEffect(() => {
-    if (!map) return;
-    const onMouseMove = (e: { coordinate: number[] }) => {
-      const [x, y] = e.coordinate;
-      setCoords(`${x.toFixed(6)}, ${y.toFixed(6)}`);
-      const res = map.getView().getResolution();
-      if (res) {
-        // Scale = resolution * 96 dpi / 0.0254 m/inch
-        const scaleVal = Math.round(res * 96 / 0.0254);
-        setScale(`1:${scaleVal.toLocaleString()}`);
-      }
-    };
-    map.on("pointermove", onMouseMove);
-    return () => { map.un("pointermove", onMouseMove); };
-  }, [map]);
-
-  // Undo stack indicator — Sprint 11
-  const undoDepth = useUndoStore((s) => s.undoStack.length);
-  const redoDepth = useUndoStore((s) => s.redoStack.length);
-  const peekUndoDesc = useUndoStore((s) => s.undoStack.length > 0 ? s.undoStack[s.undoStack.length - 1].description : null);
-  const undo = useUndoStore((s) => s.undo);
-  const redo = useUndoStore((s) => s.redo);
-
-  return (
-    <footer className="status-bar status-bar-enterprise">
-      <div className="status-bar-item" style={{ color: colors.pass }}>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: colors.pass }} />
-        Ready
-      </div>
-      <div className="status-bar-item">
-        <Crosshair className="h-3 w-3" style={{ color: accent }} />
-        <span style={{ color: colors.white }}>{coords}</span>
-      </div>
-      <div className="status-bar-item">
-        <span style={{ color: colors.textMuted ?? colors.steelGray }}>Scale:</span>
-        <span style={{ color: colors.steelLight }}>{scale}</span>
-      </div>
-      <div className="status-bar-item">
-        <MapPin className="h-3 w-3" style={{ color: accent }} />
-        <span style={{ color: colors.steelLight }}>{epsg}</span>
-      </div>
-      <div className="status-bar-item">
-        <span style={{ color: accent }}>{domainAccent[domain].label}</span>
-      </div>
-      {/* Undo/Redo — Sprint 11 */}
-      <div className="status-bar-item" title={peekUndoDesc ? `Undo: ${peekUndoDesc}` : "No actions to undo"}>
-        <button
-          onClick={() => undo()}
-          disabled={undoDepth === 0}
-          className="rounded px-1 py-0.5 text-[10px] disabled:opacity-30 hover:bg-navy-elevated"
-          style={{ color: undoDepth > 0 ? colors.steelLight : colors.steelGray }}
-          title={peekUndoDesc ? `Undo: ${peekUndoDesc} (Ctrl+Z)` : "Nothing to undo"}
-        >
-          ↶ Undo
-        </button>
-        <span className="text-[10px]" style={{ color: colors.steelGray }}>{undoDepth}</span>
-        <button
-          onClick={() => redo()}
-          disabled={redoDepth === 0}
-          className="rounded px-1 py-0.5 text-[10px] disabled:opacity-30 hover:bg-navy-elevated"
-          style={{ color: redoDepth > 0 ? colors.steelLight : colors.steelGray }}
-          title={`Redo (Ctrl+Y)`}
-        >
-          ↷ Redo
-        </button>
-        <span className="text-[10px]" style={{ color: colors.steelGray }}>{redoDepth}</span>
-      </div>
-      <div className="flex-1" />
-      <div className="status-bar-item">
-        <kbd className="rounded border px-1 py-0.5 font-mono text-[9px]" style={{ borderColor: colors.navyBorder, background: colors.navyBase }}>Ctrl+K</kbd>
-        <span style={{ color: colors.steelGray }}>Commands</span>
-      </div>
-      <button
-        className="status-bar-item cursor-pointer hover:text-white"
-        onClick={onOpenShortcuts}
-        title="Show keyboard shortcuts (?)"
-        style={{ color: colors.steelGray }}
-      >
-        <kbd className="rounded border px-1 py-0.5 font-mono text-[9px]" style={{ borderColor: colors.navyBorder, background: colors.navyBase }}>?</kbd>
-        <span>Shortcuts</span>
-      </button>
-      <div className="status-bar-item">
-        <Clock className="h-3 w-3" />
-        <span className="tabular-nums">{utcTime}Z</span>
-      </div>
-      <div className="status-bar-item" style={{ color: colors.steelGray }}>
-        v{APP_VERSION}
-      </div>
-    </footer>
-  );
-}

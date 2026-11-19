@@ -284,6 +284,8 @@ export function createCommandActions(callbacks: {
   onOpenBackscatter: () => void;
   onOpenQcDashboard: () => void;
   onOpenMbesSurvey: () => void;
+  onOpenObnSurvey: () => void;
+  onOpenPipelineInspection: () => void;
   // Sprint 10 — Stockpile change detection
   onOpenStockpileChange: () => void;
   // Sprint 11 — Real-time field ops
@@ -358,6 +360,8 @@ export function createCommandActions(callbacks: {
     // ── Sprint 11: Real-time field ops ──
     { id: "rover_stream", label: "RTK Rover Stream (NMEA over TCP)", category: "Field Tools · Real-time", keywords: ["rover", "rtk", "gnss", "nmea", "tcp", "position", "gga", "rmc", "live", "stream"], icon: <Satellite className={icon} />, action: callbacks.onOpenRoverStream },
     { id: "tide_gauge", label: "Tide Gauge (NOAA CO-OPS / TCP)", category: "Marine · Real-time", keywords: ["tide", "gauge", "noaa", "co-ops", "water", "level", "mlw", "correction", "bathymetry", "live"], icon: <Waves className={icon} />, action: callbacks.onOpenTideGauge },
+    { id: "obn", label: "OBN Survey Suite (4DNav & Node Dashboard)", category: "Marine · Operations", keywords: ["obn", "ocean", "bottom", "node", "4dnav", "dashboard", "sps", "p111", "seismic", "dpr"], icon: <Radio className={icon} />, action: callbacks.onOpenObnSurvey },
+    { id: "pipeline_inspection", label: "Pipeline Inspection & Freespan (EIVA / DelphINS)", category: "Marine · Inspection", keywords: ["pipeline", "freespan", "eiva", "navimodel", "3d pipe", "delphins", "dxf", "autocad", "dnv", "anode", "dob"], icon: <GitBranch className={icon} />, action: callbacks.onOpenPipelineInspection },
     // ── Sprint 12: UI polish ──
     { id: "shortcuts", label: "Keyboard Shortcuts Help", category: "App · Help", keywords: ["keyboard", "shortcuts", "help", "hotkey", "cheatsheet", "?"], icon: <Keyboard className={icon} />, action: callbacks.onOpenShortcuts },
     // ── Sprint 13: UI priorities ──

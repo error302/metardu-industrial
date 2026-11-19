@@ -339,7 +339,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_timeout_success() {
-        let result: Result<i32, MetarduError> = with_timeout("test", 5, async { Ok(42) }).await;
+        let result: Result<i32, MetarduError> = with_timeout("test", 5, async { Ok::<_, MetarduError>(42) }).await;
         assert_eq!(result.unwrap(), 42);
     }
 
@@ -350,7 +350,7 @@ mod tests {
             0,
             async {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                Ok(42)
+                Ok::<_, MetarduError>(42)
             },
         ).await;
         assert!(matches!(result, Err(MetarduError::Timeout { .. })));

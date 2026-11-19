@@ -43,6 +43,8 @@ pub struct GeoTiffHeader {
     pub epsg: Option<u16>,
     /// Raw ASCII GeoTIFF params (citation, CRS name, etc.)
     pub geo_ascii: Option<String>,
+    /// Raw GDAL_NODATA value, if present in the TIFF metadata.
+    pub nodata: Option<String>,
     /// Derived geographic bounds (min_x, min_y, max_x, max_y)
     /// None if pixel scale + tiepoint aren't both present
     pub bounds: Option<[f64; 4]>,
@@ -100,6 +102,7 @@ const TAG_MODEL_PIXEL_SCALE: u16 = 33550;
 const TAG_MODEL_TIEPOINT: u16 = 33922;
 const TAG_GEO_KEY_DIRECTORY: u16 = 34735;
 const TAG_GEO_ASCII_PARAMS: u16 = 34737;
+const TAG_GDAL_NODATA: u16 = 42113;
 
 // GeoTIFF key IDs for CRS extraction
 const GEOKEY_GEOGRAPHIC_TYPE: u16 = 2048;
@@ -155,6 +158,7 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
     let mut model_tiepoint: Option<[f64; 6]> = None;
     let mut geo_key_directory: Option<Vec<u16>> = None;
     let mut geo_ascii: Option<String> = None;
+    let mut nodata: Option<String> = None;
     let mut sample_format: u16 = SAMPLE_FORMAT_UINT;
     let mut rows_per_strip: u32 = 0;
     let mut strip_offsets: Vec<u64> = Vec::new();
@@ -329,6 +333,19 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
                     geo_ascii = Some(s);
                 }
             }
+            TAG_GDAL_NODATA => {
+                if type_id != 2 || count == 0 || count > 128 {
+                    return Err(GeoTiffError::InvalidFormat("invalid GDAL_NODATA tag".into()));
+                }
+                let bytes = read_value_data(&mut file, value_offset_bytes, inline, total_bytes, little_endian)?;
+                let value = std::str::from_utf8(&bytes)
+                    .map_err(|_| GeoTiffError::InvalidFormat("invalid GDAL_NODATA encoding".into()))?
+                    .trim_end_matches('\0').trim();
+                if value.is_empty() || value.parse::<f64>().is_err() {
+                    return Err(GeoTiffError::InvalidFormat("invalid GDAL_NODATA value".into()));
+                }
+                nodata = Some(value.to_owned());
+            }
             _ => {} // ignore tags we don't need for Phase 0
         }
     }
@@ -369,6 +386,7 @@ pub fn read_header(path: &Path) -> Result<GeoTiffHeader, GeoTiffError> {
         model_tiepoint,
         epsg,
         geo_ascii,
+        nodata,
         bounds,
         sample_format,
         rows_per_strip,

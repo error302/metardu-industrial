@@ -58,4 +58,30 @@ test.describe('Workspace shell', () => {
       timeout: 15_000,
     });
   });
+
+  test('shows the survey workflow rail', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(5_000);
+
+    const workflow = page.getByRole('navigation', { name: 'Survey workflow' });
+    await expect(workflow).toBeVisible({ timeout: 15_000 });
+    await expect(workflow.getByRole('button', { name: 'Ingest', exact: true })).toBeVisible();
+    await expect(workflow.getByRole('button', { name: 'Deliver', exact: true })).toBeVisible();
+  });
+
+  test('reports browser-only survey drops as uninspected', async ({ page }) => {
+    await page.goto('/');
+    const brief = page.getByRole('complementary', { name: 'Survey brief' });
+    await expect(brief).toBeVisible({ timeout: 20_000 });
+    const transfer = await page.evaluateHandle(() => {
+      const data = new DataTransfer();
+      data.items.add(new File(['not a survey'], 'example.las', { type: 'application/octet-stream' }));
+      return data;
+    });
+    await page.locator('main').dispatchEvent('dragover', { dataTransfer: transfer });
+    await page.locator('main').dispatchEvent('drop', { dataTransfer: transfer });
+    await expect(brief.getByText('Needs review')).toBeVisible();
+    await expect(brief.getByText('Survey file inspection requires the native desktop application.')).toBeVisible();
+    await expect(brief.getByText('0/1 loaded')).toBeVisible();
+  });
 });

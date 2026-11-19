@@ -23,6 +23,21 @@ pub mod streaming;
 // Sprint 12 — COGO + contours
 pub mod cogo;
 pub mod contours;
+// OBN Survey Suite — 4DNav & Node Dashboard Automation
+pub mod obn;
+// Subsea Pipeline Integrity — EIVA NaviModel, 3D Pipe, DelphINS, & AutoCAD
+pub mod subsea_pipeline;
+
+pub use obn::{
+    obn_evaluate_qc_cmd, obn_export_p111_cmd, obn_export_sps_cmd, obn_generate_sample_project,
+    obn_generate_shift_dpr_cmd, ObnDprRequest, ObnExportRequest, ObnQcRequest, ObnSampleDataset,
+};
+pub use subsea_pipeline::{
+    subsea_pipeline_detect_freespans_cmd, subsea_pipeline_evaluate_qc_cmd,
+    subsea_pipeline_export_dxf_cmd, subsea_pipeline_export_reports_cmd,
+    subsea_pipeline_generate_sample_project, subsea_pipeline_generate_shift_dpr_cmd,
+    PipelineDxfRequest, PipelineQcRequest, PipelineReportsRequest, PipelineSampleDataset,
+};
 
 use crate::formats::{
     read_geotiff_header, read_kongsberg_all_header, read_las_header, read_las_points,

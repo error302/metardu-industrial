@@ -250,11 +250,11 @@ pub struct VerifiedVolumeResult {
     pub grid_result: VolumeResult,
 }
 
-/// Compute volumes with uncertainty propagation + cross-check.
+/// Compute volumes with uncertainty propagation and an inconclusive cross-check.
 ///
 /// This wraps `compute_volumes` (the grid method) and adds:
 ///   - Uncertainty propagation: σ_volume = sqrt(N) × cell_area × σ_z
-///   - Cross-check: TIN-based volume computed independently, compared
+///   - A diagnostic TIN approximation, which cannot verify the grid result
 ///
 /// `sigma_z_m` is the 1-sigma vertical uncertainty of the current DEM.
 /// Typical values:
@@ -278,12 +278,14 @@ pub fn compute_volumes_verified(
     let tin_cut = tin_volume(current, reference, cell_width_m, cell_height_m, false);
     let tin_net = tin_fill - tin_cut;
 
-    let cross_check = verify_calculation(
+    let mut cross_check = verify_calculation(
         || grid_result.net_volume,
         || tin_net,
         0.5, // 0.5% tolerance — grid vs TIN typically agree to <0.3%
         "stockpile volume (grid vs TIN)",
     );
+    cross_check.agreement = false;
+    cross_check.warnings.push("Independent verification is unavailable: the TIN approximation does not cover the same area as the cell grid, and non-square grids use the primary method. Do not treat this result as verified.".into());
 
     // Uncertainty propagation:
     // Each cell contributes dz × cell_area to the volume.
@@ -317,9 +319,9 @@ pub fn compute_volumes_verified(
 
 /// TIN-based volume cross-check.
 ///
-/// Treats each 2x2 block of cells as a pair of triangles and integrates
-/// the Δz prisms. This is the method Civil3D uses. The result should
-/// agree with the grid method to <0.3% on well-conditioned data.
+/// Treats each 2x2 block of cell centres as a pair of triangles. Its
+/// footprint excludes the grid's outer half-cell boundary, so it cannot
+/// establish agreement with a full-cell volume calculation.
 ///
 /// `fill_only` = true returns fill volume, false returns cut volume.
 fn tin_volume(
@@ -626,12 +628,19 @@ mod tests {
     }
 
     #[test]
-    fn test_verified_volume_cross_check_agrees() {
-        // On a uniform-fill grid, grid and TIN methods should agree exactly
+    fn test_verified_volume_cross_check_is_inconclusive() {
         let current = vec![110.0_f64; 16];
         let reference = vec![100.0_f64; 16];
         let result = compute_volumes_verified(&current, &reference, 10.0, 10.0, 0.0, 0.1).unwrap();
-        assert!(result.cross_check.agreement, "cross-check should agree: {}", result.cross_check.warnings.first().unwrap_or(&String::new()));
+        assert!(!result.cross_check.agreement);
+        assert!(result.cross_check.warnings.iter().any(|warning| warning.contains("Independent verification is unavailable")));
+    }
+
+    #[test]
+    fn test_rectangular_grid_is_not_falsely_verified() {
+        let result = compute_volumes_verified(&[110.0; 6], &[100.0; 6], 10.0, 10.0, 0.0, 0.1).unwrap();
+        assert!(!result.cross_check.agreement);
+        assert!(result.cross_check.warnings.iter().any(|warning| warning.contains("non-square")));
     }
 
     #[test]
@@ -650,17 +659,13 @@ mod tests {
     }
 
     #[test]
-    fn test_tin_volume_matches_grid_on_uniform() {
-        // On a uniform-fill grid, TIN and grid methods should produce
-        // identical results (each triangle's avg dz = the cell's dz)
+    fn test_tin_volume_excludes_outer_half_cell_boundary() {
         let current = vec![110.0_f64; 16];
         let reference = vec![100.0_f64; 16];
         let grid_fill = compute_volumes(&current, &reference, 10.0, 10.0, 0.0).unwrap().fill_volume;
         let tin_fill = tin_volume(&current, &reference, 10.0, 10.0, true);
-        // TIN divides each cell into 2 triangles, each with area 50 m²
-        // Total TIN area = 16 cells × 2 triangles × 50 m² = 1600 m² (same as grid)
-        // avg dz per triangle = 10 → TIN fill = 1600 × 10 = 16000 m³ (same as grid)
-        assert!((grid_fill - tin_fill).abs() < 1e-6, "grid={}, tin={}", grid_fill, tin_fill);
+        assert_eq!(grid_fill, 16000.0);
+        assert_eq!(tin_fill, 9000.0);
     }
 
     // ── End-area volume tests ──

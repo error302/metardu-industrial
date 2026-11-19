@@ -219,15 +219,15 @@ fn parse_gga(fields: &[&str]) -> Option<GgaData> {
     let fix_quality = fields[5].parse::<u8>().unwrap_or(0);
     let satellites = fields[6].parse::<u8>().unwrap_or(0);
     let hdop = fields[7].parse::<f64>().ok();
-    let altitude_m = fields[9].parse::<f64>().ok();
-    let geoid_separation_m = fields[11].parse::<f64>().ok();
-    let age_of_diff_s = if fields[13].is_empty() {
+    let altitude_m = fields[8].parse::<f64>().ok();
+    let geoid_separation_m = fields[10].parse::<f64>().ok();
+    let age_of_diff_s = if fields[12].is_empty() {
         None
     } else {
-        fields[13].parse::<f64>().ok()
+        fields[12].parse::<f64>().ok()
     };
-    let diff_station_id = if fields.len() > 14 && !fields[14].is_empty() {
-        fields[14].parse::<u16>().ok()
+    let diff_station_id = if !fields[13].is_empty() {
+        fields[13].parse::<u16>().ok()
     } else {
         None
     };
@@ -423,11 +423,12 @@ mod tests {
         assert_eq!(gga.satellites, 8);
         assert!((gga.hdop.unwrap() - 1.03).abs() < 1e-6);
         assert!((gga.altitude_m.unwrap() - 61.7).abs() < 1e-6);
+        assert!((gga.geoid_separation_m.unwrap() - 55.2).abs() < 1e-6);
     }
 
     #[test]
     fn test_parse_gga_no_fix() {
-        let raw = "$GPGGA,092750.000,,,,,0,00,99.0,,,,,,*66";
+        let raw = "$GPGGA,092750.000,,,,,0,00,99.0,,,,,,*6F";
         let s = parse_sentence(raw).unwrap();
         let gga = s.gga.unwrap();
         assert_eq!(gga.fix_quality, 0);
@@ -438,13 +439,21 @@ mod tests {
 
     #[test]
     fn test_parse_rmc_valid() {
-        let raw = "$GPRMC,092750.000,A,5321.6802,N,00630.3372,W,0.02,31.66,280511,,,A*45";
+        let raw = "$GPRMC,092750.000,A,5321.6802,N,00630.3372,W,0.02,31.66,280511,,,A*43";
         let s = parse_sentence(raw).unwrap();
         let rmc = s.rmc.unwrap();
         assert_eq!(rmc.status, RmcStatus::Valid);
         assert!((rmc.latitude.unwrap() - 53.3613367).abs() < 1e-6);
         assert!((rmc.longitude.unwrap() - (-6.505620)).abs() < 1e-6);
         assert_eq!(rmc.date, Some((2011, 5, 28)));
+    }
+
+    #[test]
+    fn test_gga_differential_fields() {
+        let sentence = parse_sentence("$GPGGA,092750.000,5321.6802,N,00630.3372,W,4,8,1.03,61.7,M,55.2,M,2.5,0042").unwrap();
+        let gga = sentence.gga.unwrap();
+        assert_eq!(gga.age_of_diff_s, Some(2.5));
+        assert_eq!(gga.diff_station_id, Some(42));
     }
 
     #[test]

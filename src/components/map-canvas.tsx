@@ -21,7 +21,7 @@ import VectorSource from "ol/source/Vector";
 import ImageLayer from "ol/layer/Image";
 import Static from "ol/source/ImageStatic";
 import OSM from "ol/source/OSM";
-import { fromLonLat, transformExtent } from "ol/proj";
+import { fromLonLat, transformExtent, transform } from "ol/proj";
 import { MousePosition, ScaleLine, FullScreen, Zoom } from "ol/control";
 import { createStringXY } from "ol/coordinate";
 // Graticule import removed — OL Graticule crashes on null projection extent
@@ -30,7 +30,7 @@ import Feature from "ol/Feature";
 import Polygon from "ol/geom/Polygon";
 import "ol/ol.css";
 
-import { colors, rawColors, domainAccent, rawDomainAccent, type DomainMode } from "@/lib/tokens";
+import { rawColors, domainAccent, rawDomainAccent, type DomainMode } from "@/lib/tokens";
 import { registerEpsg, getOlProjection } from "@/lib/crs-registry";
 import { useSurveyStore } from "@/stores/survey-store";
 import { renderDem } from "@/lib/tauri-ipc";
@@ -192,9 +192,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
   }, [epsg]);
 
   // When survey files change, render their bounds as rectangles.
-  // Uses real bounds from the LAS header probe (via Rust IPC) when
-  // available. Falls back to placeholder rectangles for files that
-  // haven't been probed yet or don't have parseable bounds.
+  // Only display bounds whose source projection is known.
   useEffect(() => {
     const source = surveySourceRef.current;
     if (!source) return;
@@ -203,40 +201,29 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
     if (files.length === 0) return;
 
     const accent = rawDomainAccent[domain].primary;
-    files.forEach((f, idx) => {
-      let coords: [number, number][] | null = null;
-
-      if (f.bounds) {
-        // Real bounds from LAS header — already in WGS84 / source CRS
-        // (Phase 0 assumes WGS84; future: reproject from source CRS)
-        const b = f.bounds;
-        coords = [
+    files.forEach((f) => {
+      const map = mapInstanceRef.current;
+      if (!f.bounds || !f.epsg || !map || f.status !== "loaded") return;
+      const sourceProjection = getOlProjection(`EPSG:${f.epsg}`);
+      if (!sourceProjection) return;
+      const b = f.bounds;
+      if (![b.min_x, b.min_y, b.max_x, b.max_y].every(Number.isFinite) || b.min_x >= b.max_x || b.min_y >= b.max_y) return;
+      const coords: [number, number][] = [
           [b.min_x, b.min_y],
           [b.max_x, b.min_y],
           [b.max_x, b.max_y],
           [b.min_x, b.max_y],
           [b.min_x, b.min_y],
         ];
-      } else {
-        // Placeholder: small rectangle near (0,0) so the user sees
-        // SOMETHING react when a file is dropped without real bounds yet
-        const lonOffset = (idx - (files.length - 1) / 2) * 2;
-        const latOffset = 0;
-        const size = 1.5;
-        coords = [
-          [lonOffset - size / 2, latOffset - size / 2],
-          [lonOffset + size / 2, latOffset - size / 2],
-          [lonOffset + size / 2, latOffset + size / 2],
-          [lonOffset - size / 2, latOffset + size / 2],
-          [lonOffset - size / 2, latOffset - size / 2],
-        ];
+      let mapCoords: number[][];
+      try {
+        mapCoords = coords.map((coordinate) => transform(coordinate, sourceProjection, map.getView().getProjection()));
+      } catch {
+        return;
       }
-
-      const mercatorCoords = coords.map(([lon, lat]) =>
-        fromLonLat([lon, lat]),
-      );
+      if (mapCoords.some((coordinate) => !coordinate.every(Number.isFinite))) return;
       const feature = new Feature({
-        geometry: new Polygon([mercatorCoords]),
+        geometry: new Polygon([mapCoords]),
         kind: "file-bounds",
         fileName: f.name,
         fileId: f.id,
@@ -245,9 +232,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
         lasVersion: f.lasVersion,
         pdrf: f.pdrf,
       });
-      const label = f.pointCount
-        ? `${f.name} · ${f.pointCount.toLocaleString()} pts`
-        : `${f.name} · probing…`;
+      const label = f.name;
       feature.setStyle(
         new Style({
           stroke: new Stroke({ color: accent, width: 2 }),
@@ -264,7 +249,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
       feature.setId(f.id);
       source.addFeature(feature);
     });
-  }, [files, domain]);
+  }, [files, domain, epsg]);
 
   // Zoom to fit all features when files change
   useEffect(() => {
@@ -290,10 +275,9 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
   // a 3-10 second freeze for no reason. By depending on just the
   // loaded GeoTIFF's path string, the effect only re-runs when the
   // actual GeoTIFF changes.
-  const loadedGeotiffPath = useMemo(
+  const loadedGeotiff = useMemo(
     () =>
-      files.find((f) => f.kind === "geotiff" && f.status === "loaded")
-        ?.path ?? null,
+      files.find((f) => f.kind === "geotiff" && f.status === "loaded" && f.epsg) ?? null,
     [files],
   );
 
@@ -307,14 +291,17 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
       demLayerRef.current = null;
     }
 
-    if (!loadedGeotiffPath) return;
+    if (!loadedGeotiff?.epsg) return;
 
     let cancelled = false;
 
     (async () => {
       try {
+        const sourceCrs = `EPSG:${loadedGeotiff.epsg}`;
+        await registerEpsg(sourceCrs);
+        if (cancelled || !getOlProjection(sourceCrs)) return;
         const result = await renderDem({
-          path: loadedGeotiffPath,
+          path: loadedGeotiff.path,
           color_ramp: "terrain",
         });
 
@@ -334,7 +321,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
 
         const dataUrl = canvas.toDataURL("image/png");
 
-        // Convert bounds from WGS84 to the map's projection
+        // The raster bounds are expressed in the raster's source CRS.
         if (!result.bounds || result.bounds.length < 4) return;
         const minX = result.bounds[0];
         const minY = result.bounds[1];
@@ -342,7 +329,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
         const maxY = result.bounds[3];
         const projExtent = transformExtent(
           [minX, minY, maxX, maxY],
-          "EPSG:4326",
+          sourceCrs,
           map.getView().getProjection(),
         );
 
@@ -377,7 +364,7 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
         demLayerRef.current = null;
       }
     };
-  }, [loadedGeotiffPath]);
+  }, [loadedGeotiff, epsg]);
 
   return (
     <div className="relative h-full w-full">
@@ -385,20 +372,36 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
 
       {/* Overlay: empty-state hint */}
       {files.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="rounded-lg border border-navy-border bg-navy-base/80 px-6 py-4 text-center backdrop-blur-sm">
-            <div className="font-mono text-[10px] tracking-[0.2em] text-steel-gray">
-              OPENLAYERS 10 · {epsg}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+          <div className="max-w-md rounded-xl border border-[#263345] bg-[#0B0F17]/90 p-6 text-center shadow-2xl backdrop-blur-md">
+            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-[#263345] bg-[#111827] text-[#F97316]">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
             </div>
-            <div className="mt-1 text-sm text-steel-light">
-              No survey loaded. Drag a LAS / GeoTIFF / .all file here, or open
-              from the menu.
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-slate-500">
+              OpenLayers 10 · {epsg}
             </div>
-            <div
-              className="mt-2 text-xs font-medium"
-              style={{ color: domainAccent[domain].primary }}
-            >
-              {domainAccent[domain].label} mode active
+            <div className="mt-1 text-base font-medium text-slate-200">
+              Survey Canvas Ready
+            </div>
+            <p className="mt-1.5 text-xs text-slate-400 leading-relaxed">
+              Drag & drop a <span className="font-mono text-slate-300">.LAS</span>,{" "}
+              <span className="font-mono text-slate-300">.GeoTIFF</span>, or{" "}
+              <span className="font-mono text-slate-300">.all</span> file anywhere onto the canvas, or create a survey project from the left menu.
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                style={{
+                  background: `${domainAccent[domain].primary}15`,
+                  color: domainAccent[domain].primary,
+                  border: `1px solid ${domainAccent[domain].primary}30`,
+                }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: domainAccent[domain].primary }} />
+                {domainAccent[domain].label} Mode
+              </span>
             </div>
           </div>
         </div>
@@ -407,52 +410,62 @@ export function MapCanvas({ domain, epsg, onMapReady }: MapCanvasProps) {
       <style>{`
         .metardu-mouse-position {
           position: absolute !important;
-          bottom: 8px;
-          left: 8px;
-          background: rgba(10, 25, 47, 0.9);
-          color: ${colors.industrialOrange};
-          font-family: ${"JetBrains Mono"}, monospace;
-          font-size: 11px;
-          padding: 4px 8px;
-          border-radius: 4px;
-          border: 1px solid ${colors.navyBorder};
+          bottom: 12px;
+          left: 105px;
+          background: rgba(11, 15, 23, 0.9) !important;
+          color: #9CA3AF !important;
+          font-family: "JetBrains Mono", monospace !important;
+          font-size: 11px !important;
+          padding: 3px 8px !important;
+          border-radius: 4px !important;
+          border: 1px solid #263345 !important;
           font-variant-numeric: tabular-nums;
           pointer-events: none;
+          z-index: 10;
         }
         .ol-control {
-          background: rgba(10, 25, 47, 0.85) !important;
-          border: 1px solid ${colors.navyBorder} !important;
-          border-radius: 4px !important;
-          padding: 0 !important;
+          background: rgba(11, 15, 23, 0.9) !important;
+          border: 1px solid #263345 !important;
+          border-radius: 6px !important;
+          padding: 2px !important;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
         }
         .ol-control button {
           background: transparent !important;
-          color: ${colors.white} !important;
-          font-size: 14px !important;
-          width: 28px !important;
-          height: 28px !important;
+          color: #9CA3AF !important;
+          font-size: 13px !important;
+          width: 26px !important;
+          height: 26px !important;
+          border-radius: 4px !important;
+          transition: all 120ms ease !important;
         }
         .ol-control button:hover {
-          background: ${colors.industrialOrange} !important;
-          color: ${colors.navyBase} !important;
+          background: #1F2937 !important;
+          color: #F3F4F6 !important;
         }
         .ol-scale-line {
-          background: rgba(10, 25, 47, 0.85) !important;
-          border-color: ${colors.navyBorder} !important;
-          color: ${colors.steelLight} !important;
+          background: rgba(11, 15, 23, 0.9) !important;
+          border-color: #263345 !important;
+          color: #9CA3AF !important;
+          border-radius: 4px !important;
+          padding: 2px 6px !important;
         }
         .ol-scale-line-inner {
-          color: ${colors.steelLight} !important;
-          border-color: ${colors.steelLight} !important;
-          font-family: ${"JetBrains Mono"}, monospace !important;
+          color: #9CA3AF !important;
+          border-color: #4B5563 !important;
+          font-family: "JetBrains Mono", monospace !important;
+          font-size: 10px !important;
         }
         .ol-zoom {
-          top: 12px !important;
-          left: 12px !important;
+          top: 10px !important;
+          left: 10px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 1px !important;
         }
         .ol-full-screen {
-          top: 12px !important;
-          left: 56px !important;
+          top: 10px !important;
+          left: 44px !important;
         }
         .ol-graticule {
           pointer-events: none;

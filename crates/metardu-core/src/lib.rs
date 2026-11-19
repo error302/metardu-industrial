@@ -18,6 +18,20 @@ pub mod triage;
 pub use marine::cube::{
     generate_surface as generate_cube_surface, CubeError, CubeParams, CubeSurface, Sounding,
 };
+pub use marine::obn::{
+    compute_obn_audit_hash, evaluate_obn_qc, generate_iogp_p1_11, generate_shift_dpr_summary,
+    generate_ukooa_sps_r_records, parse_4dnav_aslaid, parse_node_dashboard_export,
+    parse_planned_preplot, NodeOperationalStatus, ObnAsLaidNode, ObnError, ObnHeader,
+    ObnPlannedNode, ObnQcNode, ObnQcSummary, ObnShiftDpr, ToleranceStatus,
+};
+pub use marine::subsea_pipeline::{
+    detect_freespans, evaluate_pipeline_qc, generate_event_listing_csv, generate_freespan_listing_csv,
+    generate_longitudinal_profile_csv, generate_pipeline_dxf, generate_pipeline_shift_dpr,
+    generate_sample_pipeline_project, parse_delphins_trajectory, parse_navimodel_profile,
+    parse_pipeline_events, parse_route_centerline, DelphInsFix, Freespan, FreespanCriticality,
+    PipeSurveyPoint, PipelineEvent, PipelineEventType, PipelineQcSummary, PipelineReportsBundle,
+    PipelineRoutePoint, PipelineShiftDpr,
+};
 pub use marine::s44::{
     check_compliance as check_s44_compliance, S44CheckInput, S44ComplianceResult, S44Error,
     S44Failure, S44Order, S44Status,

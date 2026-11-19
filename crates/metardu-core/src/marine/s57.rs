@@ -426,12 +426,13 @@ mod tests {
             ],
         }];
 
-        let path = std::path::PathBuf::from("/tmp/test_s57_wreck.000");
+        let path = std::env::temp_dir().join("test_s57_wreck.000");
         let result = write_s57(&path, &features);
         assert!(result.is_ok());
         assert!(path.exists());
         // Verify file is non-empty
         let metadata = std::fs::metadata(&path).unwrap();
         assert!(metadata.len() > 100, "file should be >100 bytes");
+        let _ = std::fs::remove_file(&path);
     }
 }

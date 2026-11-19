@@ -9,7 +9,6 @@
  */
 
 import * as Icons from "lucide-react";
-import { colors } from "@/lib/tokens";
 import { useToolbarStore, AVAILABLE_ACTIONS } from "@/stores/toolbar-store";
 import { Tooltip } from "@/components/tooltip";
 
@@ -26,18 +25,18 @@ export function CustomizableToolbar({ onOpenDialog, onCustomize }: Props) {
     .filter((a): a is NonNullable<typeof a> => a != null);
 
   return (
-    <div className="toolbar-enterprise flex items-center gap-1 border-b border-navy-border px-2 py-1 overflow-x-auto">
+    <div className="flex items-center gap-1 border-b border-[#263345] bg-[#0B0F17]/95 px-3 py-1 overflow-x-auto h-9">
       {pinnedActions.map((action) => {
         const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[action.icon] || Icons.Circle;
         return (
           <Tooltip key={action.id} text={action.label} position="bottom" delay={400}>
             <button
               onClick={() => onOpenDialog(action.dialogKey)}
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium text-steel-light hover:bg-navy-elevated hover:text-white transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium text-slate-300 hover:bg-[#1F2937] hover:text-white transition-colors flex-shrink-0"
               aria-label={action.label}
             >
-              <Icon className="h-3.5 w-3.5" style={{ color: colors.accent }} />
-              <span className="hidden sm:inline">{action.label}</span>
+              <Icon className="h-3.5 w-3.5 text-slate-400" />
+              <span className="hidden md:inline">{action.label}</span>
             </button>
           </Tooltip>
         );
@@ -48,7 +47,7 @@ export function CustomizableToolbar({ onOpenDialog, onCustomize }: Props) {
       <Tooltip text="Customize toolbar" position="bottom">
         <button
           onClick={onCustomize}
-          className="flex items-center gap-1 rounded-md px-2 py-1.5 text-steel-gray hover:bg-navy-elevated hover:text-white transition-colors"
+          className="flex items-center gap-1 rounded px-1.5 py-1 text-slate-400 hover:bg-[#1F2937] hover:text-white transition-colors"
           aria-label="Customize toolbar"
         >
           <Icons.Settings2 className="h-3.5 w-3.5" />

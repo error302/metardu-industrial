@@ -7,8 +7,10 @@
  * is dropping raw sensor files (LAS/GeoTIFF/.all) onto the canvas.
  */
 
-import { useState, type DragEvent } from "react";
+import { useEffect, useState } from "react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { UploadCloud, FileBox, AlertCircle } from "lucide-react";
+import { isNative } from "@/lib/tauri-ipc";
 import { colors, domainAccent, type DomainMode } from "@/lib/tokens";
 import { useSurveyStore, type SurveyFileKind } from "@/stores/survey-store";
 
@@ -30,22 +32,55 @@ interface Props {
   domain: DomainMode;
 }
 
+function acceptsFile(path: string): boolean {
+  return /\.(las|laz|tif|tiff|all|s7k|bsf|csv|tsv|gpkg|kml|mrk|json)$/i.test(path);
+}
+
 export function FileDropOverlay({ domain }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [rejected, setRejected] = useState<string[]>([]);
   const addFile = useSurveyStore((s) => s.addFile);
+  const addFileFromPath = useSurveyStore((s) => s.addFileFromPath);
 
-  function onDragOver(e: DragEvent) {
+  useEffect(() => {
+    if (!isNative()) return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void getCurrentWebview().onDragDropEvent(({ payload }) => {
+      if (payload.type === "enter") setIsDragging(true);
+      if (payload.type === "leave") setIsDragging(false);
+      if (payload.type !== "drop") return;
+      setIsDragging(false);
+      const rejectedPaths: string[] = [];
+      for (const path of payload.paths) {
+        if (acceptsFile(path)) addFileFromPath(path, 0);
+        else rejectedPaths.push(path.split(/[\\/]/).pop() ?? path);
+      }
+      setRejected(rejectedPaths);
+    }).then((stop) => {
+      if (disposed) stop();
+      else unlisten = stop;
+    }).catch((error: unknown) => {
+      console.error("Unable to listen for native file drops:", error);
+      if (!disposed) setRejected(["Native file drop is unavailable. Restart the application and try again."]);
+    });
+    return () => { disposed = true; unlisten?.(); };
+  }, [addFileFromPath]);
+
+  useEffect(() => {
+  if (isNative()) return;
+  function onDragOver(e: globalThis.DragEvent) {
+    if (!e.dataTransfer?.types.includes("Files")) return;
     e.preventDefault();
     setIsDragging(true);
   }
 
-  function onDragLeave(e: DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
+  function onDragLeave(e: globalThis.DragEvent) {
+    if (!e.relatedTarget) setIsDragging(false);
   }
 
-  function onDrop(e: DragEvent) {
+  function onDrop(e: globalThis.DragEvent) {
+    if (!e.dataTransfer?.types.includes("Files")) return;
     e.preventDefault();
     setIsDragging(false);
     setRejected([]);
@@ -55,22 +90,7 @@ export function FileDropOverlay({ domain }: Props) {
     const rej: string[] = [];
 
     for (const file of files) {
-      const lower = file.name.toLowerCase();
-      const ok =
-        lower.endsWith(".las") ||
-        lower.endsWith(".laz") ||
-        lower.endsWith(".tif") ||
-        lower.endsWith(".tiff") ||
-        lower.endsWith(".all") ||
-        lower.endsWith(".s7k") ||
-        lower.endsWith(".bsf") ||
-        lower.endsWith(".csv") ||
-        lower.endsWith(".tsv") ||
-        lower.endsWith(".gpkg") ||
-        lower.endsWith(".kml") ||
-        lower.endsWith(".mrk") ||
-        lower.endsWith(".json");
-      if (ok) accepted.push(file);
+      if (acceptsFile(file.name)) accepted.push(file);
       else rej.push(file.name);
     }
 
@@ -78,27 +98,24 @@ export function FileDropOverlay({ domain }: Props) {
     if (rej.length) setRejected(rej);
   }
 
+  window.addEventListener("dragover", onDragOver);
+  window.addEventListener("dragleave", onDragLeave);
+  window.addEventListener("drop", onDrop);
+  return () => {
+    window.removeEventListener("dragover", onDragOver);
+    window.removeEventListener("dragleave", onDragLeave);
+    window.removeEventListener("drop", onDrop);
+  };
+  }, [addFile]);
+
   if (!isDragging && rejected.length === 0) {
-    // Invisible catcher while not dragging — covers the canvas so the drop
-    // event has something to land on. Pointer-events only on dragenter.
-    return (
-      <div
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        className="absolute inset-0 z-30"
-        style={{ pointerEvents: "none" }}
-        aria-hidden
-      />
-    );
+    return null;
   }
 
   const accent = domainAccent[domain].primary;
 
   return (
     <div
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
       className="absolute inset-0 z-40 flex items-center justify-center backdrop-blur-sm"
       style={{ background: "rgba(10, 25, 47, 0.85)" }}
     >
@@ -153,6 +170,7 @@ export function FileDropOverlay({ domain }: Props) {
                 <li key={n}>{n}</li>
               ))}
             </ul>
+            <button type="button" onClick={() => setRejected([])} className="mt-3 rounded border px-2 py-1 text-steel-light hover:text-white">Dismiss</button>
           </div>
         )}
 

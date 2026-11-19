@@ -74,11 +74,13 @@ If a module fails to load, it appears in red on the module loading screen. Optio
 
 ## 3. Workspace Overview
 
-The workspace has five regions:
+The workspace has six regions:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Title Bar (brand mark, domain badge, window controls)    │
+│ Title Bar (brand mark, domain badge, commands, controls) │
+├─────────────────────────────────────────────────────────┤
+│ Workflow Rail (Ingest → Validate → Process → Review → Deliver) │
 ├──────┬──────────────────────────────────┬───────────────┤
 │      │                                   │               │
 │ Side │   OpenLayers Map Canvas           │  Right Panel  │
@@ -93,9 +95,10 @@ The workspace has five regions:
 └─────────────────────────────────────────────────────────┘
 ```
 
-- **Left sidebar**: project tree, domain-specific tools, automation, settings
+- **Workflow rail**: a compact guide to the normal survey sequence. It opens existing tools but never blocks direct access to specialist workflows.
+- **Left sidebar**: project tree, domain-specific tools, automation, settings. Tool sections can be collapsed and their state is remembered.
 - **Map canvas**: OpenLayers 10 with OSM basemap, graticule, coordinate readout, file bounds rendering, CUBE raster overlay, Deck.gl point cloud
-- **Right panel**: survey status, staged files list, elevation profile (when profile tool active)
+- **Survey brief**: readiness, staged files, processing signals, CRS facts, recommended next actions, and the elevation profile (when profile tool active)
 - **Floating actions** (top-right): toggle panels, profile tool, volume calc, settings
 - **Status bar**: active CRS, domain mode, UTC clock, app version
 

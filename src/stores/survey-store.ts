@@ -174,13 +174,7 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       if (file.kind === "drone-mrk" || file.kind === "drone-json") {
         const manifest = await parseDroneManifest(file.path);
         if (!manifest) {
-          // Browser mode — no real IPC
-          set((s) => ({
-            files: s.files.map((f) =>
-              f.id === id ? { ...f, status: "loaded" } : f,
-            ),
-          }));
-          return;
+          throw new Error("Drone manifest inspection requires the native desktop application.");
         }
         set((s) => ({
           files: s.files.map((f) => {
@@ -206,6 +200,12 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
       }
 
       const result: FileProbeResult = await probeFile(file.path);
+      if (result.kind === "other") {
+        throw new Error(`File inspection is not available for this format: ${result.note}`);
+      }
+      if (result.kind === "mb-es") {
+        throw new Error("R2Sonic BSF inspection is not yet supported.");
+      }
       set((s) => ({
         files: s.files.map((f) => {
           if (f.id !== id) return f;
@@ -249,9 +249,6 @@ export const useSurveyStore = create<SurveyState>((set, get) => ({
             updated.vendor = h.model || "Reson";
             updated.pointCount = h.bathymetry_count;
             // S7K also doesn't carry geographic bounds in header — Phase 2 work.
-          } else if (result.kind === "mb-es") {
-            updated.vendor = result.vendor;
-            updated.size = result.size_bytes;
           }
           return updated;
         }),

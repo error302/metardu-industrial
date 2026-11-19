@@ -68,6 +68,7 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
     let current_path = PathBuf::from(&request.current_path);
     let current_header = read_geotiff_header(&current_path)
         .map_err(|e| ctx!("reading current-survey DEM header", request.current_path, e))?;
+    let (cell_w_m, cell_h_m) = checked_metric_grid(&current_header)?;
     let current_grid = read_dem_grid(&current_path, &current_header)
         .map_err(|e| ctx!("reading current-survey DEM grid", request.current_path, e))?;
 
@@ -77,54 +78,19 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
             .strip_prefix("flat:")
             .and_then(|s| s.parse().ok())
             .ok_or_else(|| format!("invalid flat:Z reference: '{}'", request.reference_path))?;
+        if !z.is_finite() { return Err("Flat reference elevation must be finite".into()); }
         (vec![z; current_grid.len()], current_header.clone())
     } else if request.reference_path.starts_with("dxf:") {
-        // DXF design surface: import the TIN, rasterize to match current DEM
-        let dxf_path_str = request.reference_path.strip_prefix("dxf:").unwrap_or("");
-        let dxf_path = PathBuf::from(dxf_path_str);
-        let surface = metardu_core::mining::dxf_import::import_dxf_surface(&dxf_path)
-            .map_err(|e| ctx!("importing DXF design surface", dxf_path_str, e))?;
-        let cell_size = if let Some(ps) = current_header.model_pixel_scale {
-            ps[0].max(ps[1])
-        } else {
-            let width_m = current_header.bounds.map(|b| b[2] - b[0]).unwrap_or(100.0);
-            width_m.max(1.0) / current_header.width.max(1) as f64
-        };
-        let bounds = current_header.bounds.map(|b| (b[0], b[1], b[2], b[3]));
-        let design_dem =
-            metardu_core::mining::dxf_import::rasterize_dxf_to_dem(&surface, cell_size, bounds)
-                .map_err(|e| ctx_no_input!("rasterizing DXF design surface", e))?;
-        let ref_grid = if design_dem.ncols == current_header.width as usize
-            && design_dem.nrows == current_header.length as usize
-        {
-            design_dem.data
-        } else {
-            let mut grid = vec![f64::NAN; current_grid.len()];
-            for i in 0..grid.len() {
-                let row = i / current_header.width as usize;
-                let col = i % current_header.width as usize;
-                let src_col =
-                    (col as f64 * design_dem.ncols as f64 / current_header.width as f64) as usize;
-                let src_row =
-                    (row as f64 * design_dem.nrows as f64 / current_header.length as f64) as usize;
-                let src_col = src_col.min(design_dem.ncols - 1);
-                let src_row = src_row.min(design_dem.nrows - 1);
-                let val = design_dem.data[src_row * design_dem.ncols + src_col];
-                grid[i] = if val.is_nan() { 0.0 } else { val };
-            }
-            grid
-        };
-        (ref_grid, current_header.clone())
+        return Err("DXF surface comparison is unavailable until exact grid alignment and NoData handling are verified. Use an aligned GeoTIFF reference.".into());
     } else {
         let ref_path = PathBuf::from(&request.reference_path);
         let header = read_geotiff_header(&ref_path)
             .map_err(|e| ctx!("reading reference DEM header", request.reference_path, e))?;
+        validate_aligned_grids(&current_header, &header)?;
         let grid = read_dem_grid(&ref_path, &header)
             .map_err(|e| ctx!("reading reference DEM grid", request.reference_path, e))?;
         (grid, header)
     };
-
-    let (cell_w_m, cell_h_m) = derive_cell_meters(&current_header);
 
     compute_volumes_core(
         &current_grid,
@@ -134,6 +100,104 @@ pub async fn compute_volumes_cmd(request: ComputeVolumesRequest) -> Result<Volum
         request.bench_interval,
     )
     .map_err(|e| ctx_no_input!("computing fill/cut volumes", e))
+}
+
+fn checked_metric_grid(header: &crate::formats::GeoTiffHeader) -> Result<(f64, f64), String> {
+    // EPSG UTM north/south and WGS84 / UTM are metre-based. Other CRSs
+    // require explicit unit metadata, which this reader does not yet expose.
+    match header.epsg {
+        Some(32601..=32660 | 32701..=32760) => {}
+        _ => return Err("Volume calculations require a recognized metre-based WGS 84 UTM CRS (EPSG:32601-32660 or 32701-32760). Convert the DEM before calculating.".into()),
+    }
+    let scale = header.model_pixel_scale.ok_or("DEM pixel scale is missing")?;
+    if !scale[0].is_finite() || !scale[1].is_finite() || scale[0] <= 0.0 || scale[1] <= 0.0 {
+        return Err("DEM pixel dimensions must be finite and positive".into());
+    }
+    let tie = header.model_tiepoint.ok_or("DEM georeferencing tiepoint is missing")?;
+    if !tie.iter().all(|v| v.is_finite()) {
+        return Err("DEM tiepoint contains non-finite coordinates".into());
+    }
+    Ok((scale[0], scale[1]))
+}
+
+fn validate_aligned_grids(current: &crate::formats::GeoTiffHeader, reference: &crate::formats::GeoTiffHeader) -> Result<(), String> {
+    checked_metric_grid(reference)?;
+    if current.epsg != reference.epsg || current.width != reference.width || current.length != reference.length
+        || current.model_pixel_scale != reference.model_pixel_scale || current.model_tiepoint != reference.model_tiepoint {
+        return Err("Survey and reference DEMs must use the same CRS, dimensions, pixel scale and tiepoint. Align them before calculating.".into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod grid_validation_tests {
+    use super::*;
+    use crate::formats::GeoTiffHeader;
+
+    fn header() -> GeoTiffHeader {
+        GeoTiffHeader {
+            width: 2, length: 2, bits_per_sample: 32, samples_per_pixel: 1,
+            compression: 1, photometric: 1, is_tiled: false, strip_count: 1,
+            model_pixel_scale: Some([2.0, 2.0, 0.0]),
+            model_tiepoint: Some([0.0, 0.0, 0.0, 500_000.0, 9_900_000.0, 0.0]),
+            epsg: Some(32737), geo_ascii: None, nodata: None, bounds: None, sample_format: 3,
+            rows_per_strip: 2, strip_offsets: vec![8], strip_byte_counts: vec![16],
+        }
+    }
+
+    #[test]
+    fn accepts_aligned_utm_grids() {
+        let current = header();
+        assert_eq!(checked_metric_grid(&current).unwrap(), (2.0, 2.0));
+        assert!(validate_aligned_grids(&current, &current.clone()).is_ok());
+    }
+
+    #[test]
+    fn rejects_equal_size_but_shifted_or_incompatible_grids() {
+        let current = header();
+        let mut reference = current.clone();
+        reference.model_tiepoint.as_mut().unwrap()[3] += 1.0;
+        assert!(validate_aligned_grids(&current, &reference).is_err());
+        reference = current.clone();
+        reference.epsg = Some(4326);
+        assert!(validate_aligned_grids(&current, &reference).is_err());
+        reference = current.clone();
+        reference.model_pixel_scale = None;
+        assert!(validate_aligned_grids(&current, &reference).is_err());
+    }
+
+    #[test]
+    fn gdal_nodata_tag_is_excluded_from_dem_samples() {
+        // Minimal little-endian TIFF: one GDAL_NODATA tag followed by four f32 cells.
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"II");
+        bytes.extend_from_slice(&42u16.to_le_bytes());
+        bytes.extend_from_slice(&8u32.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&42113u16.to_le_bytes());
+        bytes.extend_from_slice(&2u16.to_le_bytes());
+        bytes.extend_from_slice(&6u32.to_le_bytes());
+        bytes.extend_from_slice(&26u32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(b"-9999\0");
+        for value in [1.0_f32, -9999.0, 2.0, 3.0] { bytes.extend_from_slice(&value.to_le_bytes()); }
+        let suffix = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let path = std::env::temp_dir().join(format!("metardu-nodata-{}-{suffix}.tif", std::process::id()));
+        std::fs::write(&path, bytes).unwrap();
+        let parsed = crate::formats::read_geotiff_header(&path).unwrap();
+        assert_eq!(parsed.nodata.as_deref(), Some("-9999"));
+        let mut raster = header();
+        raster.nodata = parsed.nodata;
+        raster.strip_offsets = vec![32];
+        let values = read_dem_grid(&path, &raster).unwrap();
+        assert_eq!(values[0], 1.0);
+        assert!(values[1].is_nan());
+        assert_eq!(values[2], 2.0);
+        let volume = compute_volumes_core(&values, &[0.0; 4], 1.0, 1.0, 0.0).unwrap();
+        assert_eq!(volume.nodata_cells, 1);
+        assert_eq!(volume.fill_volume, 6.0);
+        std::fs::remove_file(path).unwrap();
+    }
 }
 
 /// Read a GeoTIFF DEM into a flat Vec<f64> elevation grid.
@@ -147,6 +211,15 @@ pub fn read_dem_grid(
     use std::fs::File;
     use std::io::{Read, Seek, SeekFrom};
 
+    if header.is_tiled || header.compression != 1 || header.samples_per_pixel != 1 || header.rows_per_strip == 0 {
+        return Err("DEM reader supports only uncompressed, single-band strip GeoTIFFs".into());
+    }
+    if !matches!((header.sample_format, header.bits_per_sample), (1 | 2, 8 | 16 | 32) | (3, 32 | 64)) {
+        return Err("Unsupported DEM sample format or bit depth".into());
+    }
+    let nodata = header.nodata.as_deref().map(|value| value.parse::<f64>().map_err(|_| "Invalid DEM NoData value".to_string())).transpose()?
+        .map(|value| if header.sample_format == 3 && header.bits_per_sample == 32 { value as f32 as f64 } else { value });
+
     let total = (header.width as usize) * (header.length as usize);
     if total > 10_000_000 {
         return Err(format!(
@@ -156,6 +229,9 @@ pub fn read_dem_grid(
     }
 
     let mut file = File::open(path).map_err(|e| e.to_string())?;
+    let mut byte_order = [0u8; 2];
+    file.read_exact(&mut byte_order).map_err(|e| e.to_string())?;
+    if &byte_order != b"II" { return Err("DEM reader supports only little-endian GeoTIFFs".into()); }
     let bytes_per_sample = (header.bits_per_sample as usize) / 8;
     let row_stride = header.width as usize * bytes_per_sample * header.samples_per_pixel as usize;
 
@@ -183,12 +259,11 @@ pub fn read_dem_grid(
                 .ok_or("strip index out of range")?;
             let offset = row_in_strip * row_stride + col * bytes_per_sample;
             if offset + bytes_per_sample > strip.len() {
-                grid.push(0.0);
-                continue;
+                return Err(format!("Truncated DEM strip at row {row}, column {col}"));
             }
             let bytes = &strip[offset..offset + bytes_per_sample];
             let val = decode_pixel(bytes, header.sample_format, bytes_per_sample);
-            grid.push(val);
+            grid.push(if nodata.is_some_and(|missing| val == missing || (missing.is_nan() && val.is_nan())) { f64::NAN } else { val });
         }
     }
 
@@ -339,20 +414,21 @@ pub async fn compute_volumes_verified_cmd(
     tokio::task::spawn_blocking(move || -> Result<crate::mining::volume::VerifiedVolumeResult, String> {
         let cur_header = read_geotiff_header(&cur_path)
             .map_err(|e| ctx!("reading current DEM header", cur_label, e))?;
+        let (cell_w, cell_h) = checked_metric_grid(&cur_header)?;
         let cur_grid = read_dem_grid(&cur_path, &cur_header)
             .map_err(|e| ctx!("reading current DEM grid", cur_label, e))?;
         let ref_grid = if reference_path.starts_with("flat:") {
             let z: f64 = reference_path.strip_prefix("flat:").and_then(|s| s.parse().ok())
                 .ok_or_else(|| format!("invalid flat:Z reference: '{}'", reference_path))?;
+            if !z.is_finite() { return Err("Flat reference elevation must be finite".into()); }
             vec![z; cur_grid.len()]
         } else {
             let ref_header = read_geotiff_header(&ref_path)
                 .map_err(|e| ctx!("reading reference DEM header", ref_label, e))?;
+            validate_aligned_grids(&cur_header, &ref_header)?;
             read_dem_grid(&ref_path, &ref_header)
                 .map_err(|e| ctx!("reading reference DEM grid", ref_label, e))?
         };
-        let cell_w = if let Some(ps) = cur_header.model_pixel_scale { ps[0] } else { 1.0 };
-        let cell_h = if let Some(ps) = cur_header.model_pixel_scale { ps[1] } else { 1.0 };
         crate::mining::volume::compute_volumes_verified(
             &cur_grid, &ref_grid, cell_w, cell_h, 0.0, sigma_z_m,
         ).map_err(|e| format!("verified volume failed: {e}"))
@@ -385,20 +461,23 @@ pub async fn compute_volumes_verified_timed_cmd(
         tokio::task::spawn_blocking(move || -> Result<crate::mining::volume::VerifiedVolumeResult, MetarduError> {
             let cur_header = read_geotiff_header(&cur_path)
                 .map_err(|e| MetarduError::parse_error("GeoTIFF", format!("reading header: {e}")))?;
+            let (cell_w, cell_h) = checked_metric_grid(&cur_header)
+                .map_err(|e| MetarduError::calculation_error("compute_volumes_verified", e))?;
             let cur_grid = read_dem_grid(&cur_path, &cur_header)
                 .map_err(|e| MetarduError::io_error(format!("reading current DEM grid: {e}")))?;
             let ref_grid = if reference_path.starts_with("flat:") {
                 let z: f64 = reference_path.strip_prefix("flat:").and_then(|s| s.parse().ok())
                     .ok_or_else(|| MetarduError::invalid_input("reference_path", ref_label.clone(), "invalid flat:Z reference"))?;
+                if !z.is_finite() { return Err(MetarduError::invalid_input("reference_path", ref_label.clone(), "flat elevation must be finite")); }
                 vec![z; cur_grid.len()]
             } else {
                 let ref_header = read_geotiff_header(&ref_path)
                     .map_err(|e| MetarduError::parse_error("GeoTIFF", format!("reading reference header: {e}")))?;
+                validate_aligned_grids(&cur_header, &ref_header)
+                    .map_err(|e| MetarduError::calculation_error("compute_volumes_verified", e))?;
                 read_dem_grid(&ref_path, &ref_header)
                     .map_err(|e| MetarduError::io_error(format!("reading reference DEM grid: {e}")))?
             };
-            let cell_w = if let Some(ps) = cur_header.model_pixel_scale { ps[0] } else { 1.0 };
-            let cell_h = if let Some(ps) = cur_header.model_pixel_scale { ps[1] } else { 1.0 };
             crate::mining::volume::compute_volumes_verified(
                 &cur_grid, &ref_grid, cell_w, cell_h, 0.0, sigma_z_m,
             ).map_err(|e| MetarduError::calculation_error("compute_volumes_verified", e.to_string()))

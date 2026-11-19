@@ -68,6 +68,12 @@ pub enum VolumeError {
     Empty,
     #[error("cell dimensions must be positive: got {0}x{1}")]
     InvalidCellDims(f64, f64),
+    #[error("bench interval must be finite and non-negative: got {0}")]
+    InvalidBenchInterval(f64),
+    #[error("bench interval produces too many elevation bands (maximum {0})")]
+    TooManyBenches(usize),
+    #[error("cell area or volume is not finite")]
+    NonFiniteResult,
 }
 
 /// The NODATA sentinel value used throughout the pipeline.
@@ -77,7 +83,7 @@ pub const NODATA: f64 = -9999.0;
 /// Check if a value is a NODATA sentinel (either our -9999.0 or NaN).
 #[inline]
 fn is_nodata(v: f64) -> bool {
-    v == NODATA || v.is_nan()
+    v == NODATA || !v.is_finite()
 }
 
 /// Compute volumes by differencing two elevation grids.
@@ -118,11 +124,17 @@ pub fn compute_volumes(
             1,
         ));
     }
-    if cell_width_m <= 0.0 || cell_height_m <= 0.0 {
+    if !cell_width_m.is_finite() || !cell_height_m.is_finite() || cell_width_m <= 0.0 || cell_height_m <= 0.0 {
         return Err(VolumeError::InvalidCellDims(cell_width_m, cell_height_m));
+    }
+    if !bench_interval.is_finite() || bench_interval < 0.0 {
+        return Err(VolumeError::InvalidBenchInterval(bench_interval));
     }
 
     let cell_area = cell_width_m * cell_height_m;
+    if !cell_area.is_finite() || cell_area == 0.0 {
+        return Err(VolumeError::NonFiniteResult);
+    }
     // nodata_cells is counted in the bench-bounds pre-pass below.
     // fill/cut volumes and cells are computed by the rayon fold/reduce
     // further down — no need to pre-declare them here.
@@ -144,7 +156,7 @@ pub fn compute_volumes(
         return Err(VolumeError::Empty);
     }
     let benches = if bench_interval > 0.0 {
-        build_bench_breakpoints(z_min, z_max, bench_interval)
+        build_bench_breakpoints(z_min, z_max, bench_interval)?
     } else {
         Vec::new()
     };
@@ -166,12 +178,7 @@ pub fn compute_volumes(
     // accumulators. For a 25M-cell DEM this cuts the per-cell loop from
     // ~2s (single-threaded) to ~300-500ms on an 8-core machine.
     //
-    // The bench-assignment inner loop is also O(1) instead of
-    // O(n_benches): we precompute the bench index for each cell's
-    // elevation using a simple division. A cell at elevation z belongs
-    // to bench index floor((z - z_min) / bench_interval), clamped to
-    // [0, n_benches-1]. This replaces the previous linear scan through
-    // `for bench in &mut bench_results { if *c >= bench.z_min && *c < bench.z_max { … }}`.
+    // A cell contributes to every band intersected by its elevation change.
     use rayon::prelude::*;
 
     // Per-thread accumulator: (fill_volume, cut_volume, fill_cells,
@@ -190,12 +197,6 @@ pub fn compute_volumes(
     }
 
     let n_benches = bench_results.len();
-    let bench_interval_f64 = if bench_interval > 0.0 {
-        bench_interval
-    } else {
-        1.0 // avoid div-by-zero; n_benches will be 0 so the index is unused
-    };
-
     let init = || Acc {
         fill_volume: 0.0,
         cut_volume: 0.0,
@@ -222,15 +223,22 @@ pub fn compute_volumes(
                 acc.cut_volume += -dz * cell_area;
                 acc.cut_cells += 1;
             }
-            // Bench assignment: O(1) index computation, no linear scan.
             if n_benches > 0 {
-                let idx = (((*c - z_min) / bench_interval_f64) as usize).min(n_benches - 1);
-                if dz > 0.0 {
-                    acc.bench_fill_vol[idx] += dz * cell_area;
-                    acc.bench_fill_cells[idx] += 1;
-                } else if dz < 0.0 {
-                    acc.bench_cut_vol[idx] += -dz * cell_area;
-                    acc.bench_cut_cells[idx] += 1;
+                let lower = c.min(*r);
+                let upper = c.max(*r);
+                let first = (((lower - benches[0].0) / bench_interval).floor() as usize).min(n_benches - 1);
+                let last = (((upper - benches[0].0) / bench_interval).floor() as usize).min(n_benches - 1);
+                for idx in first..=last {
+                    let (lo, hi) = benches[idx];
+                    let thickness = (upper.min(hi) - lower.max(lo)).max(0.0);
+                    if thickness == 0.0 { continue; }
+                    if dz > 0.0 {
+                        acc.bench_fill_vol[idx] += thickness * cell_area;
+                        acc.bench_fill_cells[idx] += 1;
+                    } else if dz < 0.0 {
+                        acc.bench_cut_vol[idx] += thickness * cell_area;
+                        acc.bench_cut_cells[idx] += 1;
+                    }
                 }
             }
             acc
@@ -253,6 +261,9 @@ pub fn compute_volumes(
     let cut_volume = result.cut_volume;
     let fill_cells = result.fill_cells;
     let cut_cells = result.cut_cells;
+    if !fill_volume.is_finite() || !cut_volume.is_finite() || !(fill_volume - cut_volume).is_finite() {
+        return Err(VolumeError::NonFiniteResult);
+    }
 
     // Fold per-bench accumulators into the bench_results
     for (i, bench) in bench_results.iter_mut().enumerate() {
@@ -280,12 +291,16 @@ pub fn compute_volumes(
 }
 
 /// Build bench breakpoints as [(z_min, z_max), ...] covering [z_min, z_max].
-fn build_bench_breakpoints(z_min: f64, z_max: f64, interval: f64) -> Vec<(f64, f64)> {
+fn build_bench_breakpoints(z_min: f64, z_max: f64, interval: f64) -> Result<Vec<(f64, f64)>, VolumeError> {
+    const MAX_BENCHES: usize = 10_000;
     if interval <= 0.0 || z_max <= z_min {
-        return vec![];
+        return Ok(vec![]);
     }
     let mut result = Vec::new();
     let mut lo = (z_min / interval).floor() * interval;
+    if !lo.is_finite() {
+        return Err(VolumeError::TooManyBenches(MAX_BENCHES));
+    }
     // Use `<=` so the last bench is included when z_max aligns exactly
     // to the interval grid. The previous `<` skipped the final bench in
     // that case, leaving cells at exactly z_max assigned to no bench.
@@ -294,10 +309,13 @@ fn build_bench_breakpoints(z_min: f64, z_max: f64, interval: f64) -> Vec<(f64, f
     // boundary cells that were previously lost.
     while lo <= z_max {
         let hi = lo + interval;
+        if result.len() >= MAX_BENCHES || !hi.is_finite() || hi <= lo {
+            return Err(VolumeError::TooManyBenches(MAX_BENCHES));
+        }
         result.push((lo, hi));
         lo = hi;
     }
-    result
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -350,17 +368,13 @@ mod tests {
     fn test_bench_breakdown() {
         let current = vec![105.0, 115.0, 125.0, 135.0];
         let reference = vec![100.0; 4];
-        // Bench interval = 10m. Bands:
-        //   [100, 110): 105 → dz=5, fill=5*100=500
-        //   [110, 120): 115 → dz=15, fill=15*100=1500
-        //   [120, 130): 125 → dz=25, fill=25*100=2500
-        //   [130, 140): 135 → dz=35, fill=35*100=3500
+        // Each cell contributes its intersecting thickness to each band.
         let result = compute_volumes(&current, &reference, 10.0, 10.0, 10.0).unwrap();
         assert_eq!(result.benches.len(), 4);
-        assert_eq!(result.benches[0].fill_volume, 500.0);
-        assert_eq!(result.benches[1].fill_volume, 1500.0);
-        assert_eq!(result.benches[2].fill_volume, 2500.0);
-        assert_eq!(result.benches[3].fill_volume, 3500.0);
+        assert_eq!(result.benches[0].fill_volume, 3500.0);
+        assert_eq!(result.benches[1].fill_volume, 2500.0);
+        assert_eq!(result.benches[2].fill_volume, 1500.0);
+        assert_eq!(result.benches[3].fill_volume, 500.0);
     }
 
     #[test]
@@ -406,6 +420,21 @@ mod tests {
     }
 
     #[test]
+    fn rejects_nonfinite_parameters_and_unbounded_bench_counts() {
+        assert!(matches!(compute_volumes(&[1.0], &[0.0], f64::NAN, 1.0, 0.0), Err(VolumeError::InvalidCellDims(..))));
+        assert!(matches!(compute_volumes(&[1.0], &[0.0], 1.0, 1.0, f64::NAN), Err(VolumeError::InvalidBenchInterval(_))));
+        assert!(matches!(compute_volumes(&[100.0], &[0.0], 1.0, 1.0, 1e-20), Err(VolumeError::TooManyBenches(_))));
+        assert!(matches!(compute_volumes(&[1.0], &[0.0], f64::MAX, 2.0, 0.0), Err(VolumeError::NonFiniteResult)));
+    }
+
+    #[test]
+    fn skips_infinite_elevations_as_invalid_cells() {
+        let result = compute_volumes(&[1.0, f64::INFINITY], &[0.0, 0.0], 1.0, 1.0, 0.0).unwrap();
+        assert_eq!(result.fill_volume, 1.0);
+        assert_eq!(result.nodata_cells, 1);
+    }
+
+    #[test]
     fn test_all_nodata_errors() {
         let current = vec![NODATA; 4];
         let reference = vec![NODATA; 4];
@@ -419,11 +448,10 @@ mod tests {
         let current = vec![105.0, NODATA, 115.0, NODATA];
         let reference = vec![100.0, 100.0, 100.0, 100.0];
         let result = compute_volumes(&current, &reference, 10.0, 10.0, 10.0).unwrap();
-        // Only 2 valid cells. Bench [100,110): 105 → fill=5*100=500
-        // Bench [110,120): 115 → fill=15*100=1500
+        // The 115m cell contributes to both elevation bands.
         assert_eq!(result.benches.len(), 2);
-        assert_eq!(result.benches[0].fill_volume, 500.0);
-        assert_eq!(result.benches[1].fill_volume, 1500.0);
+        assert_eq!(result.benches[0].fill_volume, 1500.0);
+        assert_eq!(result.benches[1].fill_volume, 500.0);
         assert_eq!(result.fill_cells, 2);
     }
 }
